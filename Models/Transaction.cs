@@ -8,6 +8,9 @@ namespace ProWalid.Models
     public partial class Transaction : ObservableObject
     {
         [ObservableProperty]
+        private long customerId;
+
+        [ObservableProperty]
         private string invoiceNumber = string.Empty;
 
         [ObservableProperty]

@@ -226,10 +226,22 @@
             <Grid Grid.Row="0" Margin="0,0,0,24">
                 <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Left">
                     <SymbolIcon Symbol="Document" Foreground="#0078D4" VerticalAlignment="Center"/>
-                    <TextBlock Text="إدارة المعاملات" 
-                               FontSize="28" 
-                               FontWeight="Bold"
-                               VerticalAlignment="Center"/>
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="إدارة المعاملات" 
+                                   FontSize="28" 
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"/>
+                        <Border Background="#DDF4FF"
+                                BorderBrush="#8ED8F8"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="10,4">
+                            <TextBlock Text="{Binding SelectedCustomerHeaderText}"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="#0F3B5F"/>
+                        </Border>
+                    </StackPanel>
                 </StackPanel>
                 
                 <Button Command="{Binding LogoutCommand}"
@@ -416,9 +428,9 @@
                                                 </VisualStateManager.VisualStateGroups>
 
                                                 <Border x:Name="ContainerBorder"
-                                                        Margin="0,4"
-                                                        Padding="4"
-                                                        CornerRadius="18"
+                                                        Margin="0"
+                                                        Padding="0"
+                                                        CornerRadius="14"
                                                         Background="Transparent"
                                                         BorderBrush="Transparent"
                                                         BorderThickness="1">
@@ -444,7 +456,7 @@
                                         <Border.Shadow>
                                             <ThemeShadow />
                                         </Border.Shadow>
-                                        <Border Background="#CBEFFF" Padding="10,6" CornerRadius="15,15,0,0">
+                                        <Border Background="#CBEFFF" Padding="10,5" CornerRadius="15,15,0,0">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
@@ -469,7 +481,7 @@
                                         </Border>
                                     </Border>
 
-                                    <Grid Padding="8,6" Background="#F4FDFF" BorderBrush="#75CDEE" BorderThickness="1.5,0,1.5,0">
+                                    <Grid Padding="6,3" Background="#F4FDFF" BorderBrush="#75CDEE" BorderThickness="1.5,0,1.5,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="80"/>
                                             <ColumnDefinition Width="300"/>
@@ -481,15 +493,15 @@
                                             <ColumnDefinition Width="300"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" Visibility="{Binding IsFirstItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding ServiceName, Mode=OneWay}" FontSize="15" Padding="12,8" VerticalAlignment="Center" Foreground="#0F3B5F" FontWeight="SemiBold"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding Quantity, Mode=OneWay}" FontSize="15" Padding="12,8" VerticalAlignment="Center" TextAlignment="Center" FontWeight="SemiBold"/>
-                                        <TextBlock Grid.Column="3" Text="{Binding UnitPrice, Mode=OneWay}" FontSize="15" Padding="12,8" Margin="37,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#24506F"/>
-                                        <TextBlock Grid.Column="4" Text="{Binding Total, Mode=OneWay}" FontSize="15" FontWeight="Bold" Foreground="#2E7D32" Padding="12,8" Margin="0,0,50,0" VerticalAlignment="Center" TextAlignment="Right"/>
-                                        <TextBlock Grid.Column="5" Text="{Binding CompanyName, Mode=OneWay}" FontSize="15" Padding="12,8" VerticalAlignment="Center" Foreground="#24506F"/>
-                                        <TextBlock Grid.Column="6" Text="{Binding EmployeeName, Mode=OneWay}" FontSize="15" Padding="12,8" VerticalAlignment="Center" Foreground="#24506F"/>
+                                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" Visibility="{Binding IsFirstItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ServiceName, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" Foreground="#0F3B5F" FontWeight="SemiBold"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Quantity, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" TextAlignment="Center" FontWeight="SemiBold"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding UnitPrice, Mode=OneWay}" FontSize="14" Padding="10,5" Margin="24,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#24506F"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding Total, Mode=OneWay}" FontSize="14" FontWeight="Bold" Foreground="#2E7D32" Padding="10,5" Margin="0,0,28,0" VerticalAlignment="Center" TextAlignment="Right"/>
+                                        <TextBlock Grid.Column="5" Text="{Binding CompanyName, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" Foreground="#24506F"/>
+                                        <TextBlock Grid.Column="6" Text="{Binding EmployeeName, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" Foreground="#24506F"/>
 
-                                        <ItemsControl Grid.Column="7" ItemsSource="{Binding Attachments}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="8,0">
+                                        <ItemsControl Grid.Column="7" ItemsSource="{Binding Attachments}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4,0">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
                                                     <StackPanel Orientation="Horizontal" Spacing="4"/>
@@ -507,16 +519,27 @@
                                                             BorderThickness="1"
                                                             CornerRadius="10"
                                                             ToolTipService.ToolTip="{Binding OriginalFileName}">
-                                                        <FontIcon Glyph="&#xE8A5;" FontSize="16" Foreground="#0B6FA4"/>
+                                                        <Grid>
+                                                            <FontIcon Glyph="&#xE8A5;"
+                                                                      FontSize="16"
+                                                                      Foreground="#C62828"
+                                                                      Visibility="{Binding IsPdfAttachment, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                            <SymbolIcon Symbol="Pictures"
+                                                                        Foreground="#0B6FA4"
+                                                                        Visibility="{Binding IsImageAttachment, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                            <SymbolIcon Symbol="Document"
+                                                                        Foreground="#0B6FA4"
+                                                                        Visibility="{Binding IsOtherAttachment, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                        </Grid>
                                                     </Button>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                     </Grid>
 
-                                    <Border Height="4"
+                                    <Border Height="1"
                                             Background="#F4FDFF"
-                                            Margin="0,0,0,11"
+                                            Margin="0,0,0,4"
                                             BorderBrush="#75CDEE"
                                             BorderThickness="1.5,0,1.5,1.5"
                                             CornerRadius="0,0,16,16"

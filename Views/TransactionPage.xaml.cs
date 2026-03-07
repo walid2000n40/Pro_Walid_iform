@@ -11,7 +11,8 @@ namespace ProWalid.Views
         public TransactionPage()
         {
             this.InitializeComponent();
-            ViewModel = new TransactionViewModel();
+            NavigationCacheMode = NavigationCacheMode.Required;
+            ViewModel = TransactionViewModel.Instance ?? new TransactionViewModel();
             this.DataContext = ViewModel;
         }
 

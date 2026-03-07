@@ -30,64 +30,78 @@
                     CornerRadius="8"
                     Padding="24"
                     Margin="0,0,0,24">
-                <Grid HorizontalAlignment="Center">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="220"/>
-                        <ColumnDefinition Width="340"/>
-                        <ColumnDefinition Width="340"/>
-                        <ColumnDefinition Width="220"/>
-                    </Grid.ColumnDefinitions>
+                <StackPanel Spacing="18">
+                    <Border Background="#DDF4FF"
+                            BorderBrush="#8ED8F8"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="12,8"
+                            HorizontalAlignment="Stretch">
+                        <TextBlock Text="{Binding SelectedCustomerContextText}"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="#0F3B5F"/>
+                    </Border>
 
-                    <StackPanel Grid.Column="0" Spacing="10" Margin="0,0,20,0">
-                        <TextBlock Text="رقم الفاتورة" FontWeight="SemiBold" FontSize="16"/>
-                        <Border BorderBrush="{Binding InvoiceNumber, Converter={StaticResource ValidationBrushConverter}}"
-                                BorderThickness="2"
-                                CornerRadius="6">
-                            <TextBox Text="{Binding InvoiceNumber, Mode=OneWay}"
-                                     IsReadOnly="True"
-                                     Background="#F5F5F5"
-                                     FontSize="17"
-                                     Height="48"
-                                     FontWeight="Bold"/>
-                        </Border>
-                    </StackPanel>
+                    <Grid HorizontalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="340"/>
+                            <ColumnDefinition Width="340"/>
+                            <ColumnDefinition Width="220"/>
+                        </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="1" Spacing="10" Margin="0,0,20,0">
-                        <TextBlock Text="اسم الشركة" FontWeight="SemiBold" FontSize="16"/>
-                        <Border BorderBrush="{Binding CompanyName, Converter={StaticResource ValidationBrushConverter}}"
-                                BorderThickness="2"
-                                CornerRadius="6">
-                            <TextBox Text="{Binding CompanyName, Mode=TwoWay}"
-                                     PlaceholderText="أدخل اسم الشركة"
-                                     FontSize="17"
-                                     Height="48"/>
-                        </Border>
-                    </StackPanel>
+                        <StackPanel Grid.Column="0" Spacing="10" Margin="0,0,20,0">
+                            <TextBlock Text="رقم الفاتورة" FontWeight="SemiBold" FontSize="16"/>
+                            <Border BorderBrush="{Binding InvoiceNumber, Converter={StaticResource ValidationBrushConverter}}"
+                                    BorderThickness="2"
+                                    CornerRadius="6">
+                                <TextBox Text="{Binding InvoiceNumber, Mode=OneWay}"
+                                         IsReadOnly="True"
+                                         Background="#F5F5F5"
+                                         FontSize="17"
+                                         Height="48"
+                                         FontWeight="Bold"/>
+                            </Border>
+                        </StackPanel>
 
-                    <StackPanel Grid.Column="2" Spacing="10" Margin="0,0,20,0">
-                        <TextBlock Text="اسم الموظف" FontWeight="SemiBold" FontSize="16"/>
-                        <Border BorderBrush="{Binding EmployeeName, Converter={StaticResource ValidationBrushConverter}}"
-                                BorderThickness="2"
-                                CornerRadius="6">
-                            <TextBox Text="{Binding EmployeeName, Mode=TwoWay}"
-                                     PlaceholderText="أدخل اسم الموظف"
-                                     FontSize="17"
-                                     Height="48"/>
-                        </Border>
-                    </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="10" Margin="0,0,20,0">
+                            <TextBlock Text="اسم الشركة" FontWeight="SemiBold" FontSize="16"/>
+                            <Border BorderBrush="{Binding CompanyName, Converter={StaticResource ValidationBrushConverter}}"
+                                    BorderThickness="2"
+                                    CornerRadius="6">
+                                <TextBox Text="{Binding CompanyName, Mode=TwoWay}"
+                                         PlaceholderText="أدخل اسم الشركة"
+                                         FontSize="17"
+                                         Height="48"/>
+                            </Border>
+                        </StackPanel>
 
-                    <StackPanel Grid.Column="3" Spacing="10">
-                        <TextBlock Text="التاريخ" FontWeight="SemiBold" FontSize="16"/>
-                        <Border BorderBrush="ForestGreen"
-                                BorderThickness="2"
-                                CornerRadius="6">
-                            <DatePicker Date="{Binding TransactionDate, Mode=TwoWay}"
-                                        HorizontalAlignment="Stretch"
-                                        FontSize="17"
-                                        Height="48"/>
-                        </Border>
-                    </StackPanel>
-                </Grid>
+                        <StackPanel Grid.Column="2" Spacing="10" Margin="0,0,20,0">
+                            <TextBlock Text="اسم الموظف" FontWeight="SemiBold" FontSize="16"/>
+                            <Border BorderBrush="{Binding EmployeeName, Converter={StaticResource ValidationBrushConverter}}"
+                                    BorderThickness="2"
+                                    CornerRadius="6">
+                                <TextBox Text="{Binding EmployeeName, Mode=TwoWay}"
+                                         PlaceholderText="أدخل اسم الموظف"
+                                         FontSize="17"
+                                         Height="48"/>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="3" Spacing="10">
+                            <TextBlock Text="التاريخ" FontWeight="SemiBold" FontSize="16"/>
+                            <Border BorderBrush="ForestGreen"
+                                    BorderThickness="2"
+                                    CornerRadius="6">
+                                <DatePicker Date="{Binding TransactionDate, Mode=TwoWay}"
+                                            HorizontalAlignment="Stretch"
+                                            FontSize="17"
+                                            Height="48"/>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
             </Border>
 
             <Border Grid.Row="1"

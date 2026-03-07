@@ -25,6 +25,10 @@ namespace ProWalid.Views
             {
                 ViewModel.LoadTransaction(transaction);
             }
+            else if (e.Parameter is Customer customer)
+            {
+                ViewModel.LoadCustomer(customer);
+            }
         }
     }
 }

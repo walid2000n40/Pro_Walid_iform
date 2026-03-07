@@ -31,6 +31,7 @@ namespace ProWalid.Data
             var createTransactionsTable = @"
                 CREATE TABLE IF NOT EXISTS Transactions (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    CustomerId INTEGER NOT NULL DEFAULT 0,
                     InvoiceNumber TEXT NOT NULL UNIQUE,
                     CompanyName TEXT NOT NULL,
                     EmployeeName TEXT NOT NULL,
@@ -77,9 +78,19 @@ namespace ProWalid.Data
                 )";
 
             await connection.ExecuteAsync(createTransactionsTable);
+            await EnsureTransactionsCustomerIdColumnAsync(connection);
             await connection.ExecuteAsync(createItemsTable);
             await connection.ExecuteAsync(createAttachmentsTable);
             await connection.ExecuteAsync(createCustomersTable);
+        }
+
+        private static async Task EnsureTransactionsCustomerIdColumnAsync(SqliteConnection connection)
+        {
+            var transactionColumns = await connection.QueryAsync("PRAGMA table_info(Transactions)");
+            if (!transactionColumns.Any(column => string.Equals((string)column.name, "CustomerId", StringComparison.OrdinalIgnoreCase)))
+            {
+                await connection.ExecuteAsync("ALTER TABLE Transactions ADD COLUMN CustomerId INTEGER NOT NULL DEFAULT 0");
+            }
         }
 
         public async Task<long> SaveTransactionAsync(Transaction transaction)
@@ -101,7 +112,8 @@ namespace ProWalid.Data
                 {
                     await connection.ExecuteAsync(
                         @"UPDATE Transactions 
-                          SET CompanyName = @CompanyName, 
+                          SET CustomerId = @CustomerId,
+                              CompanyName = @CompanyName, 
                               EmployeeName = @EmployeeName, 
                               TransactionDate = @TransactionDate, 
                               GrandTotal = @GrandTotal 
@@ -109,6 +121,7 @@ namespace ProWalid.Data
                         new
                         {
                             Id = existingId.Value,
+                            transaction.CustomerId,
                             transaction.CompanyName,
                             transaction.EmployeeName,
                             TransactionDate = transaction.TransactionDate.ToString("yyyy-MM-dd"),
@@ -142,11 +155,12 @@ namespace ProWalid.Data
                 else
                 {
                     transactionId = await connection.QuerySingleAsync<long>(
-                        @"INSERT INTO Transactions (InvoiceNumber, CompanyName, EmployeeName, TransactionDate, GrandTotal) 
-                          VALUES (@InvoiceNumber, @CompanyName, @EmployeeName, @TransactionDate, @GrandTotal);
+                        @"INSERT INTO Transactions (CustomerId, InvoiceNumber, CompanyName, EmployeeName, TransactionDate, GrandTotal) 
+                          VALUES (@CustomerId, @InvoiceNumber, @CompanyName, @EmployeeName, @TransactionDate, @GrandTotal);
                           SELECT last_insert_rowid();",
                         new
                         {
+                            transaction.CustomerId,
                             transaction.InvoiceNumber,
                             transaction.CompanyName,
                             transaction.EmployeeName,
@@ -257,6 +271,7 @@ namespace ProWalid.Data
                     {
                         transaction = new Transaction
                         {
+                            CustomerId = trans.CustomerId != null ? (long)trans.CustomerId : 0,
                             InvoiceNumber = trans.InvoiceNumber,
                             CompanyName = trans.CompanyName,
                             EmployeeName = trans.EmployeeName,

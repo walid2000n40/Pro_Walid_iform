@@ -39,6 +39,16 @@ namespace ProWalid.ViewModels
         [ObservableProperty]
         private string pageTitle = "إضافة معاملة جديدة";
 
+        [ObservableProperty]
+        private long selectedCustomerId;
+
+        [ObservableProperty]
+        private string selectedCustomerName = string.Empty;
+
+        public string SelectedCustomerContextText => string.IsNullOrWhiteSpace(SelectedCustomerName)
+            ? "العميل: غير محدد"
+            : $"العميل المحدد: {SelectedCustomerName}";
+
         public double GrandTotal => Items.Sum(item => item.Total + item.Profit - item.Discount);
 
         public AddTransactionPageViewModel()
@@ -67,6 +77,17 @@ namespace ProWalid.ViewModels
             _frame = frame;
         }
 
+        public void LoadCustomer(Customer customer)
+        {
+            if (customer == null)
+            {
+                return;
+            }
+
+            SelectedCustomerId = customer.Id;
+            SelectedCustomerName = customer.Name;
+        }
+
         public async void LoadTransaction(Transaction transaction)
         {
             if (transaction != null)
@@ -74,6 +95,11 @@ namespace ProWalid.ViewModels
                 _isEditMode = true;
                 _originalTransaction = transaction;
                 PageTitle = "تعديل معاملة";
+                SelectedCustomerId = transaction.CustomerId;
+                if (TransactionViewModel.Instance?.SelectedCustomer?.Id == transaction.CustomerId)
+                {
+                    SelectedCustomerName = TransactionViewModel.Instance.SelectedCustomer.Name;
+                }
 
                 InvoiceNumber = transaction.InvoiceNumber;
                 CompanyName = transaction.CompanyName;
@@ -143,6 +169,12 @@ namespace ProWalid.ViewModels
         [RelayCommand]
         private async Task SaveAsync()
         {
+            if (SelectedCustomerId <= 0)
+            {
+                System.Diagnostics.Debug.WriteLine("يجب اختيار عميل قبل حفظ المعاملة");
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(InvoiceNumber))
             {
                 System.Diagnostics.Debug.WriteLine("رقم الفاتورة مطلوب");
@@ -169,6 +201,7 @@ namespace ProWalid.ViewModels
 
             var transaction = new Transaction
             {
+                CustomerId = SelectedCustomerId,
                 InvoiceNumber = InvoiceNumber,
                 CompanyName = CompanyName,
                 EmployeeName = EmployeeName,

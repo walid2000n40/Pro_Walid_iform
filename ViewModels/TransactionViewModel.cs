@@ -21,6 +21,8 @@ namespace ProWalid.ViewModels
         private Frame _frame;
         private readonly DatabaseHelper _databaseHelper;
         private readonly AttachmentManager _attachmentManager;
+        private readonly List<Transaction> _allTransactions = new();
+        private bool _isApplyingTransactionFilter;
 
         [ObservableProperty]
         private ObservableCollection<Transaction> transactions = new();
@@ -42,6 +44,10 @@ namespace ProWalid.ViewModels
 
         public ObservableCollection<TransactionItemWithDetails> AllItems { get; } = new();
 
+        public string SelectedCustomerHeaderText => SelectedCustomer == null ? "لم يتم اختيار عميل بعد" : $"العميل المحدد: {SelectedCustomer.Name}";
+
+        public bool HasSelectedCustomer => SelectedCustomer != null;
+
         public int TransactionCount => Transactions.Count;
 
         public double TotalAmount => Transactions.Sum(t => t.GrandTotal);
@@ -54,6 +60,11 @@ namespace ProWalid.ViewModels
             
             Transactions.CollectionChanged += (s, e) =>
             {
+                if (_isApplyingTransactionFilter)
+                {
+                    return;
+                }
+
                 OnPropertyChanged(nameof(TransactionCount));
                 OnPropertyChanged(nameof(TotalAmount));
                 RefreshAllItems();
@@ -70,6 +81,13 @@ namespace ProWalid.ViewModels
             {
                 Customers.Add(customer);
             }
+        }
+
+        partial void OnSelectedCustomerChanged(Customer? value)
+        {
+            OnPropertyChanged(nameof(SelectedCustomerHeaderText));
+            OnPropertyChanged(nameof(HasSelectedCustomer));
+            ApplyCustomerFilter();
         }
 
         [RelayCommand]
@@ -217,6 +235,7 @@ namespace ProWalid.ViewModels
                 SelectedCustomer.Address = addressBox.Text;
 
                 await _databaseHelper.SaveCustomerAsync(SelectedCustomer);
+                ApplyCustomerFilter();
                 
                 var successDialog = new ContentDialog
                 {
@@ -292,10 +311,37 @@ namespace ProWalid.ViewModels
         private async void LoadTransactionsAsync()
         {
             var loadedTransactions = await _databaseHelper.GetAllTransactionsAsync();
-            foreach (var transaction in loadedTransactions)
+            _allTransactions.Clear();
+            _allTransactions.AddRange(loadedTransactions);
+            ApplyCustomerFilter();
+        }
+
+        private void ApplyCustomerFilter()
+        {
+            _isApplyingTransactionFilter = true;
+
+            Transactions.Clear();
+            AllItems.Clear();
+            SelectedItem = null;
+            SelectedTransaction = null;
+
+            if (SelectedCustomer != null)
             {
-                Transactions.Add(transaction);
+                foreach (var transaction in _allTransactions.Where(t => CustomerMatchesTransaction(SelectedCustomer, t)))
+                {
+                    Transactions.Add(transaction);
+                }
             }
+
+            _isApplyingTransactionFilter = false;
+            OnPropertyChanged(nameof(TransactionCount));
+            OnPropertyChanged(nameof(TotalAmount));
+            RefreshAllItems();
+        }
+
+        private static bool CustomerMatchesTransaction(Customer customer, Transaction transaction)
+        {
+            return transaction.CustomerId > 0 && transaction.CustomerId == customer.Id;
         }
 
         private void RefreshAllItems()
@@ -388,19 +434,19 @@ namespace ProWalid.ViewModels
 
         public void AddOrUpdateTransaction(Transaction transaction)
         {
-            var existing = Transactions.FirstOrDefault(t => t.InvoiceNumber == transaction.InvoiceNumber);
+            var existing = _allTransactions.FirstOrDefault(t => t.InvoiceNumber == transaction.InvoiceNumber);
             
             if (existing != null)
             {
-                var index = Transactions.IndexOf(existing);
-                Transactions[index] = transaction;
+                var index = _allTransactions.IndexOf(existing);
+                _allTransactions[index] = transaction;
             }
             else
             {
-                Transactions.Add(transaction);
+                _allTransactions.Add(transaction);
             }
             
-            RefreshAllItems();
+            ApplyCustomerFilter();
         }
 
         [RelayCommand]
@@ -408,7 +454,7 @@ namespace ProWalid.ViewModels
         {
             if (_frame != null)
             {
-                _frame.Navigate(typeof(AddTransactionPage), null);
+                _frame.Navigate(typeof(AddTransactionPage), SelectedCustomer);
             }
         }
 
@@ -470,8 +516,14 @@ namespace ProWalid.ViewModels
                 if (passwordBox?.Password == "1234")
                 {
                     await _databaseHelper.DeleteTransactionAsync(SelectedTransaction.InvoiceNumber);
-                    Transactions.Remove(SelectedTransaction);
+                    var cachedTransaction = _allTransactions.FirstOrDefault(t => t.InvoiceNumber == SelectedTransaction.InvoiceNumber);
+                    if (cachedTransaction != null)
+                    {
+                        _allTransactions.Remove(cachedTransaction);
+                    }
+
                     SelectedTransaction = null;
+                    ApplyCustomerFilter();
                 }
                 else
                 {
