@@ -67,7 +67,7 @@ namespace ProWalid.ViewModels
             _frame = frame;
         }
 
-        public void LoadTransaction(Transaction transaction)
+        public async void LoadTransaction(Transaction transaction)
         {
             if (transaction != null)
             {
@@ -85,6 +85,7 @@ namespace ProWalid.ViewModels
                 {
                     var newItem = new TransactionItemDetail
                     {
+                        Id = item.Id,
                         ServiceName = item.ServiceName,
                         Quantity = item.Quantity,
                         UnitPrice = item.UnitPrice,
@@ -92,6 +93,12 @@ namespace ProWalid.ViewModels
                         Discount = item.Discount,
                         AttachmentPath = item.AttachmentPath
                     };
+
+                    var existingAttachments = await _databaseHelper.GetAttachmentsAsync(item.Id);
+                    foreach (var attachment in existingAttachments)
+                    {
+                        newItem.Attachments.Add(attachment);
+                    }
 
                     newItem.PropertyChanged += (s, e) =>
                     {
@@ -178,6 +185,7 @@ namespace ProWalid.ViewModels
 
                 var newItem = new TransactionItemDetail
                 {
+                    Id = item.Id,
                     ServiceName = item.ServiceName,
                     Quantity = item.Quantity,
                     UnitPrice = item.UnitPrice,
@@ -186,9 +194,19 @@ namespace ProWalid.ViewModels
                     AttachmentPath = item.AttachmentPath
                 };
 
-                if (item.Attachments.Count > 0)
+                if (_isEditMode && item.Id > 0)
                 {
-                    var filePaths = item.Attachments.Select(a => a.FilePath).ToList();
+                    var existingAttachments = await _databaseHelper.GetAttachmentsAsync(item.Id);
+                    foreach (var attachment in existingAttachments)
+                    {
+                        newItem.Attachments.Add(attachment);
+                    }
+                }
+
+                var newAttachments = item.Attachments.Where(a => a.Id == 0).ToList();
+                if (newAttachments.Count > 0)
+                {
+                    var filePaths = newAttachments.Select(a => a.FilePath).ToList();
                     var savedAttachments = await _attachmentManager.SaveMultipleAttachmentsAsync(filePaths, InvoiceNumber);
                     
                     foreach (var attachment in savedAttachments)

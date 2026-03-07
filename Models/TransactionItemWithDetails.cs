@@ -35,6 +35,21 @@ namespace ProWalid.Models
         [ObservableProperty]
         private ObservableCollection<Attachment> attachments = new();
 
+        [ObservableProperty]
+        private string invoiceNumber = string.Empty;
+
+        [ObservableProperty]
+        private bool isSelected;
+
+        [ObservableProperty]
+        private bool isFirstItemInTransaction;
+
+        [ObservableProperty]
+        private double transactionTotal;
+
+        [ObservableProperty]
+        private string transactionStatus = "مكتملة";
+
         public double Total => Quantity * UnitPrice;
     }
 }

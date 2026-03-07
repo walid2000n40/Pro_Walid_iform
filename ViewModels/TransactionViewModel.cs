@@ -66,6 +66,7 @@ namespace ProWalid.ViewModels
             AllItems.Clear();
             foreach (var transaction in Transactions)
             {
+                bool isFirst = true;
                 foreach (var item in transaction.Items)
                 {
                     var itemWithDetails = new TransactionItemWithDetails
@@ -78,7 +79,11 @@ namespace ProWalid.ViewModels
                         Discount = item.Discount,
                         CompanyName = transaction.CompanyName,
                         EmployeeName = transaction.EmployeeName,
-                        AttachmentPath = item.AttachmentPath
+                        AttachmentPath = item.AttachmentPath,
+                        InvoiceNumber = transaction.InvoiceNumber,
+                        IsFirstItemInTransaction = isFirst,
+                        TransactionTotal = transaction.GrandTotal,
+                        TransactionStatus = "مكتملة"
                     };
 
                     foreach (var attachment in item.Attachments)
@@ -86,14 +91,55 @@ namespace ProWalid.ViewModels
                         itemWithDetails.Attachments.Add(attachment);
                     }
 
+                    itemWithDetails.PropertyChanged += (s, e) =>
+                    {
+                        if (e.PropertyName == nameof(TransactionItemWithDetails.IsSelected))
+                        {
+                            UpdateTransactionSelection(itemWithDetails);
+                        }
+                    };
+
                     AllItems.Add(itemWithDetails);
+                    isFirst = false;
                 }
+            }
+        }
+
+        private void UpdateTransactionSelection(TransactionItemWithDetails changedItem)
+        {
+            var invoiceNumber = changedItem.InvoiceNumber;
+            var transactionItems = AllItems.Where(i => i.InvoiceNumber == invoiceNumber).ToList();
+            
+            foreach (var item in transactionItems)
+            {
+                if (item != changedItem)
+                {
+                    item.IsSelected = changedItem.IsSelected;
+                }
+            }
+
+            if (changedItem.IsSelected)
+            {
+                SelectedTransaction = Transactions.FirstOrDefault(t => t.InvoiceNumber == invoiceNumber);
+            }
+            else
+            {
+                SelectedTransaction = null;
             }
         }
 
         public void SetFrame(Frame frame)
         {
             _frame = frame;
+        }
+
+        [RelayCommand]
+        private void Logout()
+        {
+            if (_frame != null)
+            {
+                _frame.Navigate(typeof(LoginPage));
+            }
         }
 
         public void AddOrUpdateTransaction(Transaction transaction)

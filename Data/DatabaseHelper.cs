@@ -104,10 +104,26 @@ namespace ProWalid.Data
                         },
                         dbTransaction);
 
-                    await connection.ExecuteAsync(
-                        "DELETE FROM TransactionItems WHERE TransactionId = @TransactionId",
+                    var existingItemIds = await connection.QueryAsync<long>(
+                        "SELECT Id FROM TransactionItems WHERE TransactionId = @TransactionId",
                         new { TransactionId = existingId.Value },
                         dbTransaction);
+
+                    var itemIdsToKeep = transaction.Items.Where(i => i.Id > 0).Select(i => i.Id).ToList();
+                    var itemIdsToDelete = existingItemIds.Where(id => !itemIdsToKeep.Contains(id)).ToList();
+
+                    foreach (var itemId in itemIdsToDelete)
+                    {
+                        await connection.ExecuteAsync(
+                            "DELETE FROM Attachments WHERE TransactionItemId = @ItemId",
+                            new { ItemId = itemId },
+                            dbTransaction);
+                        
+                        await connection.ExecuteAsync(
+                            "DELETE FROM TransactionItems WHERE Id = @ItemId",
+                            new { ItemId = itemId },
+                            dbTransaction);
+                    }
 
                     transactionId = existingId.Value;
                 }
@@ -130,27 +146,58 @@ namespace ProWalid.Data
 
                 foreach (var item in transaction.Items)
                 {
-                    var itemId = await connection.QuerySingleAsync<long>(
-                        @"INSERT INTO TransactionItems (TransactionId, ServiceName, Quantity, UnitPrice, Profit, Discount, AttachmentPath) 
-                          VALUES (@TransactionId, @ServiceName, @Quantity, @UnitPrice, @Profit, @Discount, @AttachmentPath);
-                          SELECT last_insert_rowid();",
-                        new
-                        {
-                            TransactionId = transactionId,
-                            item.ServiceName,
-                            item.Quantity,
-                            item.UnitPrice,
-                            item.Profit,
-                            item.Discount,
-                            item.AttachmentPath
-                        },
-                        dbTransaction);
+                    long itemId;
                     
-                    item.Id = itemId;
-                    
-                    if (item.Attachments.Count > 0)
+                    if (item.Id > 0)
                     {
-                        foreach (var attachment in item.Attachments)
+                        await connection.ExecuteAsync(
+                            @"UPDATE TransactionItems 
+                              SET ServiceName = @ServiceName, 
+                                  Quantity = @Quantity, 
+                                  UnitPrice = @UnitPrice, 
+                                  Profit = @Profit, 
+                                  Discount = @Discount, 
+                                  AttachmentPath = @AttachmentPath 
+                              WHERE Id = @Id",
+                            new
+                            {
+                                item.Id,
+                                item.ServiceName,
+                                item.Quantity,
+                                item.UnitPrice,
+                                item.Profit,
+                                item.Discount,
+                                item.AttachmentPath
+                            },
+                            dbTransaction);
+                        
+                        itemId = item.Id;
+                    }
+                    else
+                    {
+                        itemId = await connection.QuerySingleAsync<long>(
+                            @"INSERT INTO TransactionItems (TransactionId, ServiceName, Quantity, UnitPrice, Profit, Discount, AttachmentPath) 
+                              VALUES (@TransactionId, @ServiceName, @Quantity, @UnitPrice, @Profit, @Discount, @AttachmentPath);
+                              SELECT last_insert_rowid();",
+                            new
+                            {
+                                TransactionId = transactionId,
+                                item.ServiceName,
+                                item.Quantity,
+                                item.UnitPrice,
+                                item.Profit,
+                                item.Discount,
+                                item.AttachmentPath
+                            },
+                            dbTransaction);
+                        
+                        item.Id = itemId;
+                    }
+                    
+                    var newAttachments = item.Attachments.Where(a => a.Id == 0).ToList();
+                    if (newAttachments.Count > 0)
+                    {
+                        foreach (var attachment in newAttachments)
                         {
                             await connection.ExecuteAsync(
                                 @"INSERT INTO Attachments (TransactionItemId, FileName, FilePath, OriginalFileName, FileSize, FileExtension) 

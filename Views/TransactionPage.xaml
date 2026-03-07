@@ -13,6 +13,7 @@
 
     <Page.Resources>
         <converters:StringToBoolConverter x:Key="StringToBoolConverter"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Page.Resources>
 
     <Grid Padding="32,24">
@@ -23,13 +24,30 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="16" Margin="0,0,0,24">
-            <SymbolIcon Symbol="Document" Foreground="#0078D4" VerticalAlignment="Center"/>
-            <TextBlock Text="إدارة المعاملات" 
-                       FontSize="28" 
-                       FontWeight="Bold"
-                       VerticalAlignment="Center"/>
-        </StackPanel>
+        <Grid Grid.Row="0" Margin="0,0,0,24">
+            <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Left">
+                <SymbolIcon Symbol="Document" Foreground="#0078D4" VerticalAlignment="Center"/>
+                <TextBlock Text="إدارة المعاملات" 
+                           FontSize="28" 
+                           FontWeight="Bold"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+            
+            <Button Command="{Binding LogoutCommand}"
+                    HorizontalAlignment="Right"
+                    Height="40"
+                    Padding="20,0"
+                    CornerRadius="6"
+                    Background="#D32F2F"
+                    Foreground="White"
+                    FontSize="14"
+                    FontWeight="SemiBold">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <SymbolIcon Symbol="LeaveChat" Foreground="White"/>
+                    <TextBlock Text="تسجيل الخروج" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </Grid>
 
         <Grid Grid.Row="1" Margin="0,0,0,20">
             <Grid.ColumnDefinitions>
@@ -107,6 +125,7 @@
                       Padding="16,14"
                       CornerRadius="8,8,0,0">
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="3*"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="1.5*"/>
@@ -116,36 +135,42 @@
                         <ColumnDefinition Width="1.5*"/>
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Column="0" Text="بند الخدمة" 
-                               FontSize="16" FontWeight="Bold" 
-                               Foreground="#424242" 
-                               Padding="12,0"/>
-                    <TextBlock Grid.Column="1" Text="العدد" 
+                    <TextBlock Grid.Column="0" Text="تحديد" 
                                FontSize="16" FontWeight="Bold" 
                                Foreground="#424242" 
                                Padding="12,0"
                                TextAlignment="Center"/>
-                    <TextBlock Grid.Column="2" Text="سعر الوحدة" 
+
+                    <TextBlock Grid.Column="1" Text="بند الخدمة" 
+                               FontSize="16" FontWeight="Bold" 
+                               Foreground="#424242" 
+                               Padding="12,0"/>
+                    <TextBlock Grid.Column="2" Text="العدد" 
+                               FontSize="16" FontWeight="Bold" 
+                               Foreground="#424242" 
+                               Padding="12,0"
+                               TextAlignment="Center"/>
+                    <TextBlock Grid.Column="3" Text="سعر الوحدة" 
                                FontSize="16" FontWeight="Bold" 
                                Foreground="#424242" 
                                Padding="12,0"
                                Margin="37,0,0,0"
                                TextAlignment="Right"/>
-                    <TextBlock Grid.Column="3" Text="الإجمالي" 
+                    <TextBlock Grid.Column="4" Text="الإجمالي" 
                                FontSize="16" FontWeight="Bold" 
                                Foreground="#424242" 
                                Padding="12,0"
                                Margin="0,0,50,0"
                                TextAlignment="Right"/>
-                    <TextBlock Grid.Column="4" Text="اسم الشركة" 
+                    <TextBlock Grid.Column="5" Text="اسم الشركة" 
                                FontSize="16" FontWeight="Bold" 
                                Foreground="#424242" 
                                Padding="12,0"/>
-                    <TextBlock Grid.Column="5" Text="اسم الموظف" 
+                    <TextBlock Grid.Column="6" Text="اسم الموظف" 
                                FontSize="16" FontWeight="Bold" 
                                Foreground="#424242" 
                                Padding="12,0"/>
-                    <TextBlock Grid.Column="6" Text="المرفقات" 
+                    <TextBlock Grid.Column="7" Text="المرفقات" 
                                FontSize="16" FontWeight="Bold" 
                                Foreground="#424242" 
                                Padding="12,0"
@@ -168,10 +193,63 @@
                     
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <Grid Padding="16,12" 
-                                  BorderBrush="#E0E0E0" 
-                                  BorderThickness="0,0,0,1">
+                            <StackPanel>
+                                <Border Background="#0078D4"
+                                        Padding="16,8"
+                                        Visibility="{Binding IsFirstItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+                                            <TextBlock Text="فاتورة رقم:"
+                                                       Foreground="White"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding InvoiceNumber}"
+                                                       Foreground="White"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding TransactionStatus}"
+                                                   Foreground="White"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                        
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Left">
+                                            <TextBlock Text="الإجمالي:"
+                                                       Foreground="White"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding TransactionTotal}"
+                                                       Foreground="White"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Text="ريال"
+                                                       Foreground="White"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                                
+                                <Grid Padding="16,12" 
+                                      BorderBrush="#E0E0E0" 
+                                      BorderThickness="0,0,0,1">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="3*"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="1.5*"/>
@@ -181,13 +259,20 @@
                                     <ColumnDefinition Width="1.5*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock Grid.Column="0" 
+                                <CheckBox Grid.Column="0"
+                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                          Visibility="{Binding IsFirstItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Margin="8,0"/>
+
+                                <TextBlock Grid.Column="1" 
                                            Text="{Binding ServiceName, Mode=OneWay}"
                                            FontSize="15"
                                            Padding="12,8"
                                            VerticalAlignment="Center"/>
 
-                                <TextBlock Grid.Column="1" 
+                                <TextBlock Grid.Column="2" 
                                            Text="{Binding Quantity, Mode=OneWay}"
                                            FontSize="15"
                                            Padding="12,8"
@@ -195,7 +280,7 @@
                                            TextAlignment="Center"
                                            FontWeight="SemiBold"/>
 
-                                <TextBlock Grid.Column="2" 
+                                <TextBlock Grid.Column="3" 
                                            Text="{Binding UnitPrice, Mode=OneWay}"
                                            FontSize="15"
                                            Padding="12,8"
@@ -203,7 +288,7 @@
                                            VerticalAlignment="Center"
                                            TextAlignment="Right"/>
 
-                                <TextBlock Grid.Column="3" 
+                                <TextBlock Grid.Column="4" 
                                            Text="{Binding Total, Mode=OneWay}"
                                            FontSize="15"
                                            FontWeight="Bold"
@@ -213,19 +298,19 @@
                                            VerticalAlignment="Center"
                                            TextAlignment="Right"/>
 
-                                <TextBlock Grid.Column="4" 
+                                <TextBlock Grid.Column="5" 
                                            Text="{Binding CompanyName, Mode=OneWay}"
                                            FontSize="15"
                                            Padding="12,8"
                                            VerticalAlignment="Center"/>
 
-                                <TextBlock Grid.Column="5" 
+                                <TextBlock Grid.Column="6" 
                                            Text="{Binding EmployeeName, Mode=OneWay}"
                                            FontSize="15"
                                            Padding="12,8"
                                            VerticalAlignment="Center"/>
 
-                                <ItemsControl Grid.Column="6"
+                                <ItemsControl Grid.Column="7"
                                               ItemsSource="{Binding Attachments}"
                                               HorizontalAlignment="Center"
                                               VerticalAlignment="Center">
@@ -245,7 +330,8 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                            </Grid>
+                                </Grid>
+                            </StackPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
