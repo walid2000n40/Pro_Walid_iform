@@ -320,14 +320,15 @@
                         <DataTemplate>
                             <StackPanel>
                                 <Border Background="#0078D4"
-                                        Padding="16,8"
+                                        Padding="8,2"
                                         Visibility="{Binding IsFirstItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         
                                         <CheckBox Grid.Column="0"
@@ -335,15 +336,15 @@
                                                   VerticalAlignment="Center"
                                                   Margin="0,0,16,0"/>
                                         
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3">
                                             <TextBlock Text="فاتورة رقم:"
                                                        Foreground="White"
-                                                       FontSize="14"
+                                                       FontSize="11"
                                                        FontWeight="SemiBold"
                                                        VerticalAlignment="Center"/>
                                             <TextBlock Text="{Binding InvoiceNumber}"
                                                        Foreground="White"
-                                                       FontSize="14"
+                                                       FontSize="11"
                                                        FontWeight="SemiBold"
                                                        VerticalAlignment="Center"/>
                                         </StackPanel>
@@ -351,25 +352,25 @@
                                         <TextBlock Grid.Column="2"
                                                    Text="{Binding TransactionStatus}"
                                                    Foreground="White"
-                                                   FontSize="14"
+                                                   FontSize="11"
                                                    FontWeight="SemiBold"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"/>
+                                                   VerticalAlignment="Center"
+                                                   Margin="12,0,0,0"/>
                                         
-                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Left">
+                                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="3">
                                             <TextBlock Text="الإجمالي:"
                                                        Foreground="White"
-                                                       FontSize="14"
+                                                       FontSize="11"
                                                        FontWeight="SemiBold"
                                                        VerticalAlignment="Center"/>
                                             <TextBlock Text="{Binding TransactionTotal}"
                                                        Foreground="White"
-                                                       FontSize="14"
+                                                       FontSize="11"
                                                        FontWeight="SemiBold"
                                                        VerticalAlignment="Center"/>
                                             <TextBlock Text="ريال"
                                                        Foreground="White"
-                                                       FontSize="14"
+                                                       FontSize="11"
                                                        FontWeight="SemiBold"
                                                        VerticalAlignment="Center"/>
                                         </StackPanel>
