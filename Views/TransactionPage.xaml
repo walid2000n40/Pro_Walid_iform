@@ -8,8 +8,15 @@
     xmlns:local="using:ProWalid.Views"
     xmlns:converters="using:ProWalid.Converters"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     FlowDirection="RightToLeft">
+    
+    <Page.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#E3F2FD" Offset="0.0"/>
+            <GradientStop Color="#BBDEFB" Offset="0.5"/>
+            <GradientStop Color="#90CAF9" Offset="1.0"/>
+        </LinearGradientBrush>
+    </Page.Background>
 
     <Page.Resources>
         <converters:StringToBoolConverter x:Key="StringToBoolConverter"/>
@@ -23,11 +30,17 @@
         </Grid.ColumnDefinitions>
         
         <Border Grid.Column="0"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="0,0,1,0"
                 Width="300"
                 Padding="16">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#E3F2FD" Offset="0.0"/>
+                    <GradientStop Color="#BBDEFB" Offset="0.5"/>
+                    <GradientStop Color="#90CAF9" Offset="1.0"/>
+                </LinearGradientBrush>
+            </Border.Background>
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -222,7 +235,7 @@
         </Grid>
 
         <Border Grid.Row="2" 
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                Background="White"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"
                 CornerRadius="8">
