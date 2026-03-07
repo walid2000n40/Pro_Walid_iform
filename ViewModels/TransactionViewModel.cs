@@ -76,30 +76,212 @@ namespace ProWalid.ViewModels
         }
 
         [RelayCommand]
-        private void AddCustomer()
+        private async Task AddCustomerAsync()
         {
-            var newCustomer = new Customer { Name = "عميل جديد" };
-            Customers.Add(newCustomer);
-            SelectedCustomer = newCustomer;
+            var nameBox = new TextBox { PlaceholderText = "اسم العميل" };
+            var phoneBox = new TextBox { PlaceholderText = "رقم الهاتف" };
+            var emailBox = new TextBox { PlaceholderText = "البريد الإلكتروني (اختياري)" };
+            var addressBox = new TextBox { PlaceholderText = "العنوان (اختياري)" };
+
+            var dialog = new ContentDialog
+            {
+                Title = "إضافة عميل جديد",
+                Content = new StackPanel
+                {
+                    Spacing = 12,
+                    Children =
+                    {
+                        new TextBlock { Text = "اسم العميل:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                        nameBox,
+                        new TextBlock { Text = "رقم الهاتف:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                        phoneBox,
+                        new TextBlock { Text = "البريد الإلكتروني:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                        emailBox,
+                        new TextBlock { Text = "العنوان:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                        addressBox
+                    }
+                },
+                PrimaryButtonText = "حفظ",
+                CloseButtonText = "إلغاء",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = _frame?.XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                if (string.IsNullOrWhiteSpace(nameBox.Text))
+                {
+                    var errorDialog = new ContentDialog
+                    {
+                        Title = "خطأ",
+                        Content = "يجب إدخال اسم العميل!",
+                        CloseButtonText = "حسناً",
+                        XamlRoot = _frame?.XamlRoot
+                    };
+                    await errorDialog.ShowAsync();
+                    return;
+                }
+
+                var newCustomer = new Customer
+                {
+                    Name = nameBox.Text,
+                    Phone = phoneBox.Text,
+                    Email = emailBox.Text,
+                    Address = addressBox.Text
+                };
+
+                var customerId = await _databaseHelper.SaveCustomerAsync(newCustomer);
+                newCustomer.Id = customerId;
+                Customers.Add(newCustomer);
+                SelectedCustomer = newCustomer;
+            }
         }
 
         [RelayCommand]
-        private async Task SaveCustomerAsync()
+        private async Task EditCustomerAsync()
         {
-            if (SelectedCustomer == null) return;
+            if (SelectedCustomer == null)
+            {
+                var noSelectionDialog = new ContentDialog
+                {
+                    Title = "تنبيه",
+                    Content = "يرجى اختيار عميل للتعديل!",
+                    CloseButtonText = "حسناً",
+                    XamlRoot = _frame?.XamlRoot
+                };
+                await noSelectionDialog.ShowAsync();
+                return;
+            }
 
-            var customerId = await _databaseHelper.SaveCustomerAsync(SelectedCustomer);
-            SelectedCustomer.Id = customerId;
+            var nameBox = new TextBox { Text = SelectedCustomer.Name };
+            var phoneBox = new TextBox { Text = SelectedCustomer.Phone };
+            var emailBox = new TextBox { Text = SelectedCustomer.Email };
+            var addressBox = new TextBox { Text = SelectedCustomer.Address };
+            var idText = new TextBlock 
+            { 
+                Text = $"رقم العميل: {SelectedCustomer.Id}",
+                FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+                Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.DarkBlue)
+            };
+
+            var dialog = new ContentDialog
+            {
+                Title = "تعديل بيانات العميل",
+                Content = new StackPanel
+                {
+                    Spacing = 12,
+                    Children =
+                    {
+                        idText,
+                        new TextBlock { Text = "اسم العميل:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                        nameBox,
+                        new TextBlock { Text = "رقم الهاتف:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                        phoneBox,
+                        new TextBlock { Text = "البريد الإلكتروني:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                        emailBox,
+                        new TextBlock { Text = "العنوان:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                        addressBox
+                    }
+                },
+                PrimaryButtonText = "حفظ التعديلات",
+                CloseButtonText = "إلغاء",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = _frame?.XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                if (string.IsNullOrWhiteSpace(nameBox.Text))
+                {
+                    var errorDialog = new ContentDialog
+                    {
+                        Title = "خطأ",
+                        Content = "يجب إدخال اسم العميل!",
+                        CloseButtonText = "حسناً",
+                        XamlRoot = _frame?.XamlRoot
+                    };
+                    await errorDialog.ShowAsync();
+                    return;
+                }
+
+                SelectedCustomer.Name = nameBox.Text;
+                SelectedCustomer.Phone = phoneBox.Text;
+                SelectedCustomer.Email = emailBox.Text;
+                SelectedCustomer.Address = addressBox.Text;
+
+                await _databaseHelper.SaveCustomerAsync(SelectedCustomer);
+                
+                var successDialog = new ContentDialog
+                {
+                    Title = "نجاح",
+                    Content = "تم تحديث بيانات العميل بنجاح!",
+                    CloseButtonText = "حسناً",
+                    XamlRoot = _frame?.XamlRoot
+                };
+                await successDialog.ShowAsync();
+            }
         }
 
         [RelayCommand]
         private async Task DeleteCustomerAsync()
         {
-            if (SelectedCustomer == null) return;
+            if (SelectedCustomer == null)
+            {
+                var noSelectionDialog = new ContentDialog
+                {
+                    Title = "تنبيه",
+                    Content = "يرجى اختيار عميل للحذف!",
+                    CloseButtonText = "حسناً",
+                    XamlRoot = _frame?.XamlRoot
+                };
+                await noSelectionDialog.ShowAsync();
+                return;
+            }
 
-            await _databaseHelper.DeleteCustomerAsync(SelectedCustomer.Id);
-            Customers.Remove(SelectedCustomer);
-            SelectedCustomer = null;
+            var dialog = new ContentDialog
+            {
+                Title = "تأكيد حذف العميل",
+                Content = new StackPanel
+                {
+                    Spacing = 12,
+                    Children =
+                    {
+                        new TextBlock 
+                        { 
+                            Text = $"هل أنت متأكد من حذف العميل: {SelectedCustomer.Name}؟",
+                            TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap,
+                            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+                        },
+                        new TextBlock 
+                        { 
+                            Text = $"رقم العميل: {SelectedCustomer.Id}",
+                            Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Gray)
+                        },
+                        new TextBlock 
+                        { 
+                            Text = "تحذير: لا يمكن التراجع عن هذا الإجراء!",
+                            Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Red)
+                        }
+                    }
+                },
+                PrimaryButtonText = "حذف",
+                CloseButtonText = "إلغاء",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = _frame?.XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                await _databaseHelper.DeleteCustomerAsync(SelectedCustomer.Id);
+                Customers.Remove(SelectedCustomer);
+                SelectedCustomer = null;
+            }
         }
 
         public static TransactionViewModel Instance => _instance;
@@ -232,10 +414,66 @@ namespace ProWalid.ViewModels
         [RelayCommand]
         private async Task DeleteSelectedAsync()
         {
-            if (SelectedTransaction != null)
+            if (SelectedTransaction == null)
+                return;
+
+            var dialog = new ContentDialog
             {
-                await _databaseHelper.DeleteTransactionAsync(SelectedTransaction.InvoiceNumber);
-                Transactions.Remove(SelectedTransaction);
+                Title = "تأكيد الحذف",
+                Content = new StackPanel
+                {
+                    Spacing = 12,
+                    Children =
+                    {
+                        new TextBlock 
+                        { 
+                            Text = $"هل أنت متأكد من حذف المعاملة رقم {SelectedTransaction.InvoiceNumber}؟",
+                            TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap
+                        },
+                        new TextBlock 
+                        { 
+                            Text = "أدخل كود الحذف للتأكيد:",
+                            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                            Margin = new Microsoft.UI.Xaml.Thickness(0, 8, 0, 0)
+                        },
+                        new PasswordBox 
+                        { 
+                            Name = "DeleteCodeBox",
+                            PlaceholderText = "1234"
+                        }
+                    }
+                },
+                PrimaryButtonText = "حذف",
+                CloseButtonText = "إلغاء",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = _frame?.XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                var passwordBox = (dialog.Content as StackPanel)?.Children
+                    .OfType<PasswordBox>()
+                    .FirstOrDefault();
+
+                if (passwordBox?.Password == "1234")
+                {
+                    await _databaseHelper.DeleteTransactionAsync(SelectedTransaction.InvoiceNumber);
+                    Transactions.Remove(SelectedTransaction);
+                    SelectedTransaction = null;
+                }
+                else
+                {
+                    var errorDialog = new ContentDialog
+                    {
+                        Title = "خطأ",
+                        Content = "كود الحذف غير صحيح!",
+                        CloseButtonText = "حسناً",
+                        XamlRoot = _frame?.XamlRoot
+                    };
+                    await errorDialog.ShowAsync();
+                }
             }
         }
 
