@@ -194,13 +194,9 @@ namespace ProWalid.ViewModels
                     AttachmentPath = item.AttachmentPath
                 };
 
-                if (_isEditMode && item.Id > 0)
+                foreach (var existingAttachment in item.Attachments.Where(a => a.Id > 0))
                 {
-                    var existingAttachments = await _databaseHelper.GetAttachmentsAsync(item.Id);
-                    foreach (var attachment in existingAttachments)
-                    {
-                        newItem.Attachments.Add(attachment);
-                    }
+                    newItem.Attachments.Add(existingAttachment);
                 }
 
                 var newAttachments = item.Attachments.Where(a => a.Id == 0).ToList();
