@@ -1,9 +1,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using System.Collections.ObjectModel;
 
 namespace ProWalid.Models
 {
     public partial class TransactionItemWithDetails : ObservableObject
     {
+        [ObservableProperty]
+        private long itemId;
+
         [ObservableProperty]
         private string serviceName = string.Empty;
 
@@ -27,6 +31,9 @@ namespace ProWalid.Models
 
         [ObservableProperty]
         private string attachmentPath = string.Empty;
+
+        [ObservableProperty]
+        private ObservableCollection<Attachment> attachments = new();
 
         public double Total => Quantity * UnitPrice;
     }

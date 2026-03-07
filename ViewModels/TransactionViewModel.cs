@@ -4,9 +4,11 @@ using Microsoft.UI.Xaml.Controls;
 using ProWalid.Models;
 using ProWalid.Views;
 using ProWalid.Data;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.Storage;
 
 namespace ProWalid.ViewModels
 {
@@ -66,8 +68,9 @@ namespace ProWalid.ViewModels
             {
                 foreach (var item in transaction.Items)
                 {
-                    AllItems.Add(new TransactionItemWithDetails
+                    var itemWithDetails = new TransactionItemWithDetails
                     {
+                        ItemId = item.Id,
                         ServiceName = item.ServiceName,
                         Quantity = item.Quantity,
                         UnitPrice = item.UnitPrice,
@@ -76,7 +79,14 @@ namespace ProWalid.ViewModels
                         CompanyName = transaction.CompanyName,
                         EmployeeName = transaction.EmployeeName,
                         AttachmentPath = item.AttachmentPath
-                    });
+                    };
+
+                    foreach (var attachment in item.Attachments)
+                    {
+                        itemWithDetails.Attachments.Add(attachment);
+                    }
+
+                    AllItems.Add(itemWithDetails);
                 }
             }
         }
@@ -132,11 +142,26 @@ namespace ProWalid.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenAttachmentAsync(TransactionItemWithDetails item)
+        private async Task OpenAttachmentAsync(Attachment attachment)
         {
-            if (!string.IsNullOrEmpty(item.AttachmentPath))
+            if (attachment == null || string.IsNullOrEmpty(attachment.FilePath))
+                return;
+
+            try
             {
-                await _attachmentManager.OpenAttachmentAsync(item.AttachmentPath);
+                if (System.IO.File.Exists(attachment.FilePath))
+                {
+                    var file = await StorageFile.GetFileFromPathAsync(attachment.FilePath).AsTask();
+                    await Windows.System.Launcher.LaunchFileAsync(file).AsTask();
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"File not found: {attachment.FilePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error opening attachment: {ex.Message}");
             }
         }
     }

@@ -185,6 +185,7 @@ namespace ProWalid.Data
             await connection.OpenAsync();
 
             var transactionDict = new Dictionary<long, Transaction>();
+            var itemDict = new Dictionary<long, TransactionItemDetail>();
 
             await connection.QueryAsync<dynamic, dynamic, Transaction>(
                 @"SELECT t.*, ti.* 
@@ -207,20 +208,36 @@ namespace ProWalid.Data
 
                     if (item != null && item.Id != null)
                     {
-                        transaction.Items.Add(new TransactionItemDetail
+                        var itemId = (long)item.Id;
+                        if (!itemDict.ContainsKey(itemId))
                         {
-                            ServiceName = item.ServiceName ?? string.Empty,
-                            Quantity = (double)item.Quantity,
-                            UnitPrice = (double)item.UnitPrice,
-                            Profit = (double)item.Profit,
-                            Discount = (double)item.Discount,
-                            AttachmentPath = item.AttachmentPath ?? string.Empty
-                        });
+                            var transactionItem = new TransactionItemDetail
+                            {
+                                Id = itemId,
+                                ServiceName = item.ServiceName ?? string.Empty,
+                                Quantity = (double)item.Quantity,
+                                UnitPrice = (double)item.UnitPrice,
+                                Profit = (double)item.Profit,
+                                Discount = (double)item.Discount,
+                                AttachmentPath = item.AttachmentPath ?? string.Empty
+                            };
+                            transaction.Items.Add(transactionItem);
+                            itemDict.Add(itemId, transactionItem);
+                        }
                     }
 
                     return transaction;
                 },
                 splitOn: "Id");
+
+            foreach (var item in itemDict.Values)
+            {
+                var attachments = await GetAttachmentsAsync(item.Id);
+                foreach (var attachment in attachments)
+                {
+                    item.Attachments.Add(attachment);
+                }
+            }
 
             return transactionDict.Values.ToList();
         }
