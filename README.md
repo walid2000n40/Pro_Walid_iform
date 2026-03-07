@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Pro Walid - نظام إدارة المعاملات
 
 ## WinUI 3 Application with MVVM Architecture
@@ -55,3 +56,6 @@ dotnet run
 - `ViewModels/LoginViewModel.cs` - منطق تسجيل الدخول
 - `ViewModels/TransactionViewModel.cs` - منطق المعاملات
 - `Models/TransactionItem.cs` - نموذج بيانات البند
+=======
+# Pro_Walid_iform
+>>>>>>> acf403f42c8db4f7aa0963081ca464d59fe57b92
