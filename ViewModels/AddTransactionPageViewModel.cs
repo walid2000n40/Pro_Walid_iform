@@ -136,6 +136,30 @@ namespace ProWalid.ViewModels
         [RelayCommand]
         private async Task SaveAsync()
         {
+            if (string.IsNullOrWhiteSpace(InvoiceNumber))
+            {
+                System.Diagnostics.Debug.WriteLine("رقم الفاتورة مطلوب");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(CompanyName))
+            {
+                System.Diagnostics.Debug.WriteLine("اسم الشركة مطلوب");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(EmployeeName))
+            {
+                System.Diagnostics.Debug.WriteLine("اسم الموظف مطلوب");
+                return;
+            }
+
+            if (Items.Count == 0)
+            {
+                System.Diagnostics.Debug.WriteLine("يجب إضافة بند واحد على الأقل");
+                return;
+            }
+
             var transaction = new Transaction
             {
                 InvoiceNumber = InvoiceNumber,
@@ -146,7 +170,13 @@ namespace ProWalid.ViewModels
 
             foreach (var item in Items)
             {
-                transaction.Items.Add(new TransactionItemDetail
+                if (string.IsNullOrWhiteSpace(item.ServiceName))
+                {
+                    System.Diagnostics.Debug.WriteLine("اسم الخدمة مطلوب لكل بند");
+                    return;
+                }
+
+                var newItem = new TransactionItemDetail
                 {
                     ServiceName = item.ServiceName,
                     Quantity = item.Quantity,
@@ -154,7 +184,20 @@ namespace ProWalid.ViewModels
                     Profit = item.Profit,
                     Discount = item.Discount,
                     AttachmentPath = item.AttachmentPath
-                });
+                };
+
+                if (item.Attachments.Count > 0)
+                {
+                    var filePaths = item.Attachments.Select(a => a.FilePath).ToList();
+                    var savedAttachments = await _attachmentManager.SaveMultipleAttachmentsAsync(filePaths, InvoiceNumber);
+                    
+                    foreach (var attachment in savedAttachments)
+                    {
+                        newItem.Attachments.Add(attachment);
+                    }
+                }
+
+                transaction.Items.Add(newItem);
             }
 
             await _databaseHelper.SaveTransactionAsync(transaction);
@@ -177,7 +220,7 @@ namespace ProWalid.ViewModels
         }
 
         [RelayCommand]
-        private async Task PickFileAsync(TransactionItemDetail item)
+        private async Task PickFilesAsync(TransactionItemDetail item)
         {
             try
             {
@@ -187,19 +230,63 @@ namespace ProWalid.ViewModels
                 var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
                 WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
 
-                var file = await picker.PickSingleFileAsync();
-                if (file != null)
+                var files = await picker.PickMultipleFilesAsync();
+                if (files != null && files.Count > 0)
                 {
-                    var savedPath = await _attachmentManager.SaveAttachmentAsync(file.Path);
-                    if (!string.IsNullOrEmpty(savedPath))
+                    var filePaths = files.Select(f => f.Path).ToList();
+                    
+                    foreach (var file in files)
                     {
-                        item.AttachmentPath = savedPath;
+                        var fileInfo = new System.IO.FileInfo(file.Path);
+                        
+                        var tempAttachment = new Attachment
+                        {
+                            OriginalFileName = file.Name,
+                            FilePath = file.Path,
+                            FileSize = (long)fileInfo.Length,
+                            FileExtension = fileInfo.Extension,
+                            FileName = file.Name
+                        };
+                        
+                        item.Attachments.Add(tempAttachment);
                     }
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error picking file: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error picking files: {ex.Message}");
+            }
+        }
+
+        [RelayCommand]
+        private void RemoveAttachment(object parameter)
+        {
+            if (parameter is Tuple<TransactionItemDetail, Attachment> tuple)
+            {
+                var item = tuple.Item1;
+                var attachment = tuple.Item2;
+                
+                item.Attachments.Remove(attachment);
+            }
+        }
+
+        [RelayCommand]
+        private async Task PreviewAttachmentAsync(Attachment attachment)
+        {
+            if (attachment == null || string.IsNullOrEmpty(attachment.FilePath))
+                return;
+
+            try
+            {
+                if (System.IO.File.Exists(attachment.FilePath))
+                {
+                    var file = await StorageFile.GetFileFromPathAsync(attachment.FilePath);
+                    await Windows.System.Launcher.LaunchFileAsync(file);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error previewing attachment: {ex.Message}");
             }
         }
     }

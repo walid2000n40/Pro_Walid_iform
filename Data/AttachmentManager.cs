@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -39,6 +40,46 @@ namespace ProWalid.Data
                 System.Diagnostics.Debug.WriteLine($"Error saving attachment: {ex.Message}");
                 return string.Empty;
             }
+        }
+
+        public async Task<List<ProWalid.Models.Attachment>> SaveMultipleAttachmentsAsync(List<string> sourceFilePaths, string transactionId)
+        {
+            var savedAttachments = new List<ProWalid.Models.Attachment>();
+
+            foreach (var sourceFilePath in sourceFilePaths)
+            {
+                if (string.IsNullOrEmpty(sourceFilePath) || !File.Exists(sourceFilePath))
+                    continue;
+
+                try
+                {
+                    var fileInfo = new FileInfo(sourceFilePath);
+                    var originalFileName = fileInfo.Name;
+                    var fileExtension = fileInfo.Extension;
+                    var fileSize = fileInfo.Length;
+                    
+                    var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+                    var uniqueFileName = $"{transactionId}_{timestamp}_{Guid.NewGuid():N}{fileExtension}";
+                    var destinationPath = Path.Combine(_attachmentsFolder, uniqueFileName);
+
+                    await Task.Run(() => File.Copy(sourceFilePath, destinationPath, true));
+
+                    savedAttachments.Add(new ProWalid.Models.Attachment
+                    {
+                        FileName = uniqueFileName,
+                        FilePath = destinationPath,
+                        OriginalFileName = originalFileName,
+                        FileSize = fileSize,
+                        FileExtension = fileExtension
+                    });
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error saving attachment {sourceFilePath}: {ex.Message}");
+                }
+            }
+
+            return savedAttachments;
         }
 
         public bool DeleteAttachment(string attachmentPath)

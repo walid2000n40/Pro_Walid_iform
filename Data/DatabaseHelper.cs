@@ -52,8 +52,22 @@ namespace ProWalid.Data
                     FOREIGN KEY (TransactionId) REFERENCES Transactions(Id) ON DELETE CASCADE
                 )";
 
+            var createAttachmentsTable = @"
+                CREATE TABLE IF NOT EXISTS Attachments (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    TransactionItemId INTEGER NOT NULL,
+                    FileName TEXT NOT NULL,
+                    FilePath TEXT NOT NULL,
+                    OriginalFileName TEXT NOT NULL,
+                    FileSize INTEGER NOT NULL,
+                    FileExtension TEXT NOT NULL,
+                    CreatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (TransactionItemId) REFERENCES TransactionItems(Id) ON DELETE CASCADE
+                )";
+
             await connection.ExecuteAsync(createTransactionsTable);
             await connection.ExecuteAsync(createItemsTable);
+            await connection.ExecuteAsync(createAttachmentsTable);
         }
 
         public async Task<long> SaveTransactionAsync(Transaction transaction)
@@ -116,9 +130,10 @@ namespace ProWalid.Data
 
                 foreach (var item in transaction.Items)
                 {
-                    await connection.ExecuteAsync(
+                    var itemId = await connection.QuerySingleAsync<long>(
                         @"INSERT INTO TransactionItems (TransactionId, ServiceName, Quantity, UnitPrice, Profit, Discount, AttachmentPath) 
-                          VALUES (@TransactionId, @ServiceName, @Quantity, @UnitPrice, @Profit, @Discount, @AttachmentPath)",
+                          VALUES (@TransactionId, @ServiceName, @Quantity, @UnitPrice, @Profit, @Discount, @AttachmentPath);
+                          SELECT last_insert_rowid();",
                         new
                         {
                             TransactionId = transactionId,
@@ -130,6 +145,28 @@ namespace ProWalid.Data
                             item.AttachmentPath
                         },
                         dbTransaction);
+                    
+                    item.Id = itemId;
+                    
+                    if (item.Attachments.Count > 0)
+                    {
+                        foreach (var attachment in item.Attachments)
+                        {
+                            await connection.ExecuteAsync(
+                                @"INSERT INTO Attachments (TransactionItemId, FileName, FilePath, OriginalFileName, FileSize, FileExtension) 
+                                  VALUES (@TransactionItemId, @FileName, @FilePath, @OriginalFileName, @FileSize, @FileExtension)",
+                                new
+                                {
+                                    TransactionItemId = itemId,
+                                    attachment.FileName,
+                                    attachment.FilePath,
+                                    attachment.OriginalFileName,
+                                    attachment.FileSize,
+                                    attachment.FileExtension
+                                },
+                                dbTransaction);
+                        }
+                    }
                 }
 
                 dbTransaction.Commit();
@@ -215,6 +252,54 @@ namespace ProWalid.Data
                 return lastNumber + 1;
 
             return 811;
+        }
+
+        public async Task SaveAttachmentsAsync(long transactionItemId, List<Attachment> attachments)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            await connection.ExecuteAsync(
+                "DELETE FROM Attachments WHERE TransactionItemId = @TransactionItemId",
+                new { TransactionItemId = transactionItemId });
+
+            foreach (var attachment in attachments)
+            {
+                await connection.ExecuteAsync(
+                    @"INSERT INTO Attachments (TransactionItemId, FileName, FilePath, OriginalFileName, FileSize, FileExtension) 
+                      VALUES (@TransactionItemId, @FileName, @FilePath, @OriginalFileName, @FileSize, @FileExtension)",
+                    new
+                    {
+                        TransactionItemId = transactionItemId,
+                        attachment.FileName,
+                        attachment.FilePath,
+                        attachment.OriginalFileName,
+                        attachment.FileSize,
+                        attachment.FileExtension
+                    });
+            }
+        }
+
+        public async Task<List<Attachment>> GetAttachmentsAsync(long transactionItemId)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var attachments = await connection.QueryAsync<Attachment>(
+                "SELECT * FROM Attachments WHERE TransactionItemId = @TransactionItemId ORDER BY Id",
+                new { TransactionItemId = transactionItemId });
+
+            return attachments.ToList();
+        }
+
+        public async Task DeleteAttachmentAsync(long attachmentId)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            await connection.ExecuteAsync(
+                "DELETE FROM Attachments WHERE Id = @Id",
+                new { Id = attachmentId });
         }
     }
 }
