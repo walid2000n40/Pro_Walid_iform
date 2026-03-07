@@ -1,0 +1,11 @@
+<Window
+    x:Class="ProWalid.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ProWalid"
+    xmlns:pages="using:ProWalid.Views">
+
+    <Grid>
+        <Frame x:Name="RootFrame"/>
+    </Grid>
+</Window>

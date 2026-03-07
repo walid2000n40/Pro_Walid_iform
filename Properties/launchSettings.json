@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ProWalid": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}
