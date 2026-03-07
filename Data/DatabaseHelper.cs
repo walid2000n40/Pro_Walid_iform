@@ -65,9 +65,21 @@ namespace ProWalid.Data
                     FOREIGN KEY (TransactionItemId) REFERENCES TransactionItems(Id) ON DELETE CASCADE
                 )";
 
+            var createCustomersTable = @"
+                CREATE TABLE IF NOT EXISTS Customers (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Name TEXT NOT NULL,
+                    Phone TEXT,
+                    Email TEXT,
+                    Address TEXT,
+                    Notes TEXT,
+                    CreatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )";
+
             await connection.ExecuteAsync(createTransactionsTable);
             await connection.ExecuteAsync(createItemsTable);
             await connection.ExecuteAsync(createAttachmentsTable);
+            await connection.ExecuteAsync(createCustomersTable);
         }
 
         public async Task<long> SaveTransactionAsync(Transaction transaction)
@@ -364,6 +376,52 @@ namespace ProWalid.Data
             await connection.ExecuteAsync(
                 "DELETE FROM Attachments WHERE Id = @Id",
                 new { Id = attachmentId });
+        }
+
+        public async Task<List<Customer>> GetAllCustomersAsync()
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var customers = await connection.QueryAsync<Customer>(
+                "SELECT * FROM Customers ORDER BY Name");
+
+            return customers.ToList();
+        }
+
+        public async Task<long> SaveCustomerAsync(Customer customer)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            if (customer.Id > 0)
+            {
+                await connection.ExecuteAsync(
+                    @"UPDATE Customers 
+                      SET Name = @Name, Phone = @Phone, Email = @Email, 
+                          Address = @Address, Notes = @Notes 
+                      WHERE Id = @Id",
+                    customer);
+                return customer.Id;
+            }
+            else
+            {
+                return await connection.QuerySingleAsync<long>(
+                    @"INSERT INTO Customers (Name, Phone, Email, Address, Notes) 
+                      VALUES (@Name, @Phone, @Email, @Address, @Notes);
+                      SELECT last_insert_rowid();",
+                    customer);
+            }
+        }
+
+        public async Task DeleteCustomerAsync(long customerId)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            await connection.ExecuteAsync(
+                "DELETE FROM Customers WHERE Id = @Id",
+                new { Id = customerId });
         }
     }
 }

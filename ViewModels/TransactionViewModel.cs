@@ -28,6 +28,15 @@ namespace ProWalid.ViewModels
         [ObservableProperty]
         private TransactionItemWithDetails? selectedItem;
 
+        [ObservableProperty]
+        private ObservableCollection<Customer> customers = new();
+
+        [ObservableProperty]
+        private Customer? selectedCustomer;
+
+        [ObservableProperty]
+        private bool isCustomerPanelVisible;
+
         public ObservableCollection<TransactionItemWithDetails> AllItems { get; } = new();
 
         public int TransactionCount => Transactions.Count;
@@ -48,6 +57,49 @@ namespace ProWalid.ViewModels
             };
 
             LoadTransactionsAsync();
+            LoadCustomersAsync();
+        }
+
+        private async void LoadCustomersAsync()
+        {
+            var loadedCustomers = await _databaseHelper.GetAllCustomersAsync();
+            foreach (var customer in loadedCustomers)
+            {
+                Customers.Add(customer);
+            }
+        }
+
+        [RelayCommand]
+        private void ToggleCustomerPanel()
+        {
+            IsCustomerPanelVisible = !IsCustomerPanelVisible;
+        }
+
+        [RelayCommand]
+        private void AddCustomer()
+        {
+            var newCustomer = new Customer { Name = "عميل جديد" };
+            Customers.Add(newCustomer);
+            SelectedCustomer = newCustomer;
+        }
+
+        [RelayCommand]
+        private async Task SaveCustomerAsync()
+        {
+            if (SelectedCustomer == null) return;
+
+            var customerId = await _databaseHelper.SaveCustomerAsync(SelectedCustomer);
+            SelectedCustomer.Id = customerId;
+        }
+
+        [RelayCommand]
+        private async Task DeleteCustomerAsync()
+        {
+            if (SelectedCustomer == null) return;
+
+            await _databaseHelper.DeleteCustomerAsync(SelectedCustomer.Id);
+            Customers.Remove(SelectedCustomer);
+            SelectedCustomer = null;
         }
 
         public static TransactionViewModel Instance => _instance;
