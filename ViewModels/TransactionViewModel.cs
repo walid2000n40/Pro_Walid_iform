@@ -3,8 +3,10 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml.Controls;
 using ProWalid.Models;
 using ProWalid.Views;
+using ProWalid.Data;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ProWalid.ViewModels
 {
@@ -12,6 +14,8 @@ namespace ProWalid.ViewModels
     {
         private static TransactionViewModel _instance;
         private Frame _frame;
+        private readonly DatabaseHelper _databaseHelper;
+        private readonly AttachmentManager _attachmentManager;
 
         [ObservableProperty]
         private ObservableCollection<Transaction> transactions = new();
@@ -31,6 +35,8 @@ namespace ProWalid.ViewModels
         public TransactionViewModel()
         {
             _instance = this;
+            _databaseHelper = new DatabaseHelper();
+            _attachmentManager = new AttachmentManager();
             
             Transactions.CollectionChanged += (s, e) =>
             {
@@ -38,9 +44,20 @@ namespace ProWalid.ViewModels
                 OnPropertyChanged(nameof(TotalAmount));
                 RefreshAllItems();
             };
+
+            LoadTransactionsAsync();
         }
 
         public static TransactionViewModel Instance => _instance;
+
+        private async void LoadTransactionsAsync()
+        {
+            var loadedTransactions = await _databaseHelper.GetAllTransactionsAsync();
+            foreach (var transaction in loadedTransactions)
+            {
+                Transactions.Add(transaction);
+            }
+        }
 
         private void RefreshAllItems()
         {
@@ -105,11 +122,21 @@ namespace ProWalid.ViewModels
         }
 
         [RelayCommand]
-        private void DeleteSelected()
+        private async Task DeleteSelectedAsync()
         {
             if (SelectedTransaction != null)
             {
+                await _databaseHelper.DeleteTransactionAsync(SelectedTransaction.InvoiceNumber);
                 Transactions.Remove(SelectedTransaction);
+            }
+        }
+
+        [RelayCommand]
+        private async Task OpenAttachmentAsync(TransactionItemWithDetails item)
+        {
+            if (!string.IsNullOrEmpty(item.AttachmentPath))
+            {
+                await _attachmentManager.OpenAttachmentAsync(item.AttachmentPath);
             }
         }
     }

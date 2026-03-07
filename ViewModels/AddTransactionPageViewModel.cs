@@ -2,9 +2,13 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml.Controls;
 using ProWalid.Models;
+using ProWalid.Data;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
+using Windows.Storage.Pickers;
+using Windows.Storage;
 
 namespace ProWalid.ViewModels
 {
@@ -14,6 +18,8 @@ namespace ProWalid.ViewModels
         private Frame _frame;
         private Transaction _originalTransaction;
         private bool _isEditMode;
+        private readonly DatabaseHelper _databaseHelper;
+        private readonly AttachmentManager _attachmentManager;
 
         [ObservableProperty]
         private string invoiceNumber;
@@ -37,8 +43,10 @@ namespace ProWalid.ViewModels
 
         public AddTransactionPageViewModel()
         {
-            _lastInvoiceNumber++;
-            InvoiceNumber = _lastInvoiceNumber.ToString();
+            _databaseHelper = new DatabaseHelper();
+            _attachmentManager = new AttachmentManager();
+            
+            InitializeAsync();
 
             Items.CollectionChanged += (s, e) =>
             {
@@ -46,6 +54,12 @@ namespace ProWalid.ViewModels
             };
 
             AddItemCommand.Execute(null);
+        }
+
+        private async void InitializeAsync()
+        {
+            _lastInvoiceNumber = await _databaseHelper.GetNextInvoiceNumberAsync();
+            InvoiceNumber = _lastInvoiceNumber.ToString();
         }
 
         public void SetFrame(Frame frame)
@@ -120,7 +134,7 @@ namespace ProWalid.ViewModels
         }
 
         [RelayCommand]
-        private void Save()
+        private async Task SaveAsync()
         {
             var transaction = new Transaction
             {
@@ -143,6 +157,8 @@ namespace ProWalid.ViewModels
                 });
             }
 
+            await _databaseHelper.SaveTransactionAsync(transaction);
+            
             TransactionViewModel.Instance?.AddOrUpdateTransaction(transaction);
 
             if (_frame != null && _frame.CanGoBack)
@@ -157,6 +173,33 @@ namespace ProWalid.ViewModels
             if (_frame != null && _frame.CanGoBack)
             {
                 _frame.GoBack();
+            }
+        }
+
+        [RelayCommand]
+        private async Task PickFileAsync(TransactionItemDetail item)
+        {
+            try
+            {
+                var picker = new FileOpenPicker();
+                picker.FileTypeFilter.Add("*");
+                
+                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+                WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+                var file = await picker.PickSingleFileAsync();
+                if (file != null)
+                {
+                    var savedPath = await _attachmentManager.SaveAttachmentAsync(file.Path);
+                    if (!string.IsNullOrEmpty(savedPath))
+                    {
+                        item.AttachmentPath = savedPath;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error picking file: {ex.Message}");
             }
         }
     }

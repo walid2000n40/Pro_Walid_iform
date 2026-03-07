@@ -163,6 +163,8 @@
 
                                             <Button Grid.Column="6"
                                                     Content="🗑️"
+                                                    Command="{Binding DataContext.RemoveItemCommand, RelativeSource={RelativeSource Mode=TemplatedParent}}"
+                                                    CommandParameter="{Binding}"
                                                     Background="#FFEBEE"
                                                     BorderBrush="#EF5350"
                                                     FontSize="20"
@@ -191,6 +193,8 @@
 
                                                 <Button Grid.Column="1"
                                                         Content="📎 اختيار ملف"
+                                                        Command="{Binding DataContext.PickFileCommand, RelativeSource={RelativeSource Mode=TemplatedParent}}"
+                                                        CommandParameter="{Binding}"
                                                         Background="#0078D4"
                                                         Foreground="White"
                                                         Height="46"
