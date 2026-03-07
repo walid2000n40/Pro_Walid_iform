@@ -45,6 +45,9 @@ namespace ProWalid.Models
         private bool isFirstItemInTransaction;
 
         [ObservableProperty]
+        private bool isLastItemInTransaction;
+
+        [ObservableProperty]
         private double transactionTotal;
 
         [ObservableProperty]

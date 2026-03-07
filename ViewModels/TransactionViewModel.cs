@@ -7,6 +7,9 @@ using ProWalid.Data;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
 
@@ -301,8 +304,14 @@ namespace ProWalid.ViewModels
             foreach (var transaction in Transactions)
             {
                 bool isFirst = true;
+                int itemCount = transaction.Items.Count;
+                int currentIndex = 0;
+                
                 foreach (var item in transaction.Items)
                 {
+                    currentIndex++;
+                    bool isLast = (currentIndex == itemCount);
+                    
                     var itemWithDetails = new TransactionItemWithDetails
                     {
                         ItemId = item.Id,
@@ -316,6 +325,7 @@ namespace ProWalid.ViewModels
                         AttachmentPath = item.AttachmentPath,
                         InvoiceNumber = transaction.InvoiceNumber,
                         IsFirstItemInTransaction = isFirst,
+                        IsLastItemInTransaction = isLast,
                         TransactionTotal = transaction.GrandTotal,
                         TransactionStatus = "مكتملة"
                     };
@@ -499,6 +509,142 @@ namespace ProWalid.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"Error opening attachment: {ex.Message}");
             }
+        }
+
+        [RelayCommand]
+        private async Task ShowStatusAsync()
+        {
+            if (SelectedTransaction == null)
+            {
+                await ShowMessageAsync("الحالة", "يرجى تحديد معاملة أولاً.");
+                return;
+            }
+
+            var selectedItems = GetSelectedTransactionItems();
+            var attachmentsCount = selectedItems.Sum(item => item.Attachments.Count);
+            var message = new StringBuilder();
+            message.AppendLine($"رقم الفاتورة: {SelectedTransaction.InvoiceNumber}");
+            message.AppendLine("الحالة: مكتملة");
+            message.AppendLine($"عدد البنود: {SelectedTransaction.Items.Count}");
+            message.AppendLine($"عدد المرفقات: {attachmentsCount}");
+            message.AppendLine($"الإجمالي: {SelectedTransaction.GrandTotal} درهم إماراتي");
+
+            await ShowMessageAsync("حالة المعاملة", message.ToString());
+        }
+
+        [RelayCommand]
+        private async Task ShowInvoicesAsync()
+        {
+            if (Transactions.Count == 0)
+            {
+                await ShowMessageAsync("الفواتير", "لا توجد فواتير متاحة حالياً.");
+                return;
+            }
+
+            var invoices = string.Join(Environment.NewLine, Transactions.Select(t => $"- {t.InvoiceNumber} | {t.CompanyName}"));
+            await ShowMessageAsync("الفواتير", invoices);
+        }
+
+        [RelayCommand]
+        private async Task ShowReportsAsync()
+        {
+            var report = new StringBuilder();
+            report.AppendLine($"عدد المعاملات: {Transactions.Count}");
+            report.AppendLine($"إجمالي المبلغ: {TotalAmount} درهم إماراتي");
+            report.AppendLine($"عدد العملاء: {Customers.Count}");
+            report.AppendLine($"عدد البنود: {AllItems.Count}");
+
+            await ShowMessageAsync("التقارير", report.ToString());
+        }
+
+        [RelayCommand]
+        private async Task DownloadAttachmentsAsync()
+        {
+            var attachments = GetSelectedAttachments();
+            if (attachments.Count == 0)
+            {
+                await ShowMessageAsync("تحميل المرفقات", "لا توجد مرفقات للمعاملة المحددة.");
+                return;
+            }
+
+            foreach (var attachment in attachments)
+            {
+                await OpenAttachmentAsync(attachment);
+            }
+        }
+
+        [RelayCommand]
+        private async Task DeleteAttachmentsAsync()
+        {
+            if (SelectedTransaction == null)
+            {
+                await ShowMessageAsync("حذف المرفقات", "يرجى تحديد معاملة أولاً.");
+                return;
+            }
+
+            var selectedItems = GetSelectedTransactionItems();
+            var attachments = selectedItems.SelectMany(item => item.Attachments).ToList();
+            if (attachments.Count == 0)
+            {
+                await ShowMessageAsync("حذف المرفقات", "لا توجد مرفقات لحذفها في المعاملة المحددة.");
+                return;
+            }
+
+            foreach (var attachment in attachments)
+            {
+                _attachmentManager.DeleteAttachment(attachment.FilePath);
+            }
+
+            foreach (var item in selectedItems)
+            {
+                item.Attachments.Clear();
+            }
+
+            foreach (var item in SelectedTransaction.Items)
+            {
+                item.Attachments.Clear();
+                item.AttachmentPath = string.Empty;
+            }
+
+            await _databaseHelper.SaveTransactionAsync(SelectedTransaction);
+            RefreshAllItems();
+            await ShowMessageAsync("حذف المرفقات", "تم حذف مرفقات المعاملة المحددة بنجاح.");
+        }
+
+        private List<TransactionItemWithDetails> GetSelectedTransactionItems()
+        {
+            if (SelectedTransaction == null)
+            {
+                return new List<TransactionItemWithDetails>();
+            }
+
+            return AllItems.Where(i => i.InvoiceNumber == SelectedTransaction.InvoiceNumber).ToList();
+        }
+
+        private List<Attachment> GetSelectedAttachments()
+        {
+            return GetSelectedTransactionItems()
+                .SelectMany(item => item.Attachments)
+                .Where(attachment => attachment != null && !string.IsNullOrWhiteSpace(attachment.FilePath) && File.Exists(attachment.FilePath))
+                .ToList();
+        }
+
+        private async Task ShowMessageAsync(string title, string message)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = title,
+                Content = new TextBlock
+                {
+                    Text = message,
+                    TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap,
+                    MaxWidth = 520
+                },
+                CloseButtonText = "حسناً",
+                XamlRoot = _frame?.XamlRoot
+            };
+
+            await dialog.ShowAsync();
         }
     }
 }

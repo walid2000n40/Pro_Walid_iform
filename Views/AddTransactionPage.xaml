@@ -5,12 +5,18 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:converters="using:ProWalid.Converters"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     FlowDirection="RightToLeft">
 
+    <Page.Resources>
+        <converters:ValidationBrushConverter x:Key="ValidationBrushConverter"/>
+        <converters:NumericTextConverter x:Key="NumericTextConverter"/>
+    </Page.Resources>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Grid Padding="40,32" MaxWidth="1400">
+        <Grid Padding="32,24" MaxWidth="1220" HorizontalAlignment="Center">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -22,48 +28,64 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
-                    Padding="28"
+                    Padding="24"
                     Margin="0,0,0,24">
-                <Grid>
+                <Grid HorizontalAlignment="Center">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="340"/>
+                        <ColumnDefinition Width="340"/>
+                        <ColumnDefinition Width="220"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Spacing="10" Margin="0,0,20,0">
                         <TextBlock Text="رقم الفاتورة" FontWeight="SemiBold" FontSize="16"/>
-                        <TextBox Text="{Binding InvoiceNumber, Mode=OneWay}"
-                                 IsReadOnly="True"
-                                 Background="#F5F5F5"
-                                 FontSize="17"
-                                 Height="48"
-                                 FontWeight="Bold"/>
+                        <Border BorderBrush="{Binding InvoiceNumber, Converter={StaticResource ValidationBrushConverter}}"
+                                BorderThickness="2"
+                                CornerRadius="6">
+                            <TextBox Text="{Binding InvoiceNumber, Mode=OneWay}"
+                                     IsReadOnly="True"
+                                     Background="#F5F5F5"
+                                     FontSize="17"
+                                     Height="48"
+                                     FontWeight="Bold"/>
+                        </Border>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Spacing="10" Margin="0,0,20,0">
                         <TextBlock Text="اسم الشركة" FontWeight="SemiBold" FontSize="16"/>
-                        <TextBox Text="{Binding CompanyName, Mode=TwoWay}"
-                                 PlaceholderText="أدخل اسم الشركة"
-                                 FontSize="17"
-                                 Height="48"/>
+                        <Border BorderBrush="{Binding CompanyName, Converter={StaticResource ValidationBrushConverter}}"
+                                BorderThickness="2"
+                                CornerRadius="6">
+                            <TextBox Text="{Binding CompanyName, Mode=TwoWay}"
+                                     PlaceholderText="أدخل اسم الشركة"
+                                     FontSize="17"
+                                     Height="48"/>
+                        </Border>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Spacing="10" Margin="0,0,20,0">
                         <TextBlock Text="اسم الموظف" FontWeight="SemiBold" FontSize="16"/>
-                        <TextBox Text="{Binding EmployeeName, Mode=TwoWay}"
-                                 PlaceholderText="أدخل اسم الموظف"
-                                 FontSize="17"
-                                 Height="48"/>
+                        <Border BorderBrush="{Binding EmployeeName, Converter={StaticResource ValidationBrushConverter}}"
+                                BorderThickness="2"
+                                CornerRadius="6">
+                            <TextBox Text="{Binding EmployeeName, Mode=TwoWay}"
+                                     PlaceholderText="أدخل اسم الموظف"
+                                     FontSize="17"
+                                     Height="48"/>
+                        </Border>
                     </StackPanel>
 
                     <StackPanel Grid.Column="3" Spacing="10">
                         <TextBlock Text="التاريخ" FontWeight="SemiBold" FontSize="16"/>
-                        <DatePicker Date="{Binding TransactionDate, Mode=TwoWay}"
-                                    HorizontalAlignment="Stretch"
-                                    FontSize="17"
-                                    Height="48"/>
+                        <Border BorderBrush="ForestGreen"
+                                BorderThickness="2"
+                                CornerRadius="6">
+                            <DatePicker Date="{Binding TransactionDate, Mode=TwoWay}"
+                                        HorizontalAlignment="Stretch"
+                                        FontSize="17"
+                                        Height="48"/>
+                        </Border>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -73,7 +95,7 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
-                    Padding="28"
+                    Padding="24"
                     Margin="0,0,0,24">
                 <StackPanel Spacing="20">
                     <TextBlock Text="بنود المعاملة"
@@ -88,7 +110,7 @@
                                         BorderBrush="#E0E0E0"
                                         BorderThickness="1"
                                         CornerRadius="8"
-                                        Padding="24"
+                                        Padding="18"
                                         Margin="0,0,0,16">
                                     <Grid>
                                         <Grid.RowDefinitions>
@@ -96,75 +118,99 @@
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
-                                        <Grid Grid.Row="0">
+                                        <Grid Grid.Row="0" HorizontalAlignment="Center">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="2*"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="320"/>
+                                                <ColumnDefinition Width="130"/>
+                                                <ColumnDefinition Width="130"/>
+                                                <ColumnDefinition Width="130"/>
+                                                <ColumnDefinition Width="130"/>
+                                                <ColumnDefinition Width="130"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
 
                                             <StackPanel Grid.Column="0" Spacing="10" Margin="0,0,16,0">
                                                 <TextBlock Text="بند الخدمة" FontSize="15" FontWeight="SemiBold"/>
-                                                <TextBox Text="{Binding ServiceName, Mode=TwoWay}"
-                                                         PlaceholderText="اسم الخدمة"
-                                                         FontSize="16"
-                                                         Height="46"/>
+                                                <Border BorderBrush="{Binding ServiceName, Converter={StaticResource ValidationBrushConverter}}"
+                                                        BorderThickness="2"
+                                                        CornerRadius="6">
+                                                    <TextBox Text="{Binding ServiceName, Mode=TwoWay}"
+                                                             PlaceholderText="اسم الخدمة"
+                                                             FontSize="16"
+                                                             Height="46"/>
+                                                </Border>
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="1" Spacing="10" Margin="0,0,16,0">
                                                 <TextBlock Text="العدد" FontSize="15" FontWeight="SemiBold"/>
-                                                <NumberBox Value="{Binding Quantity, Mode=TwoWay}"
-                                                           Minimum="0"
-                                                           SpinButtonPlacementMode="Compact"
-                                                           FontSize="16"
-                                                           Height="46"/>
+                                                <Border BorderBrush="{Binding Quantity, Converter={StaticResource ValidationBrushConverter}, ConverterParameter=numeric}"
+                                                        BorderThickness="2"
+                                                        CornerRadius="6">
+                                                    <TextBox Text="{Binding Quantity, Mode=TwoWay, Converter={StaticResource NumericTextConverter}}"
+                                                             PlaceholderText="العدد"
+                                                             InputScope="Number"
+                                                             FontSize="16"
+                                                             Height="46"/>
+                                                </Border>
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="2" Spacing="10" Margin="0,0,16,0">
                                                 <TextBlock Text="سعر الوحدة" FontSize="15" FontWeight="SemiBold"/>
-                                                <NumberBox Value="{Binding UnitPrice, Mode=TwoWay}"
-                                                           Minimum="0"
-                                                           SpinButtonPlacementMode="Compact"
-                                                           FontSize="16"
-                                                           Height="46"/>
+                                                <Border BorderBrush="{Binding UnitPrice, Converter={StaticResource ValidationBrushConverter}, ConverterParameter=numeric}"
+                                                        BorderThickness="2"
+                                                        CornerRadius="6">
+                                                    <TextBox Text="{Binding UnitPrice, Mode=TwoWay, Converter={StaticResource NumericTextConverter}}"
+                                                             PlaceholderText="السعر"
+                                                             InputScope="Number"
+                                                             FontSize="16"
+                                                             Height="46"/>
+                                                </Border>
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="3" Spacing="10" Margin="0,0,16,0">
                                                 <TextBlock Text="الإجمالي" FontSize="15" FontWeight="SemiBold"/>
-                                                <TextBox Text="{Binding Total, Mode=OneWay}"
-                                                         IsReadOnly="True"
-                                                         Background="#E8F5E9"
-                                                         FontSize="16"
-                                                         FontWeight="Bold"
-                                                         Foreground="#2E7D32"
-                                                         Height="46"/>
+                                                <Border BorderBrush="ForestGreen"
+                                                        BorderThickness="2"
+                                                        CornerRadius="6">
+                                                    <TextBox Text="{Binding Total, Mode=OneWay}"
+                                                             IsReadOnly="True"
+                                                             Background="#E8F5E9"
+                                                             FontSize="16"
+                                                             FontWeight="Bold"
+                                                             Foreground="#2E7D32"
+                                                             Height="46"/>
+                                                </Border>
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="4" Spacing="10" Margin="0,0,16,0">
                                                 <TextBlock Text="الفائدة" FontSize="15" FontWeight="SemiBold"/>
-                                                <NumberBox Value="{Binding Profit, Mode=TwoWay}"
-                                                           Minimum="0"
-                                                           SpinButtonPlacementMode="Compact"
-                                                           FontSize="16"
-                                                           Height="46"/>
+                                                <Border BorderBrush="{Binding Profit, Converter={StaticResource ValidationBrushConverter}, ConverterParameter=numeric}"
+                                                        BorderThickness="2"
+                                                        CornerRadius="6">
+                                                    <TextBox Text="{Binding Profit, Mode=TwoWay, Converter={StaticResource NumericTextConverter}}"
+                                                             PlaceholderText="الفائدة"
+                                                             InputScope="Number"
+                                                             FontSize="16"
+                                                             Height="46"/>
+                                                </Border>
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="5" Spacing="10" Margin="0,0,16,0">
                                                 <TextBlock Text="الخصم" FontSize="15" FontWeight="SemiBold"/>
-                                                <NumberBox Value="{Binding Discount, Mode=TwoWay}"
-                                                           Minimum="0"
-                                                           SpinButtonPlacementMode="Compact"
-                                                           FontSize="16"
-                                                           Height="46"/>
+                                                <Border BorderBrush="{Binding Discount, Converter={StaticResource ValidationBrushConverter}, ConverterParameter=numeric}"
+                                                        BorderThickness="2"
+                                                        CornerRadius="6">
+                                                    <TextBox Text="{Binding Discount, Mode=TwoWay, Converter={StaticResource NumericTextConverter}}"
+                                                             PlaceholderText="الخصم"
+                                                             InputScope="Number"
+                                                             FontSize="16"
+                                                             Height="46"/>
+                                                </Border>
                                             </StackPanel>
 
                                             <Button Grid.Column="6"
                                                     Content="🗑️"
-                                                    Command="{Binding DataContext.RemoveItemCommand, RelativeSource={RelativeSource Mode=TemplatedParent}}"
+                                                    Command="{Binding DataContext.RemoveItemCommand, ElementName=AddTransactionPageRoot}"
                                                     CommandParameter="{Binding}"
                                                     Background="#FFEBEE"
                                                     BorderBrush="#EF5350"
@@ -304,12 +350,12 @@
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16">
                         <Button Command="{Binding AddItemCommand}"
-                                Background="#0078D4"
+                                Background="#1E88E5"
                                 Foreground="White"
-                                Height="50"
-                                Padding="28,0"
-                                CornerRadius="8"
-                                FontSize="16"
+                                Height="42"
+                                Padding="18,0"
+                                CornerRadius="10"
+                                FontSize="14"
                                 FontWeight="SemiBold">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <SymbolIcon Symbol="Add" Foreground="White"/>
@@ -320,10 +366,10 @@
                         <Button Command="{Binding SaveCommand}"
                                 Background="#2E7D32"
                                 Foreground="White"
-                                Height="50"
-                                Padding="28,0"
-                                CornerRadius="8"
-                                FontSize="16"
+                                Height="42"
+                                Padding="18,0"
+                                CornerRadius="10"
+                                FontSize="14"
                                 FontWeight="SemiBold">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <SymbolIcon Symbol="Save" Foreground="White"/>
@@ -334,10 +380,10 @@
                         <Button Command="{Binding CancelCommand}"
                                 Background="#D32F2F"
                                 Foreground="White"
-                                Height="50"
-                                Padding="28,0"
-                                CornerRadius="8"
-                                FontSize="16"
+                                Height="42"
+                                Padding="18,0"
+                                CornerRadius="10"
+                                FontSize="14"
                                 FontWeight="SemiBold">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <SymbolIcon Symbol="Cancel" Foreground="White"/>
@@ -362,7 +408,7 @@
                                        FontWeight="Bold"
                                        Foreground="#0078D4"
                                        VerticalAlignment="Center"/>
-                            <TextBlock Text="ريال"
+                            <TextBlock Text="درهم إماراتي"
                                        FontSize="18"
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>

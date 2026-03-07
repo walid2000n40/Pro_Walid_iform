@@ -8,10 +8,47 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
             
+            <FontFamily x:Key="AppFontFamily">ms-appx:///Assets/Fonts/Cairo-Regular.ttf#Cairo</FontFamily>
             <SolidColorBrush x:Key="PrimaryBrush" Color="#0078D4"/>
             <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#106EBE"/>
             <SolidColorBrush x:Key="BackgroundGradientStart" Color="#F5F7FA"/>
             <SolidColorBrush x:Key="BackgroundGradientEnd" Color="#E8EDF2"/>
+
+            <Style TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+            </Style>
+
+            <Style TargetType="Button">
+                <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+            </Style>
+
+            <Style TargetType="TextBox">
+                <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+            </Style>
+
+            <Style TargetType="PasswordBox">
+                <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+            </Style>
+
+            <Style TargetType="CheckBox">
+                <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+            </Style>
+
+            <Style TargetType="ComboBox">
+                <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+            </Style>
+
+            <Style TargetType="DatePicker">
+                <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+            </Style>
+
+            <Style TargetType="ListViewItem">
+                <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+            </Style>
+
+            <Style TargetType="MenuFlyoutItem">
+                <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

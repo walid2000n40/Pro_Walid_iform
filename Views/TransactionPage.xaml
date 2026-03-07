@@ -8,6 +8,7 @@
     xmlns:local="using:ProWalid.Views"
     xmlns:converters="using:ProWalid.Converters"
     mc:Ignorable="d"
+    FontFamily="{StaticResource AppFontFamily}"
     FlowDirection="RightToLeft">
     
     <Page.Background>
@@ -21,6 +22,32 @@
     <Page.Resources>
         <converters:StringToBoolConverter x:Key="StringToBoolConverter"/>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <Style x:Key="ModernActionButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="11,0"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="#F8FBFF"/>
+            <Setter Property="Foreground" Value="#12304A"/>
+            <Setter Property="BorderBrush" Value="#A9C6EE"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style x:Key="PrimaryModernActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernActionButtonStyle}">
+            <Setter Property="Background" Value="#DCEEFF"/>
+            <Setter Property="BorderBrush" Value="#5D98EB"/>
+            <Setter Property="Foreground" Value="#0B5394"/>
+        </Style>
+        <Style x:Key="DangerModernActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernActionButtonStyle}">
+            <Setter Property="Background" Value="#FFF0F0"/>
+            <Setter Property="BorderBrush" Value="#E28A8A"/>
+            <Setter Property="Foreground" Value="#A61B1B"/>
+        </Style>
+        <Style x:Key="SuccessModernActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernActionButtonStyle}">
+            <Setter Property="Background" Value="#EEF9F0"/>
+            <Setter Property="BorderBrush" Value="#84BE8C"/>
+            <Setter Property="Foreground" Value="#1B5E20"/>
+        </Style>
     </Page.Resources>
 
     <Grid Padding="32,24">
@@ -55,11 +82,9 @@
                                Foreground="#0078D4"/>
                     
                     <Button Command="{Binding ToggleCustomerPanelCommand}"
+                            Style="{StaticResource ModernActionButtonStyle}"
                             HorizontalAlignment="Stretch"
-                            Height="36"
-                            CornerRadius="6"
-                            Background="#F5F5F5"
-                            BorderThickness="0">
+                            HorizontalContentAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <SymbolIcon Symbol="List" Foreground="#0078D4"/>
                             <TextBlock Text="إظهار/إخفاء القائمة" 
@@ -71,43 +96,25 @@
                 
                 <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,16">
                     <Button Command="{Binding AddCustomerCommand}"
-                            Height="36"
-                            Padding="12,0"
-                            CornerRadius="6"
-                            Background="#4CAF50"
-                            Foreground="White"
-                            FontSize="13"
-                            FontWeight="SemiBold">
+                            Style="{StaticResource SuccessModernActionButtonStyle}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <SymbolIcon Symbol="Add" Foreground="White"/>
+                            <SymbolIcon Symbol="Add" Foreground="#1B5E20"/>
                             <TextBlock Text="إضافة" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                     
                     <Button Command="{Binding SaveCustomerCommand}"
-                            Height="36"
-                            Padding="12,0"
-                            CornerRadius="6"
-                            Background="#FF8F00"
-                            Foreground="White"
-                            FontSize="13"
-                            FontWeight="SemiBold">
+                            Style="{StaticResource PrimaryModernActionButtonStyle}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <SymbolIcon Symbol="Save" Foreground="White"/>
+                            <SymbolIcon Symbol="Save" Foreground="#0B5394"/>
                             <TextBlock Text="حفظ" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                     
                     <Button Command="{Binding DeleteCustomerCommand}"
-                            Height="36"
-                            Padding="12,0"
-                            CornerRadius="6"
-                            Background="#D32F2F"
-                            Foreground="White"
-                            FontSize="13"
-                            FontWeight="SemiBold">
+                            Style="{StaticResource DangerModernActionButtonStyle}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <SymbolIcon Symbol="Delete" Foreground="White"/>
+                            <SymbolIcon Symbol="Delete" Foreground="#A61B1B"/>
                             <TextBlock Text="حذف" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
@@ -117,22 +124,89 @@
                               Visibility="{Binding IsCustomerPanelVisible, Converter={StaticResource BoolToVisibilityConverter}}">
                     <ListView ItemsSource="{Binding Customers}"
                               SelectedItem="{Binding SelectedCustomer, Mode=TwoWay}"
-                              SelectionMode="Single">
+                              SelectionMode="Single"
+                              Padding="0"
+                              Background="Transparent"
+                              BorderThickness="0">
+                        <ListView.Resources>
+                            <SolidColorBrush x:Key="ListViewItemBackground" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPressed" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemRevealBackground" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBorderBrush" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBorderBrushPointerOver" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBorderBrushPressed" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBorderBrushSelected" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBorderBrushSelectedPointerOver" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBorderBrushSelectedPressed" Color="Transparent"/>
+                        </ListView.Resources>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0"/>
+                                <Setter Property="MinHeight" Value="0"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="UseSystemFocusVisuals" Value="False"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="#F9F9F9"
-                                        CornerRadius="6"
-                                        Padding="12"
-                                        Margin="0,4">
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="{Binding Name}"
-                                                   FontSize="15"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="#1F1F1F"/>
-                                        <TextBlock Text="{Binding Phone}"
-                                                   FontSize="13"
-                                                   Foreground="#616161"/>
-                                    </StackPanel>
+                                <Border BorderBrush="#75CDEE"
+                                        BorderThickness="1.5"
+                                        CornerRadius="16"
+                                        Margin="0,6"
+                                        Background="#EAF9FF"
+                                        Padding="1">
+                                    <Border.Shadow>
+                                        <ThemeShadow />
+                                    </Border.Shadow>
+                                    <Border Background="#F4FDFF"
+                                            CornerRadius="15"
+                                            Padding="14,12">
+                                        <Grid ColumnSpacing="10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <Border Width="40"
+                                                    Height="40"
+                                                    CornerRadius="20"
+                                                    Background="#CBEFFF"
+                                                    BorderBrush="#8ED8F8"
+                                                    BorderThickness="1"
+                                                    VerticalAlignment="Top">
+                                                <SymbolIcon Symbol="Contact" Foreground="#0B6FA4"/>
+                                            </Border>
+
+                                            <StackPanel Grid.Column="1" Spacing="6">
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontSize="15"
+                                                           FontWeight="Bold"
+                                                           Foreground="#0F3B5F"
+                                                           TextWrapping="WrapWholeWords"/>
+                                                <Border Background="#DDF4FF"
+                                                        BorderBrush="#A7DFF7"
+                                                        BorderThickness="1"
+                                                        CornerRadius="10"
+                                                        Padding="8,5">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <SymbolIcon Symbol="Phone" Foreground="#1976A5"/>
+                                                        <TextBlock Text="{Binding Phone}"
+                                                                   FontSize="12"
+                                                                   Foreground="#24506F"
+                                                                   TextWrapping="WrapWholeWords"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
                                 </Border>
                             </DataTemplate>
                         </ListView.ItemTemplate>
@@ -149,339 +223,315 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="0,0,0,24">
-            <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Left">
-                <SymbolIcon Symbol="Document" Foreground="#0078D4" VerticalAlignment="Center"/>
-                <TextBlock Text="إدارة المعاملات" 
-                           FontSize="28" 
-                           FontWeight="Bold"
-                           VerticalAlignment="Center"/>
-            </StackPanel>
-            
-            <Button Command="{Binding LogoutCommand}"
-                    HorizontalAlignment="Right"
-                    Height="40"
-                    Padding="20,0"
-                    CornerRadius="6"
-                    Background="#D32F2F"
-                    Foreground="White"
-                    FontSize="14"
-                    FontWeight="SemiBold">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <SymbolIcon Symbol="LeaveChat" Foreground="White"/>
-                    <TextBlock Text="تسجيل الخروج" VerticalAlignment="Center"/>
+            <Grid Grid.Row="0" Margin="0,0,0,24">
+                <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Left">
+                    <SymbolIcon Symbol="Document" Foreground="#0078D4" VerticalAlignment="Center"/>
+                    <TextBlock Text="إدارة المعاملات" 
+                               FontSize="28" 
+                               FontWeight="Bold"
+                               VerticalAlignment="Center"/>
                 </StackPanel>
-            </Button>
-        </Grid>
-
-        <Grid Grid.Row="1" Margin="0,0,0,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <StackPanel Orientation="Horizontal" Spacing="16">
-                <Button Command="{Binding AddNewTransactionCommand}"
-                        Height="44"
-                        Padding="20,0"
-                        CornerRadius="6"
-                        Background="#0078D4"
-                        Foreground="White"
-                        FontSize="15"
-                        FontWeight="SemiBold">
+                
+                <Button Command="{Binding LogoutCommand}"
+                        Style="{StaticResource DangerModernActionButtonStyle}"
+                        HorizontalAlignment="Right"
+                        Padding="18,0">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <SymbolIcon Symbol="Add" Foreground="White"/>
-                        <TextBlock Text="إضافة معاملة"/>
+                        <SymbolIcon Symbol="LeaveChat" Foreground="#A61B1B"/>
+                        <TextBlock Text="تسجيل الخروج" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
+            </Grid>
 
-                <Button Command="{Binding EditTransactionCommand}"
-                        Height="44"
-                        Padding="20,0"
-                        CornerRadius="6"
-                        Background="#FF8F00"
-                        Foreground="White"
-                        FontSize="15"
-                        FontWeight="SemiBold">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <SymbolIcon Symbol="Edit" Foreground="White"/>
-                        <TextBlock Text="تعديل معاملة"/>
-                    </StackPanel>
-                </Button>
+            <Grid Grid.Row="1" Margin="0,0,0,20" FlowDirection="LeftToRight">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-                <Button Command="{Binding DeleteSelectedCommand}"
-                        Height="44"
-                        Padding="20,0"
-                        CornerRadius="6"
-                        Background="#D32F2F"
-                        Foreground="White"
-                        FontSize="15"
-                        FontWeight="SemiBold">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <SymbolIcon Symbol="Delete" Foreground="White"/>
-                        <TextBlock Text="حذف معاملة"/>
-                    </StackPanel>
-                </Button>
-            </StackPanel>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left" FlowDirection="RightToLeft">
+                    <Button Command="{Binding ShowInvoicesCommand}" Style="{StaticResource ModernActionButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <SymbolIcon Symbol="Library" Foreground="#12304A"/>
+                            <TextBlock Text="الفواتير"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding ShowReportsCommand}" Style="{StaticResource ModernActionButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <SymbolIcon Symbol="AllApps" Foreground="#12304A"/>
+                            <TextBlock Text="التقارير"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding DownloadAttachmentsCommand}" Style="{StaticResource PrimaryModernActionButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <SymbolIcon Symbol="Download" Foreground="#0B5394"/>
+                            <TextBlock Text="تحميل المرفقات"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding DeleteAttachmentsCommand}" Style="{StaticResource DangerModernActionButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <SymbolIcon Symbol="Delete" Foreground="#A61B1B"/>
+                            <TextBlock Text="حذف المرفقات"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
 
-            <TextBlock Grid.Column="1" 
-                       VerticalAlignment="Center"
-                       FontSize="16"
-                       FontWeight="SemiBold">
-                <Run Text="الإجمالي الكلي: "/>
-                <Run Text="{Binding TotalAmount, Mode=OneWay}" Foreground="#0078D4"/>
-                <Run Text=" ريال"/>
-            </TextBlock>
-        </Grid>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" FlowDirection="RightToLeft">
+                    <Button Command="{Binding AddNewTransactionCommand}" Style="{StaticResource PrimaryModernActionButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <SymbolIcon Symbol="Add" Foreground="#0B5394"/>
+                            <TextBlock Text="إضافة معاملة"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding EditTransactionCommand}" Style="{StaticResource ModernActionButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <SymbolIcon Symbol="Edit" Foreground="#12304A"/>
+                            <TextBlock Text="تعديل معاملة"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding DeleteSelectedCommand}" Style="{StaticResource DangerModernActionButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <SymbolIcon Symbol="Delete" Foreground="#A61B1B"/>
+                            <TextBlock Text="حذف معاملة"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding ShowStatusCommand}" Style="{StaticResource SuccessModernActionButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <SymbolIcon Symbol="Accept" Foreground="#1B5E20"/>
+                            <TextBlock Text="الحالة"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
 
-        <Border Grid.Row="2" 
-                Background="White"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="8">
-            <Grid>
+            <Grid Grid.Row="2">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" 
-                      Background="#F5F5F5" 
-                      Padding="16,14"
-                      CornerRadius="8,8,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="80"/>
-                        <ColumnDefinition Width="300"/>
-                        <ColumnDefinition Width="100"/>
-                        <ColumnDefinition Width="150"/>
-                        <ColumnDefinition Width="150"/>
-                        <ColumnDefinition Width="250"/>
-                        <ColumnDefinition Width="200"/>
-                        <ColumnDefinition Width="300"/>
-                    </Grid.ColumnDefinitions>
+                <Border Grid.Row="0"
+                        Background="#4169E1"
+                        BorderBrush="#4169E1"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Margin="0,0,0,15">
+                    <Grid Padding="16,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="300"/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="250"/>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="300"/>
+                        </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Column="0" Text="تحديد" 
-                               FontSize="16" FontWeight="Bold" 
-                               Foreground="#424242" 
-                               Padding="12,0"
-                               TextAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Text="تحديد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="بند الخدمة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0"/>
+                        <TextBlock Grid.Column="2" Text="العدد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="3" Text="سعر الوحدة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="37,0,0,0" TextAlignment="Right"/>
+                        <TextBlock Grid.Column="4" Text="الإجمالي" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="0,0,50,0" TextAlignment="Right"/>
+                        <TextBlock Grid.Column="5" Text="اسم الشركة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0"/>
+                        <TextBlock Grid.Column="6" Text="اسم الموظف" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0"/>
+                        <TextBlock Grid.Column="7" Text="المرفقات" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
+                    </Grid>
+                </Border>
 
-                    <TextBlock Grid.Column="1" Text="بند الخدمة" 
-                               FontSize="16" FontWeight="Bold" 
-                               Foreground="#424242" 
-                               Padding="12,0"/>
-                    <TextBlock Grid.Column="2" Text="العدد" 
-                               FontSize="16" FontWeight="Bold" 
-                               Foreground="#424242" 
-                               Padding="12,0"
-                               TextAlignment="Center"/>
-                    <TextBlock Grid.Column="3" Text="سعر الوحدة" 
-                               FontSize="16" FontWeight="Bold" 
-                               Foreground="#424242" 
-                               Padding="12,0"
-                               Margin="37,0,0,0"
-                               TextAlignment="Right"/>
-                    <TextBlock Grid.Column="4" Text="الإجمالي" 
-                               FontSize="16" FontWeight="Bold" 
-                               Foreground="#424242" 
-                               Padding="12,0"
-                               Margin="0,0,50,0"
-                               TextAlignment="Right"/>
-                    <TextBlock Grid.Column="5" Text="اسم الشركة" 
-                               FontSize="16" FontWeight="Bold" 
-                               Foreground="#424242" 
-                               Padding="12,0"/>
-                    <TextBlock Grid.Column="6" Text="اسم الموظف" 
-                               FontSize="16" FontWeight="Bold" 
-                               Foreground="#424242" 
-                               Padding="12,0"/>
-                    <TextBlock Grid.Column="7" Text="المرفقات" 
-                               FontSize="16" FontWeight="Bold" 
-                               Foreground="#424242" 
-                               Padding="12,0"
-                               TextAlignment="Center"/>
-                </Grid>
+                <ScrollViewer Grid.Row="2"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ListView
+                            ItemsSource="{Binding AllItems, Mode=OneWay}"
+                            SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+                            SelectionMode="Single"
+                            Padding="0"
+                            Background="White">
+                        <ListView.Resources>
+                            <SolidColorBrush x:Key="ListViewItemBackground" Color="White"/>
+                            <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="White"/>
+                            <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="White"/>
+                            <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="White"/>
+                            <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="White"/>
+                            <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPressed" Color="White"/>
+                            <SolidColorBrush x:Key="ListViewItemRevealBackground" Color="White"/>
+                            <SolidColorBrush x:Key="ListViewItemBorderBrush" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBorderBrushPointerOver" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBorderBrushPressed" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBorderBrushSelected" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBorderBrushSelectedPointerOver" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ListViewItemBorderBrushSelectedPressed" Color="Transparent"/>
+                        </ListView.Resources>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0"/>
+                                <Setter Property="MinHeight" Value="0"/>
+                                <Setter Property="Background" Value="White"/>
+                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="UseSystemFocusVisuals" Value="False"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListViewItem">
+                                            <Grid>
+                                                <VisualStateManager.VisualStateGroups>
+                                                    <VisualStateGroup x:Name="CommonStates">
+                                                        <VisualState x:Name="Normal"/>
+                                                        <VisualState x:Name="PointerOver">
+                                                            <VisualState.Setters>
+                                                                <Setter Target="ContainerBorder.Background" Value="#14CBEFFF"/>
+                                                                <Setter Target="ContainerBorder.BorderBrush" Value="#86D6F3"/>
+                                                            </VisualState.Setters>
+                                                        </VisualState>
+                                                        <VisualState x:Name="Pressed">
+                                                            <VisualState.Setters>
+                                                                <Setter Target="ContainerBorder.Background" Value="#20CBEFFF"/>
+                                                                <Setter Target="ContainerBorder.BorderBrush" Value="#5FC1E8"/>
+                                                            </VisualState.Setters>
+                                                        </VisualState>
+                                                        <VisualState x:Name="Selected">
+                                                            <VisualState.Setters>
+                                                                <Setter Target="ContainerBorder.Background" Value="#22CBEFFF"/>
+                                                                <Setter Target="ContainerBorder.BorderBrush" Value="#4FAFD8"/>
+                                                            </VisualState.Setters>
+                                                        </VisualState>
+                                                        <VisualState x:Name="PointerOverSelected">
+                                                            <VisualState.Setters>
+                                                                <Setter Target="ContainerBorder.Background" Value="#2CCBEFFF"/>
+                                                                <Setter Target="ContainerBorder.BorderBrush" Value="#3E9CC8"/>
+                                                            </VisualState.Setters>
+                                                        </VisualState>
+                                                        <VisualState x:Name="SelectedUnfocused">
+                                                            <VisualState.Setters>
+                                                                <Setter Target="ContainerBorder.Background" Value="#1CCBEFFF"/>
+                                                                <Setter Target="ContainerBorder.BorderBrush" Value="#68BFDF"/>
+                                                            </VisualState.Setters>
+                                                        </VisualState>
+                                                    </VisualStateGroup>
+                                                </VisualStateManager.VisualStateGroups>
 
-                <ListView Grid.Row="1"
-                          ItemsSource="{Binding AllItems, Mode=OneWay}"
-                          SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
-                          SelectionMode="Single"
-                          Padding="0">
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                            <Setter Property="Padding" Value="0"/>
-                            <Setter Property="Margin" Value="0"/>
-                            <Setter Property="MinHeight" Value="64"/>
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                    
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel>
-                                <Border Background="#0078D4"
-                                        Padding="8,2"
-                                        Visibility="{Binding IsFirstItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}">
-                                    <Grid>
+                                                <Border x:Name="ContainerBorder"
+                                                        Margin="0,4"
+                                                        Padding="4"
+                                                        CornerRadius="18"
+                                                        Background="Transparent"
+                                                        BorderBrush="Transparent"
+                                                        BorderThickness="1">
+                                                    <ContentPresenter Content="{TemplateBinding Content}"
+                                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                                </Border>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <Border CornerRadius="8,8,0,0"
+                                            Background="#EAF9FF"
+                                            BorderBrush="#75CDEE"
+                                            BorderThickness="1.5,1.5,1.5,0"
+                                            Visibility="{Binding IsFirstItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <Border.Shadow>
+                                            <ThemeShadow />
+                                        </Border.Shadow>
+                                        <Border Background="#CBEFFF" Padding="10,6" CornerRadius="15,15,0,0">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3">
+                                                    <TextBlock Text="فاتورة رقم:" Foreground="#0F3B5F" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding InvoiceNumber}" Foreground="#0F3B5F" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="{Binding TransactionStatus}" Foreground="#1E587C" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="3">
+                                                    <TextBlock Text="الإجمالي:" Foreground="#0F3B5F" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding TransactionTotal}" Foreground="#0F3B5F" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="درهم" Foreground="#0F3B5F" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </Border>
+
+                                    <Grid Padding="8,6" Background="#F4FDFF" BorderBrush="#75CDEE" BorderThickness="1.5,0,1.5,0">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="300"/>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="150"/>
+                                            <ColumnDefinition Width="150"/>
+                                            <ColumnDefinition Width="250"/>
+                                            <ColumnDefinition Width="200"/>
+                                            <ColumnDefinition Width="300"/>
                                         </Grid.ColumnDefinitions>
-                                        
-                                        <CheckBox Grid.Column="0"
-                                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                  VerticalAlignment="Center"
-                                                  Margin="0,0,16,0"/>
-                                        
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3">
-                                            <TextBlock Text="فاتورة رقم:"
-                                                       Foreground="White"
-                                                       FontSize="11"
-                                                       FontWeight="SemiBold"
-                                                       VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding InvoiceNumber}"
-                                                       Foreground="White"
-                                                       FontSize="11"
-                                                       FontWeight="SemiBold"
-                                                       VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                        
-                                        <TextBlock Grid.Column="2"
-                                                   Text="{Binding TransactionStatus}"
-                                                   Foreground="White"
-                                                   FontSize="11"
-                                                   FontWeight="SemiBold"
-                                                   VerticalAlignment="Center"
-                                                   Margin="12,0,0,0"/>
-                                        
-                                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="3">
-                                            <TextBlock Text="الإجمالي:"
-                                                       Foreground="White"
-                                                       FontSize="11"
-                                                       FontWeight="SemiBold"
-                                                       VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding TransactionTotal}"
-                                                       Foreground="White"
-                                                       FontSize="11"
-                                                       FontWeight="SemiBold"
-                                                       VerticalAlignment="Center"/>
-                                            <TextBlock Text="ريال"
-                                                       Foreground="White"
-                                                       FontSize="11"
-                                                       FontWeight="SemiBold"
-                                                       VerticalAlignment="Center"/>
-                                        </StackPanel>
+
+                                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" Visibility="{Binding IsFirstItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ServiceName, Mode=OneWay}" FontSize="15" Padding="12,8" VerticalAlignment="Center" Foreground="#0F3B5F" FontWeight="SemiBold"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Quantity, Mode=OneWay}" FontSize="15" Padding="12,8" VerticalAlignment="Center" TextAlignment="Center" FontWeight="SemiBold"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding UnitPrice, Mode=OneWay}" FontSize="15" Padding="12,8" Margin="37,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#24506F"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding Total, Mode=OneWay}" FontSize="15" FontWeight="Bold" Foreground="#2E7D32" Padding="12,8" Margin="0,0,50,0" VerticalAlignment="Center" TextAlignment="Right"/>
+                                        <TextBlock Grid.Column="5" Text="{Binding CompanyName, Mode=OneWay}" FontSize="15" Padding="12,8" VerticalAlignment="Center" Foreground="#24506F"/>
+                                        <TextBlock Grid.Column="6" Text="{Binding EmployeeName, Mode=OneWay}" FontSize="15" Padding="12,8" VerticalAlignment="Center" Foreground="#24506F"/>
+
+                                        <ItemsControl Grid.Column="7" ItemsSource="{Binding Attachments}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="8,0">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Command="{Binding DataContext.OpenAttachmentCommand, ElementName=TransactionPageRoot}"
+                                                            CommandParameter="{Binding}"
+                                                            Width="32"
+                                                            Height="32"
+                                                            Padding="0"
+                                                            Background="#DDF4FF"
+                                                            BorderBrush="#8ED8F8"
+                                                            BorderThickness="1"
+                                                            CornerRadius="10"
+                                                            ToolTipService.ToolTip="{Binding OriginalFileName}">
+                                                        <FontIcon Glyph="&#xE8A5;" FontSize="16" Foreground="#0B6FA4"/>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
                                     </Grid>
-                                </Border>
-                                
-                                <Grid Padding="16,12" 
-                                      BorderBrush="#E0E0E0" 
-                                      BorderThickness="0,0,0,1">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="80"/>
-                                    <ColumnDefinition Width="300"/>
-                                    <ColumnDefinition Width="100"/>
-                                    <ColumnDefinition Width="150"/>
-                                    <ColumnDefinition Width="150"/>
-                                    <ColumnDefinition Width="250"/>
-                                    <ColumnDefinition Width="200"/>
-                                    <ColumnDefinition Width="300"/>
-                                </Grid.ColumnDefinitions>
 
-                                <CheckBox Grid.Column="0"
-                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                          Visibility="{Binding IsFirstItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}"
-                                          HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"
-                                          Margin="8,0"/>
-
-                                <TextBlock Grid.Column="1" 
-                                           Text="{Binding ServiceName, Mode=OneWay}"
-                                           FontSize="15"
-                                           Padding="12,8"
-                                           VerticalAlignment="Center"/>
-
-                                <TextBlock Grid.Column="2" 
-                                           Text="{Binding Quantity, Mode=OneWay}"
-                                           FontSize="15"
-                                           Padding="12,8"
-                                           VerticalAlignment="Center"
-                                           TextAlignment="Center"
-                                           FontWeight="SemiBold"/>
-
-                                <TextBlock Grid.Column="3" 
-                                           Text="{Binding UnitPrice, Mode=OneWay}"
-                                           FontSize="15"
-                                           Padding="12,8"
-                                           Margin="37,0,0,0"
-                                           VerticalAlignment="Center"
-                                           TextAlignment="Right"/>
-
-                                <TextBlock Grid.Column="4" 
-                                           Text="{Binding Total, Mode=OneWay}"
-                                           FontSize="15"
-                                           FontWeight="Bold"
-                                           Foreground="#2E7D32"
-                                           Padding="12,8"
-                                           Margin="0,0,50,0"
-                                           VerticalAlignment="Center"
-                                           TextAlignment="Right"/>
-
-                                <TextBlock Grid.Column="5" 
-                                           Text="{Binding CompanyName, Mode=OneWay}"
-                                           FontSize="15"
-                                           Padding="12,8"
-                                           VerticalAlignment="Center"/>
-
-                                <TextBlock Grid.Column="6" 
-                                           Text="{Binding EmployeeName, Mode=OneWay}"
-                                           FontSize="15"
-                                           Padding="12,8"
-                                           VerticalAlignment="Center"/>
-
-                                <ItemsControl Grid.Column="7"
-                                              ItemsSource="{Binding Attachments}"
-                                              HorizontalAlignment="Right"
-                                              VerticalAlignment="Center"
-                                              Margin="8,0">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal" Spacing="4"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Button Command="{Binding DataContext.OpenAttachmentCommand, ElementName=TransactionPageRoot}"
-                                                    CommandParameter="{Binding}"
-                                                    Width="28"
-                                                    Height="28"
-                                                    Padding="0"
-                                                    Background="Transparent"
-                                                    BorderThickness="0"
-                                                    ToolTipService.ToolTip="{Binding OriginalFileName}">
-                                                <FontIcon Glyph="&#xE8A5;" 
-                                                          FontSize="16"
-                                                          Foreground="#0078D4"/>
-                                            </Button>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                </Grid>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
+                                    <Border Height="4"
+                                            Background="#F4FDFF"
+                                            Margin="0,0,0,11"
+                                            BorderBrush="#75CDEE"
+                                            BorderThickness="1.5,0,1.5,1.5"
+                                            CornerRadius="0,0,16,16"
+                                            Visibility="{Binding IsLastItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </ScrollViewer>
             </Grid>
-        </Border>
-
-        <StackPanel Grid.Row="3" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Right" 
-                    Spacing="12"
-                    Margin="0,20,0,0">
+            <StackPanel Grid.Row="3" 
+                        Orientation="Horizontal" 
+                        HorizontalAlignment="Right" 
+                        Spacing="12"
+                   Margin="0,20,0,0">
             <TextBlock Text="عدد المعاملات: " 
                        FontSize="15" 
                        VerticalAlignment="Center"/>
@@ -491,6 +541,6 @@
                        Foreground="#0078D4"
                        VerticalAlignment="Center"/>
         </StackPanel>
-        </Grid>
     </Grid>
+</Grid>
 </Page>
