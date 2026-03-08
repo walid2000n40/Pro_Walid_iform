@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.Web.WebView2.Core;
 using ProWalid.Models;
 using ProWalid.ViewModels;
 using System;
@@ -102,7 +103,13 @@ namespace ProWalid.Views
                 return;
             }
 
-            var success = await A4PrintWebView.CoreWebView2.PrintToPdfAsync(file.Path, null);
+            var printSettings = A4PrintWebView.CoreWebView2.Environment.CreatePrintSettings();
+            printSettings.ShouldPrintBackgrounds = true;
+            printSettings.ShouldPrintHeaderAndFooter = false;
+            printSettings.ShouldPrintSelectionOnly = false;
+            printSettings.ShouldPrintBackgrounds = true;
+
+            var success = await A4PrintWebView.CoreWebView2.PrintToPdfAsync(file.Path, printSettings);
 
             var dialog = new ContentDialog
             {

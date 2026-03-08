@@ -5,6 +5,7 @@ using ProWalid.Data;
 using ProWalid.Models;
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -18,19 +19,19 @@ namespace ProWalid.ViewModels
         private readonly DatabaseHelper _databaseHelper = new();
 
         [ObservableProperty]
-        private string companyName = "مؤسسة برو وليد للخدمات الرقمية";
+        private string companyName = "انفورم للطباعة والتصوير";
 
         [ObservableProperty]
-        private string companySubtitle = "حلول أعمال - معاملات - خدمات تقنية";
+        private string companySubtitle = "Inform Typing Photo Copy";
 
         [ObservableProperty]
-        private string companyPhone = "+971 50 123 4567";
+        private string companyPhone = "Mob: 971528047909 / 528047909";
 
         [ObservableProperty]
-        private string companyEmail = "info@prowalid.com";
+        private string companyEmail = "Email: alzaeemtyping@hotmail.com";
 
         [ObservableProperty]
-        private string companyAddress = "دبي - الإمارات العربية المتحدة";
+        private string companyAddress = "العنوان / Address: أبوظبي مصفح م7";
 
         [ObservableProperty]
         private string taxNumber = "TRN 100245889900003";
@@ -97,17 +98,17 @@ namespace ProWalid.ViewModels
             var customer = (await _databaseHelper.GetAllCustomersAsync())
                 .FirstOrDefault(item => item.Id == row.Transaction.CustomerId);
 
-            CustomerName = !string.IsNullOrWhiteSpace(row.CustomerName)
-                ? row.CustomerName
-                : customer?.Name ?? "غير محدد";
+            CustomerName = !string.IsNullOrWhiteSpace(row.Transaction.CompanyName)
+                ? row.Transaction.CompanyName
+                : !string.IsNullOrWhiteSpace(row.CompanyName)
+                    ? row.CompanyName
+                    : !string.IsNullOrWhiteSpace(row.CustomerName)
+                        ? row.CustomerName
+                        : customer?.Name ?? "غير محدد";
 
             CustomerIdText = customer == null
                 ? $"ID {row.Transaction.CustomerId}"
                 : $"ID {(customer.CustomerNumber > 0 ? customer.CustomerNumber : customer.Id)}";
-
-            CompanyName = string.IsNullOrWhiteSpace(row.CompanyName)
-                ? "مؤسسة برو وليد للخدمات الرقمية"
-                : row.CompanyName;
 
             InvoiceNumber = row.InvoiceNumber;
             InvoiceDate = row.Transaction.TransactionDate.ToString("yyyy/MM/dd");
@@ -140,13 +141,13 @@ namespace ProWalid.ViewModels
 
         private void LoadSamplePreview()
         {
-            CompanyName = "مؤسسة برو وليد للخدمات الرقمية";
-            CompanySubtitle = "حلول أعمال - معاملات - خدمات تقنية";
-            CompanyPhone = "+971 50 123 4567";
-            CompanyEmail = "info@prowalid.com";
-            CompanyAddress = "دبي - الإمارات العربية المتحدة";
+            CompanyName = "انفورم للطباعة والتصوير";
+            CompanySubtitle = "Inform Typing Photo Copy";
+            CompanyPhone = "Mob: 971528047909 / 528047909";
+            CompanyEmail = "Email: alzaeemtyping@hotmail.com";
+            CompanyAddress = "العنوان / Address: أبوظبي مصفح م7";
             TaxNumber = "TRN 100245889900003";
-            CustomerName = "شركة الأفق للتجارة العامة";
+            CustomerName = "اسم الشركة من المعاملة";
             CustomerIdText = "ID 1048";
             InvoiceNumber = "INV-2026-084";
             InvoiceDate = DateTime.Now.ToString("yyyy/MM/dd");
@@ -190,6 +191,9 @@ namespace ProWalid.ViewModels
 
         private string BuildPrintHtml()
         {
+            var logoDataUri = GetImageDataUri("Assets", "invoice", "LOGO1.png");
+            var stampDataUri = GetImageDataUri("Assets", "invoice", "STAMP (1).png");
+
             var rows = new StringBuilder();
             foreach (var item in Items)
             {
@@ -203,12 +207,6 @@ namespace ProWalid.ViewModels
                         <td class='num total'>{item.Total:N2}</td>
                     </tr>");
             }
-
-            var vatLabel = IsHazemInvoice ? "الضريبة" : "ضريبة القيمة المضافة 5%";
-            var hazardNotice = IsHazemInvoice
-                ? "<div class='note-badge'>GOV-FEES قيمة معلوماتية فقط ولا تدخل في الإجمالي</div>"
-                : string.Empty;
-
             return $@"<!DOCTYPE html>
 <html lang='ar' dir='rtl'>
 <head>
@@ -217,90 +215,118 @@ namespace ProWalid.ViewModels
     <style>
         @page {{ size: A4; margin: 12mm; }}
         * {{ box-sizing: border-box; }}
-        body {{ margin: 0; background: #eaf1f8; font-family: 'Cairo', 'Segoe UI', sans-serif; color: #17324d; }}
-        .sheet {{ width: 210mm; min-height: 297mm; margin: 0 auto; background: #ffffff; padding: 14mm; }}
-        .header {{ display: flex; justify-content: space-between; align-items: flex-start; gap: 10mm; margin-bottom: 8mm; }}
-        .title {{ font-size: 28px; font-weight: 700; color: #123b66; margin: 0 0 3mm 0; }}
-        .subtitle {{ color: #5a7490; font-size: 12px; margin: 0; }}
-        .meta-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; width: 72mm; }}
-        .meta-card, .info-card, .summary-card, .notes-card {{ border: 1px solid #d7e5f3; border-radius: 14px; background: #f8fbff; padding: 4mm; }}
-        .meta-label, .section-label {{ font-size: 11px; color: #6b8198; margin-bottom: 1.5mm; }}
-        .meta-value {{ font-size: 16px; font-weight: 700; color: #153e75; }}
-        .info-grid {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4mm; margin-bottom: 6mm; }}
-        .info-title {{ font-size: 13px; font-weight: 700; color: #153e75; margin-bottom: 2mm; }}
-        .info-value {{ font-size: 17px; font-weight: 600; color: #15304d; }}
-        .muted {{ color: #60758c; font-size: 12px; }}
-        .note-badge {{ display: inline-block; margin-top: 2mm; padding: 2mm 3mm; border-radius: 999px; background: #fff7d6; color: #7a5a00; font-size: 11px; font-weight: 700; }}
-        table {{ width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 4mm; }}
-        thead th {{ background: #eaf2fb; color: #163b63; font-size: 13px; font-weight: 700; padding: 3.5mm 2.5mm; border-bottom: 1px solid #d9e6f4; }}
-        tbody td {{ padding: 3.5mm 2.5mm; border-bottom: 1px solid #edf3f9; font-size: 12px; vertical-align: top; }}
+        html, body {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; forced-color-adjust: none; }}
+        body {{ margin: 0; background: #eff7fc; font-family: 'Cairo', 'Segoe UI', sans-serif; color: #17324d; }}
+        .sheet {{ width: 210mm; min-height: 297mm; margin: 0 auto; background: #ffffff; padding: 10mm; display: flex; flex-direction: column; }}
+        .content-section {{ display: block; }}
+        .hero {{ background: linear-gradient(135deg, #e9f8ff 0%, #d7f0ff 100%); border: 1px solid #b9e4fb; border-radius: 22px; padding: 5.2mm 6mm; margin-bottom: 4.2mm; }}
+        .hero-grid {{ display: grid; grid-template-columns: 34mm 1fr; gap: 5mm; align-items: center; direction: ltr; }}
+        .hero-logo-wrap {{ display: flex; align-items: center; justify-content: flex-start; min-height: 100%; }}
+        .hero-logo {{ max-width: 30mm; max-height: 24mm; width: auto; height: auto; object-fit: contain; }}
+        .hero-brand {{ direction: rtl; text-align: right; }}
+        .brand-name {{ font-size: 24px; font-weight: 800; color: #0d4f7a; margin: 0 0 1.2mm 0; }}
+        .brand-subtitle {{ font-size: 14px; font-weight: 700; color: #286489; margin: 0 0 2mm 0; }}
+        .brand-line {{ font-size: 11.5px; color: #3b6787; margin: 0.8mm 0; }}
+        .meta-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; }}
+        .meta-card, .client-card, .total-card {{ border: 1px solid #cfeaf8; border-radius: 18px; background: #ffffff; padding: 3.2mm 3.8mm; }}
+        .meta-label, .section-label {{ font-size: 10.5px; color: #5d7b95; margin-bottom: 1mm; }}
+        .meta-value {{ font-size: 15px; font-weight: 800; color: #144b71; }}
+        .client-row {{ display: grid; grid-template-columns: 0.78fr 1.22fr; gap: 4mm; align-items: stretch; margin-bottom: 4.2mm; direction: ltr; }}
+        .client-card {{ background: #f7fcff; }}
+        .client-side-card {{ background: #f7fcff; direction: rtl; text-align: right; }}
+        .client-title {{ font-size: 12.5px; font-weight: 700; color: #15507c; margin-bottom: 1.2mm; text-align: center; }}
+        .client-name-wrap {{ background: rgba(255, 255, 255, 0.72); border-radius: 12px; padding: 2.2mm 3mm; margin: 1.2mm 0 1.6mm 0; text-align: center; }}
+        .client-name {{ font-size: 17.5px; font-weight: 800; color: #0f3556; margin: 0; line-height: 1.4; }}
+        .muted {{ color: #648099; font-size: 12px; }}
+        .id-text {{ color: #0e5b86; font-size: 11.5px; font-weight: 700; margin-top: 1mm; text-align: center; }}
+        .side-meta-item + .side-meta-item {{ margin-top: 2.2mm; }}
+        .side-meta-item {{ display: flex; align-items: center; justify-content: space-between; gap: 2.5mm; direction: ltr; background: rgba(255, 255, 255, 0.72); border-radius: 12px; padding: 2.1mm 2.7mm; }}
+        .side-meta-item .meta-label {{ margin: 0; text-align: right; direction: rtl; flex: 1; }}
+        .side-meta-item .meta-value {{ min-width: 25mm; text-align: left; direction: ltr; font-size: 16px; }}
+        .employee-row {{ display: flex; justify-content: flex-start; direction: ltr; margin: 0 0 2.2mm 0; }}
+        .employee-line {{ color: #8b1e1e; font-size: 13.5px; font-weight: 800; direction: rtl; text-align: right; padding-left: 6mm; }}
+        table {{ width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; margin-top: 2mm; border: 1px solid #cae8f9; border-radius: 18px; overflow: hidden; }}
+        thead th {{ background: #dff3ff; color: #114566; font-size: 13px; font-weight: 800; padding: 3.6mm 2.5mm; border-bottom: 1px solid #c6e8fa; }}
+        tbody td {{ padding: 3.6mm 2.5mm; border-bottom: 1px solid #e7f4fb; font-size: 12px; vertical-align: top; }}
+        tbody tr:nth-child(odd) td {{ background: #fafdff; }}
+        tbody tr:nth-child(even) td {{ background: #f1f9fe; }}
+        tbody tr:last-child td {{ border-bottom: 0; }}
         .num {{ text-align: center; }}
         .service {{ text-align: right; }}
         .gov {{ color: #7a5a00; font-weight: 700; }}
-        .total {{ color: #0f766e; font-weight: 700; }}
-        .bottom-grid {{ display: grid; grid-template-columns: 1fr 78mm; gap: 5mm; margin-top: 6mm; align-items: start; }}
-        .summary-card {{ background: #0f3f71; color: #ffffff; border-color: #0f3f71; }}
-        .summary-row {{ display: flex; justify-content: space-between; gap: 3mm; margin-top: 3mm; font-size: 13px; }}
-        .summary-row strong {{ color: #fde68a; font-size: 18px; }}
-        .notes-card {{ min-height: 34mm; }}
-        .notes-text {{ color: #4e6580; line-height: 1.9; font-size: 12px; white-space: pre-wrap; }}
+        .total {{ color: #0b7a75; font-weight: 800; }}
+        .stamp-wrap {{ display: flex; justify-content: center; margin-top: 5mm; }}
+        .stamp-image {{ max-width: 34mm; max-height: 34mm; width: auto; height: auto; object-fit: contain; }}
+        .footer-row {{ display: flex; justify-content: flex-end; align-items: center; gap: 4mm; margin-top: 6mm; }}
+        .total-card {{ min-width: 72mm; background: linear-gradient(135deg, #2f8fc7 0%, #42a8de 100%); border-color: #55afe1; color: #ffffff; }}
+        .total-label {{ font-size: 12px; color: #dff5ff; margin-bottom: 1.5mm; }}
+        .total-value {{ font-size: 24px; font-weight: 800; color: #ffffff; }}
+        .bottom-section {{ margin-top: auto; }}
+        .signature-row {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18mm; margin-top: 12mm; align-items: end; direction: rtl; }}
+        .signature-block {{ text-align: center; direction: rtl; }}
+        .signature-line {{ width: 88%; margin: 0 auto; border-top: 2px dotted #78aecd; padding-top: 3.2mm; color: #144b71; direction: rtl; }}
+        .signature-ar {{ font-size: 11px; font-weight: 700; margin-bottom: 1.2mm; }}
+        .signature-en {{ font-size: 13px; font-weight: 800; }}
+        .invoice-footer {{ margin-top: 6.5mm; background: linear-gradient(135deg, #e9f8ff 0%, #d7f0ff 100%); border: 1px solid #b9e4fb; border-radius: 18px; padding: 3.1mm 5mm; text-align: center; color: #15507c; font-size: 12px; font-weight: 700; direction: rtl; }}
+        .invoice-footer-text {{ display: inline-flex; align-items: center; justify-content: center; gap: 3mm; flex-wrap: wrap; direction: rtl; }}
+        @media print {{
+            body {{ background: #ffffff !important; }}
+            .sheet {{ width: auto; min-height: calc(297mm - 24mm); margin: 0; padding: 0; }}
+            .hero, .meta-card, .client-card, .client-side-card, .total-card, .invoice-footer, thead th, tbody td {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+        }}
     </style>
 </head>
 <body>
     <div class='sheet'>
-        <div class='header'>
-            <div>
-                <h1 class='title'>{Escape(IsHazemInvoice ? "فاتورة حازم - A4" : "فاتورة A4 جاهزة للطباعة")}</h1>
-                <p class='subtitle'>{Escape(CompanyName)}</p>
-                <p class='subtitle'>{Escape(CompanySubtitle)}</p>
-                <p class='subtitle'>{Escape(CompanyAddress)}</p>
-                {hazardNotice}
-            </div>
-            <div class='meta-grid'>
-                <div class='meta-card'>
-                    <div class='meta-label'>رقم الفاتورة</div>
-                    <div class='meta-value'>{Escape(InvoiceNumber)}</div>
+        <div class='content-section'>
+        <div class='hero'>
+            <div class='hero-grid'>
+                <div class='hero-logo-wrap'>
+                    {(string.IsNullOrWhiteSpace(logoDataUri) ? string.Empty : $"<img class='hero-logo' src='{logoDataUri}' alt='Logo' />")}
                 </div>
-                <div class='meta-card'>
-                    <div class='meta-label'>الحالة</div>
-                    <div class='meta-value'>{Escape(InvoiceStatus)}</div>
-                </div>
-                <div class='meta-card'>
-                    <div class='meta-label'>التاريخ</div>
-                    <div class='meta-value'>{Escape(InvoiceDate)}</div>
-                </div>
-                <div class='meta-card'>
-                    <div class='meta-label'>الموظف</div>
-                    <div class='meta-value'>{Escape(EmployeeName)}</div>
+                <div class='hero-brand'>
+                    <div class='brand-name'>{Escape(CompanyName)}</div>
+                    <div class='brand-subtitle'>{Escape(CompanySubtitle)}</div>
+                    <div class='brand-line'>{Escape(CompanyPhone)}</div>
+                    <div class='brand-line'>{Escape(CompanyEmail)}</div>
+                    <div class='brand-line'>{Escape(CompanyAddress)}</div>
                 </div>
             </div>
         </div>
 
-        <div class='info-grid'>
-            <div class='info-card'>
-                <div class='info-title'>بيانات العميل</div>
-                <div class='info-value'>{Escape(CustomerName)}</div>
-                <div class='muted'>{Escape(CustomerIdText)}</div>
+        <div class='client-row'>
+            <div class='meta-card client-side-card'>
+                <div class='side-meta-item'>
+                    <div class='meta-value'>{Escape(InvoiceNumber)}</div>
+                    <div class='meta-label'>رقم الفاتورة / Invoice No</div>
+                </div>
+                <div class='side-meta-item'>
+                    <div class='meta-value'>{Escape(InvoiceDate)}</div>
+                    <div class='meta-label'>التاريخ / Date</div>
+                </div>
             </div>
-            <div class='info-card'>
-                <div class='info-title'>الاستحقاق</div>
-                <div class='info-value'>{Escape(DueDate)}</div>
+            <div class='client-card'>
+                <div class='client-title'>بيانات العميل / Client Details</div>
+                <div class='client-name-wrap'>
+                    <div class='client-name'>{Escape(CustomerName)}</div>
+                </div>
+                <div class='id-text'>رقم العميل / Customer ID: {Escape(CustomerIdText)}</div>
             </div>
-            <div class='info-card'>
-                <div class='info-title'>نوع الفاتورة</div>
-                <div class='info-value'>{Escape(IsHazemInvoice ? "مخصصة لحازم" : "قياسية")}</div>
-            </div>
+        </div>
+
+        <div class='employee-row'>
+            <div class='employee-line'>اسم الموظف / Employee: {Escape(EmployeeName)}</div>
         </div>
 
         <table>
             <thead>
                 <tr>
                     <th style='width:10%;'>#</th>
-                    <th style='width:38%;'>الخدمة</th>
-                    <th style='width:12%;'>الكمية</th>
-                    <th style='width:14%;'>سعر الوحدة</th>
+                    <th style='width:38%;'>الخدمة / Service</th>
+                    <th style='width:12%;'>الكمية / Qty</th>
+                    <th style='width:14%;'>سعر الوحدة / Unit Price</th>
                     <th style='width:12%;'>GOV-FEES</th>
-                    <th style='width:14%;'>الإجمالي</th>
+                    <th style='width:14%;'>الإجمالي / Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -308,21 +334,80 @@ namespace ProWalid.ViewModels
             </tbody>
         </table>
 
-        <div class='bottom-grid'>
-            <div class='notes-card'>
-                <div class='section-label'>ملاحظات</div>
-                <div class='notes-text'>{Escape(Notes)}</div>
+        {(string.IsNullOrWhiteSpace(stampDataUri) ? string.Empty : $"<div class='stamp-wrap'><img class='stamp-image' src='{stampDataUri}' alt='Stamp' /></div>")}
+
+        </div>
+
+        <div class='bottom-section'>
+        <div class='footer-row'>
+            <div class='total-card'>
+                <div class='total-label'>الإجمالي النهائي / Grand Total</div>
+                <div class='total-value'>{Escape(GrandTotalText)}</div>
             </div>
-            <div class='summary-card'>
-                <div class='section-label' style='color:#dcebff;'>الملخص المالي</div>
-                <div class='summary-row'><span>الإجمالي الفرعي</span><span>{Escape(SubtotalText)}</span></div>
-                <div class='summary-row'><span>{Escape(vatLabel)}</span><span>{Escape(VatText)}</span></div>
-                <div class='summary-row'><span>الإجمالي النهائي</span><strong>{Escape(GrandTotalText)}</strong></div>
+        </div>
+
+        <div class='signature-row'>
+            <div class='signature-block'>
+                <div class='signature-line'>
+                    <div class='signature-ar'>انفورم للطباعة والتصوير</div>
+                    <div class='signature-en'>Inform Typing Photo Copy</div>
+                </div>
             </div>
+            <div class='signature-block'>
+                <div class='signature-line'>
+                    <div class='signature-ar'>توقيع المستلم</div>
+                    <div class='signature-en'>Receiver Signature</div>
+                </div>
+            </div>
+        </div>
+
+        <div class='invoice-footer'>
+            <div class='invoice-footer-text'>
+                <span>{Escape(CompanyName)}</span>
+                <span>-</span>
+                <span>{Escape(CompanyEmail)}</span>
+                <span>-</span>
+                <span>{Escape(CompanyPhone)}</span>
+            </div>
+        </div>
         </div>
     </div>
 </body>
 </html>";
+        }
+
+        private static string GetImageDataUri(params string[] relativePathParts)
+        {
+            try
+            {
+                var fullPath = Path.Combine(AppContext.BaseDirectory, Path.Combine(relativePathParts));
+                if (!File.Exists(fullPath))
+                {
+                    fullPath = Path.Combine(Environment.CurrentDirectory, Path.Combine(relativePathParts));
+                }
+
+                if (!File.Exists(fullPath))
+                {
+                    return string.Empty;
+                }
+
+                var extension = Path.GetExtension(fullPath).ToLowerInvariant();
+                var mimeType = extension switch
+                {
+                    ".png" => "image/png",
+                    ".jpg" => "image/jpeg",
+                    ".jpeg" => "image/jpeg",
+                    ".svg" => "image/svg+xml",
+                    _ => "application/octet-stream"
+                };
+
+                var bytes = File.ReadAllBytes(fullPath);
+                return $"data:{mimeType};base64,{Convert.ToBase64String(bytes)}";
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         private static string Escape(string? value)

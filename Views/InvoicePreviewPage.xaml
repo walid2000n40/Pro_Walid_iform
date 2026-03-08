@@ -679,7 +679,8 @@
             </PivotItem>
 
             <PivotItem Header="A4 Print / PDF">
-                <Grid RowSpacing="16">
+                <Grid RowSpacing="16"
+                      FlowDirection="LeftToRight">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -749,9 +750,11 @@
                             BorderBrush="#D9E6F4"
                             BorderThickness="1"
                             CornerRadius="18"
-                            Padding="10">
+                            Padding="10"
+                            FlowDirection="LeftToRight">
                         <WebView2 x:Name="A4PrintWebView"
                                   DefaultBackgroundColor="White"
+                                  FlowDirection="LeftToRight"
                                   HorizontalAlignment="Stretch"
                                   VerticalAlignment="Stretch"/>
                     </Border>
