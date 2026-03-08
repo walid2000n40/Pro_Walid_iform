@@ -213,25 +213,29 @@ namespace ProWalid.ViewModels
     <meta charset='utf-8' />
     <title>{Escape(InvoiceNumber)}</title>
     <style>
-        @page {{ size: A4; margin: 12mm; }}
+        @page {{ size: A4; margin: 9mm 10mm 10mm 10mm; }}
         * {{ box-sizing: border-box; }}
         html, body {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; forced-color-adjust: none; }}
         body {{ margin: 0; background: #eff7fc; font-family: 'Cairo', 'Segoe UI', sans-serif; color: #17324d; }}
-        .sheet {{ width: 210mm; min-height: 297mm; margin: 0 auto; background: #ffffff; padding: 10mm; display: flex; flex-direction: column; }}
+        .sheet {{ width: 210mm; min-height: 297mm; margin: 0 auto; background: #ffffff; padding: 7mm 10mm 10mm 10mm; display: flex; flex-direction: column; }}
         .content-section {{ display: block; }}
-        .hero {{ background: linear-gradient(135deg, #e9f8ff 0%, #d7f0ff 100%); border: 1px solid #b9e4fb; border-radius: 22px; padding: 5.2mm 6mm; margin-bottom: 4.2mm; }}
-        .hero-grid {{ display: grid; grid-template-columns: 34mm 1fr; gap: 5mm; align-items: center; direction: ltr; }}
+        .hero {{ position: relative; background: linear-gradient(135deg, #e9f8ff 0%, #d7f0ff 100%); border: 1px solid #b9e4fb; border-radius: 22px; padding: 4.1mm 5.2mm; margin-bottom: 3.4mm; }}
+        .hero-grid {{ display: grid; grid-template-columns: 32mm 1fr; gap: 4mm; align-items: center; direction: ltr; }}
         .hero-logo-wrap {{ display: flex; align-items: center; justify-content: flex-start; min-height: 100%; }}
-        .hero-logo {{ max-width: 30mm; max-height: 24mm; width: auto; height: auto; object-fit: contain; }}
-        .hero-brand {{ direction: rtl; text-align: right; }}
-        .brand-name {{ font-size: 24px; font-weight: 800; color: #0d4f7a; margin: 0 0 1.2mm 0; }}
-        .brand-subtitle {{ font-size: 14px; font-weight: 700; color: #286489; margin: 0 0 2mm 0; }}
-        .brand-line {{ font-size: 11.5px; color: #3b6787; margin: 0.8mm 0; }}
+        .hero-logo {{ max-width: 28mm; max-height: 21mm; width: auto; height: auto; object-fit: contain; }}
+        .hero-invoice-title {{ position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; direction: ltr; width: 42mm; pointer-events: none; }}
+        .invoice-main-title {{ font-size: 21px; font-weight: 800; letter-spacing: 0.8px; color: #0d4f7a; line-height: 1; margin-bottom: 0.8mm; }}
+        .invoice-sub-title {{ font-size: 14px; font-weight: 700; color: #1f5e84; line-height: 1; margin-bottom: 1mm; direction: rtl; text-align: center; width: 100%; }}
+        .invoice-title-line {{ width: 26mm; border-top: 1px solid #78aecd; }}
+        .hero-brand {{ direction: rtl; text-align: right; padding-left: 44mm; }}
+        .brand-name {{ font-size: 22px; font-weight: 800; color: #0d4f7a; margin: 0 0 0.8mm 0; }}
+        .brand-subtitle {{ font-size: 13px; font-weight: 700; color: #286489; margin: 0 0 1.4mm 0; }}
+        .brand-line {{ font-size: 11px; color: #3b6787; margin: 0.6mm 0; }}
         .meta-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; }}
         .meta-card, .client-card, .total-card {{ border: 1px solid #cfeaf8; border-radius: 18px; background: #ffffff; padding: 3.2mm 3.8mm; }}
         .meta-label, .section-label {{ font-size: 10.5px; color: #5d7b95; margin-bottom: 1mm; }}
         .meta-value {{ font-size: 15px; font-weight: 800; color: #144b71; }}
-        .client-row {{ display: grid; grid-template-columns: 0.78fr 1.22fr; gap: 4mm; align-items: stretch; margin-bottom: 4.2mm; direction: ltr; }}
+        .client-row {{ display: grid; grid-template-columns: 0.78fr 1.22fr; gap: 4mm; align-items: stretch; margin-bottom: 3.6mm; direction: ltr; }}
         .client-card {{ background: #f7fcff; }}
         .client-side-card {{ background: #f7fcff; direction: rtl; text-align: right; }}
         .client-title {{ font-size: 12.5px; font-weight: 700; color: #15507c; margin-bottom: 1.2mm; text-align: center; }}
@@ -255,12 +259,12 @@ namespace ProWalid.ViewModels
         .service {{ text-align: right; }}
         .gov {{ color: #7a5a00; font-weight: 700; }}
         .total {{ color: #0b7a75; font-weight: 800; }}
-        .stamp-wrap {{ display: flex; justify-content: center; margin-top: 5mm; }}
+        .stamp-wrap {{ display: flex; justify-content: center; margin-top: 3.4mm; }}
         .stamp-image {{ max-width: 34mm; max-height: 34mm; width: auto; height: auto; object-fit: contain; }}
-        .footer-row {{ display: flex; justify-content: flex-end; align-items: center; gap: 4mm; margin-top: 6mm; }}
-        .total-card {{ min-width: 72mm; background: linear-gradient(135deg, #2f8fc7 0%, #42a8de 100%); border-color: #55afe1; color: #ffffff; }}
-        .total-label {{ font-size: 12px; color: #dff5ff; margin-bottom: 1.5mm; }}
-        .total-value {{ font-size: 24px; font-weight: 800; color: #ffffff; }}
+        .footer-row {{ display: flex; justify-content: flex-end; align-items: center; gap: 4mm; margin-top: 3mm; }}
+        .total-card {{ min-width: 54mm; border: 1px solid #b8ddf1; border-radius: 14px; background: #dff3ff; color: #111111; padding: 2.4mm 3mm; }}
+        .total-label {{ font-size: 10.5px; color: #111111; margin-bottom: 0.8mm; font-weight: 700; }}
+        .total-value {{ font-size: 17px; font-weight: 700; color: #111111; }}
         .bottom-section {{ margin-top: auto; }}
         .signature-row {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18mm; margin-top: 12mm; align-items: end; direction: rtl; }}
         .signature-block {{ text-align: center; direction: rtl; }}
@@ -284,11 +288,14 @@ namespace ProWalid.ViewModels
                 <div class='hero-logo-wrap'>
                     {(string.IsNullOrWhiteSpace(logoDataUri) ? string.Empty : $"<img class='hero-logo' src='{logoDataUri}' alt='Logo' />")}
                 </div>
+                <div class='hero-invoice-title'>
+                    <div class='invoice-main-title'>INVOICE</div>
+                    <div class='invoice-sub-title'>فاتورة</div>
+                    <div class='invoice-title-line'></div>
+                </div>
                 <div class='hero-brand'>
                     <div class='brand-name'>{Escape(CompanyName)}</div>
                     <div class='brand-subtitle'>{Escape(CompanySubtitle)}</div>
-                    <div class='brand-line'>{Escape(CompanyPhone)}</div>
-                    <div class='brand-line'>{Escape(CompanyEmail)}</div>
                     <div class='brand-line'>{Escape(CompanyAddress)}</div>
                 </div>
             </div>
@@ -334,11 +341,6 @@ namespace ProWalid.ViewModels
             </tbody>
         </table>
 
-        {(string.IsNullOrWhiteSpace(stampDataUri) ? string.Empty : $"<div class='stamp-wrap'><img class='stamp-image' src='{stampDataUri}' alt='Stamp' /></div>")}
-
-        </div>
-
-        <div class='bottom-section'>
         <div class='footer-row'>
             <div class='total-card'>
                 <div class='total-label'>الإجمالي النهائي / Grand Total</div>
@@ -346,6 +348,11 @@ namespace ProWalid.ViewModels
             </div>
         </div>
 
+        {(string.IsNullOrWhiteSpace(stampDataUri) ? string.Empty : $"<div class='stamp-wrap'><img class='stamp-image' src='{stampDataUri}' alt='Stamp' /></div>")}
+
+        </div>
+
+        <div class='bottom-section'>
         <div class='signature-row'>
             <div class='signature-block'>
                 <div class='signature-line'>
