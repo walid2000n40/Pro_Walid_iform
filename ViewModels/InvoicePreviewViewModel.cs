@@ -15,6 +15,11 @@ namespace ProWalid.ViewModels
 {
     public partial class InvoicePreviewViewModel : ObservableObject
     {
+        public const string FluentTemplateKey = "fluent";
+        public const string ErpTemplateKey = "erp";
+        public const string PremiumTemplateKey = "premium";
+        public const string HazemTemplateKey = "hazem";
+
         private Frame? _frame;
         private readonly DatabaseHelper _databaseHelper = new();
 
@@ -66,6 +71,9 @@ namespace ProWalid.ViewModels
         [ObservableProperty]
         private string printHtml = string.Empty;
 
+        [ObservableProperty]
+        private string selectedPreviewTemplateKey = FluentTemplateKey;
+
         public ObservableCollection<InvoicePreviewLineItem> Items { get; } = new();
 
         public double Subtotal => Items.Sum(item => item.Total);
@@ -115,7 +123,8 @@ namespace ProWalid.ViewModels
             DueDate = row.Transaction.TransactionDate.ToString("yyyy/MM/dd");
             InvoiceStatus = string.IsNullOrWhiteSpace(row.Transaction.TransactionStatus) ? "معلق" : row.Transaction.TransactionStatus;
             EmployeeName = string.IsNullOrWhiteSpace(row.EmployeeName) ? "غير محدد" : row.EmployeeName;
-            IsHazemInvoice = IsHazemCustomer(CustomerName);
+            IsHazemInvoice = IsHazemTransaction(row.Transaction.InvoiceTemplateKey, CustomerName);
+            SelectedPreviewTemplateKey = IsHazemInvoice ? HazemTemplateKey : FluentTemplateKey;
             Notes = IsHazemInvoice
                 ? "نموذج حازم: كل فاتورة مرتبطة بمعاملة واحدة فقط. قيمة GOV-FEES المعروضة لكل بند هي قيمة معلوماتية فقط ولا تدخل ضمن الإجمالي أو أي منطق محاسبي."
                 : "هذه معاينة حقيقية مبنية على بيانات الفاتورة المحفوظة."
@@ -155,6 +164,7 @@ namespace ProWalid.ViewModels
             InvoiceStatus = "معلق";
             EmployeeName = "غير محدد";
             IsHazemInvoice = false;
+            SelectedPreviewTemplateKey = FluentTemplateKey;
             Notes = "هذه مجرد معاينة بصرية أولية لاختيار اتجاه التصميم قبل اعتماد النموذج النهائي وحقن بياناتك الحقيقية.";
 
             Items.Clear();
@@ -170,11 +180,58 @@ namespace ProWalid.ViewModels
             _frame = frame;
         }
 
+        public void SelectPreviewTemplate(string templateKey)
+        {
+            var normalizedTemplateKey = NormalizeTemplateKey(templateKey);
+            if (string.Equals(SelectedPreviewTemplateKey, normalizedTemplateKey, StringComparison.OrdinalIgnoreCase))
+            {
+                PrintHtml = BuildPrintHtml();
+                return;
+            }
+
+            SelectedPreviewTemplateKey = normalizedTemplateKey;
+        }
+
+        partial void OnSelectedPreviewTemplateKeyChanged(string value)
+        {
+            PrintHtml = BuildPrintHtml();
+        }
+
         private static bool IsHazemCustomer(string customerName)
         {
             return !string.IsNullOrWhiteSpace(customerName)
                 && (customerName.Contains("حازم", StringComparison.OrdinalIgnoreCase)
                     || customerName.Contains("hazem", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsHazemTransaction(string invoiceTemplateKey, string customerName)
+        {
+            if (string.Equals(invoiceTemplateKey, HazemTemplateKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return IsHazemCustomer(customerName);
+        }
+
+        private static string NormalizeTemplateKey(string? templateKey)
+        {
+            if (string.Equals(templateKey, ErpTemplateKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return ErpTemplateKey;
+            }
+
+            if (string.Equals(templateKey, PremiumTemplateKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return PremiumTemplateKey;
+            }
+
+            if (string.Equals(templateKey, HazemTemplateKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return HazemTemplateKey;
+            }
+
+            return FluentTemplateKey;
         }
 
         private void RefreshTotals()
@@ -191,6 +248,146 @@ namespace ProWalid.ViewModels
 
         private string BuildPrintHtml()
         {
+            return NormalizeTemplateKey(SelectedPreviewTemplateKey) switch
+            {
+                ErpTemplateKey => BuildErpPrintHtml(),
+                PremiumTemplateKey => BuildPremiumPrintHtml(),
+                HazemTemplateKey => BuildHazemPrintHtml(),
+                _ => BuildFluentPrintHtml()
+            };
+        }
+
+        private string BuildFluentPrintHtml()
+        {
+            return BuildStyledPrintHtml(
+                templateTitle: "INVOICE",
+                templateSubtitle: "فاتورة",
+                titleAccent: "#5a9fc5",
+                bodyBackground: "#eff7fc",
+                heroGradientStart: "#e9f8ff",
+                heroGradientEnd: "#d7f0ff",
+                heroBorder: "#b9e4fb",
+                metaGradientStart: "#d7f0ff",
+                metaGradientEnd: "#c7e9ff",
+                metaBorder: "#abd9f4",
+                tableHeaderStart: "#b8e3fb",
+                tableHeaderEnd: "#9fd4f3",
+                tableHeaderBorder: "#90c7e8",
+                totalBackground: "#dff3ff",
+                totalBorder: "#b8ddf1",
+                footerGradientStart: "#e9f8ff",
+                footerGradientEnd: "#d7f0ff",
+                footerBorder: "#b9e4fb",
+                signatureBorder: "#78aecd",
+                useGovFeesColumn: false,
+                employeeColor: "#7f1d1d");
+        }
+
+        private string BuildErpPrintHtml()
+        {
+            return BuildStyledPrintHtml(
+                templateTitle: "ERP ACCOUNTING",
+                templateSubtitle: "فاتورة ضريبية",
+                titleAccent: "#64748b",
+                bodyBackground: "#f5f7fb",
+                heroGradientStart: "#f8fafc",
+                heroGradientEnd: "#eef2f7",
+                heroBorder: "#d8e0ea",
+                metaGradientStart: "#f8fafc",
+                metaGradientEnd: "#eef2f7",
+                metaBorder: "#d7dee8",
+                tableHeaderStart: "#eef2f7",
+                tableHeaderEnd: "#e2e8f0",
+                tableHeaderBorder: "#cbd5e1",
+                totalBackground: "#f8fafc",
+                totalBorder: "#d7dee8",
+                footerGradientStart: "#f8fafc",
+                footerGradientEnd: "#eef2f7",
+                footerBorder: "#d8e0ea",
+                signatureBorder: "#94a3b8",
+                useGovFeesColumn: true,
+                employeeColor: "#7f1d1d");
+        }
+
+        private string BuildPremiumPrintHtml()
+        {
+            return BuildStyledPrintHtml(
+                templateTitle: "PREMIUM",
+                templateSubtitle: "فاتورة احترافية",
+                titleAccent: "#7c3aed",
+                bodyBackground: "#f7f3ff",
+                heroGradientStart: "#4c1d95",
+                heroGradientEnd: "#7c3aed",
+                heroBorder: "#c4b5fd",
+                metaGradientStart: "#fcfaff",
+                metaGradientEnd: "#f3e8ff",
+                metaBorder: "#ddd6fe",
+                tableHeaderStart: "#f5f3ff",
+                tableHeaderEnd: "#ede9fe",
+                tableHeaderBorder: "#c4b5fd",
+                totalBackground: "#312e81",
+                totalBorder: "#4338ca",
+                footerGradientStart: "#4c1d95",
+                footerGradientEnd: "#7c3aed",
+                footerBorder: "#c4b5fd",
+                signatureBorder: "#8b5cf6",
+                useGovFeesColumn: true,
+                employeeColor: "#fecaca",
+                darkSurfaceText: "#ffffff",
+                footerTextColor: "#f5f3ff");
+        }
+
+        private string BuildHazemPrintHtml()
+        {
+            return BuildStyledPrintHtml(
+                templateTitle: "INVOICE",
+                templateSubtitle: "فاتورة",
+                titleAccent: "#5a9fc5",
+                bodyBackground: "#eff7fc",
+                heroGradientStart: "#e9f8ff",
+                heroGradientEnd: "#d7f0ff",
+                heroBorder: "#b9e4fb",
+                metaGradientStart: "#d7f0ff",
+                metaGradientEnd: "#c7e9ff",
+                metaBorder: "#abd9f4",
+                tableHeaderStart: "#b8e3fb",
+                tableHeaderEnd: "#9fd4f3",
+                tableHeaderBorder: "#90c7e8",
+                totalBackground: "#dff3ff",
+                totalBorder: "#b8ddf1",
+                footerGradientStart: "#e9f8ff",
+                footerGradientEnd: "#d7f0ff",
+                footerBorder: "#b9e4fb",
+                signatureBorder: "#78aecd",
+                useGovFeesColumn: true,
+                employeeColor: "#7f1d1d");
+        }
+
+        private string BuildStyledPrintHtml(
+            string templateTitle,
+            string templateSubtitle,
+            string titleAccent,
+            string bodyBackground,
+            string heroGradientStart,
+            string heroGradientEnd,
+            string heroBorder,
+            string metaGradientStart,
+            string metaGradientEnd,
+            string metaBorder,
+            string tableHeaderStart,
+            string tableHeaderEnd,
+            string tableHeaderBorder,
+            string totalBackground,
+            string totalBorder,
+            string footerGradientStart,
+            string footerGradientEnd,
+            string footerBorder,
+            string signatureBorder,
+            bool useGovFeesColumn,
+            string employeeColor,
+            string darkSurfaceText = "#3d434a",
+            string footerTextColor = "#3d434a")
+        {
             var logoDataUri = GetImageDataUri("Assets", "invoice", "LOGO1.png");
             var stampDataUri = GetImageDataUri("Assets", "invoice", "STAMP (1).png");
 
@@ -202,10 +399,24 @@ namespace ProWalid.ViewModels
 
             var phoneLinesHtml = string.Join(string.Empty, phoneLines.Select(part => $"<div class='contact-line'>Mob: {Escape(part)}</div>"));
 
+            var tableHeadColumns = useGovFeesColumn
+                ? @"<th style='width:10%;'>#</th>
+                    <th style='width:36%;'>الخدمة / Service</th>
+                    <th style='width:12%;'>الكمية / Qty</th>
+                    <th style='width:14%;'>سعر الوحدة / Unit Price</th>
+                    <th style='width:12%;'>GOV-FEES</th>
+                    <th style='width:16%;'>الإجمالي / Total</th>"
+                : @"<th style='width:12%;'>#</th>
+                    <th style='width:42%;'>الخدمة / Service</th>
+                    <th style='width:14%;'>الكمية / Qty</th>
+                    <th style='width:16%;'>سعر الوحدة / Unit Price</th>
+                    <th style='width:16%;'>الإجمالي / Total</th>";
+
             var rows = new StringBuilder();
             foreach (var item in Items)
             {
-                rows.Append($@"
+                rows.Append(useGovFeesColumn
+                    ? $@"
                     <tr>
                         <td class='num'>{item.LineNumber}</td>
                         <td class='service'>{Escape(item.Description)}</td>
@@ -213,8 +424,17 @@ namespace ProWalid.ViewModels
                         <td class='num'>{item.UnitPrice:N2}</td>
                         <td class='num gov'>{Escape(item.GovFeesDisplay)}</td>
                         <td class='num total'>{item.Total:N2}</td>
+                    </tr>"
+                    : $@"
+                    <tr>
+                        <td class='num'>{item.LineNumber}</td>
+                        <td class='service'>{Escape(item.Description)}</td>
+                        <td class='num'>{item.Quantity:0.##}</td>
+                        <td class='num'>{item.UnitPrice:N2}</td>
+                        <td class='num total'>{item.Total:N2}</td>
                     </tr>");
             }
+
             return $@"<!DOCTYPE html>
 <html lang='ar' dir='rtl'>
 <head>
@@ -224,69 +444,69 @@ namespace ProWalid.ViewModels
         @page {{ size: A4; margin: 4mm; }}
         * {{ box-sizing: border-box; }}
         html, body {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; forced-color-adjust: none; }}
-        body {{ margin: 0; background: #eff7fc; font-family: 'Cairo', 'Segoe UI', sans-serif; color: #111111; font-size: 14px; }}
+        body {{ margin: 0; background: {bodyBackground}; font-family: 'Cairo', 'Segoe UI', sans-serif; color: #3d434a; font-size: 14px; }}
         body, body * {{ font-family: 'Cairo', 'Segoe UI', sans-serif; }}
         .sheet {{ width: 100%; min-height: calc(297mm - 8mm); margin: 0 auto; background: #ffffff; padding: 4mm 4.5mm 5mm 4.5mm; display: flex; flex-direction: column; }}
         .content-section {{ display: block; }}
-        .hero {{ position: relative; background: linear-gradient(135deg, #e9f8ff 0%, #d7f0ff 100%); border: 1px solid #b9e4fb; border-radius: 22px; padding: 2.9mm 4.2mm; margin-bottom: 2.8mm; break-inside: avoid; page-break-inside: avoid; }}
+        .hero {{ position: relative; background: linear-gradient(135deg, {heroGradientStart} 0%, {heroGradientEnd} 100%); border: 1px solid {heroBorder}; border-radius: 22px; padding: 2.9mm 4.2mm; margin-bottom: 2.8mm; break-inside: avoid; page-break-inside: avoid; }}
         .hero-grid {{ display: grid; grid-template-columns: 28mm minmax(0, 1fr) 58mm; gap: 3.2mm; align-items: start; direction: ltr; }}
         .hero-logo-wrap {{ display: flex; align-items: center; justify-content: flex-start; min-height: 100%; }}
         .hero-logo {{ max-width: 28mm; max-height: 21mm; width: auto; height: auto; object-fit: contain; }}
         .hero-brand {{ direction: rtl; text-align: center; padding: 0 4mm; }}
-        .brand-name {{ font-size: 24px; font-weight: 800; color: #111111; margin: 0 0 0.8mm 0; }}
-        .brand-subtitle {{ font-size: 15px; font-weight: 700; color: #111111; margin: 0 0 1.2mm 0; }}
-        .brand-line {{ font-size: 13px; color: #111111; margin: 0.45mm 0; }}
-        .tax-line {{ font-size: 13px; font-weight: 700; color: #111111; margin-top: 1mm; }}
+        .brand-name {{ font-size: 24px; font-weight: 800; color: #3d434a; margin: 0 0 0.8mm 0; }}
+        .brand-subtitle {{ font-size: 15px; font-weight: 700; color: #3d434a; margin: 0 0 1.2mm 0; }}
+        .brand-line {{ font-size: 13px; color: #3d434a; margin: 0.45mm 0; }}
+        .tax-line {{ font-size: 13px; font-weight: 700; color: #3d434a; margin-top: 1mm; }}
         .hero-contact {{ direction: rtl; text-align: right; background: rgba(255, 255, 255, 0.58); border: 1px solid #b9def2; border-radius: 16px; padding: 1.9mm 2.5mm; }}
-        .contact-line {{ font-size: 12px; font-weight: 700; color: #111111; line-height: 1.45; white-space: nowrap; }}
+        .contact-line {{ font-size: 12px; font-weight: 700; color: #3d434a; line-height: 1.45; white-space: nowrap; }}
         .contact-line + .contact-line {{ margin-top: 0.5mm; }}
         .invoice-heading-row {{ display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 4mm; margin: 0 0 2.1mm 0; direction: ltr; break-inside: avoid; page-break-inside: avoid; }}
         .invoice-heading-block {{ display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; direction: rtl; }}
         .invoice-heading-spacer {{ min-height: 1px; }}
-        .invoice-main-title {{ font-size: 23px; font-weight: 800; letter-spacing: 0.8px; color: #111111; line-height: 1; margin-bottom: 0.8mm; direction: ltr; }}
-        .invoice-sub-title {{ font-size: 16px; font-weight: 700; color: #111111; line-height: 1; margin-bottom: 1.2mm; direction: rtl; text-align: center; width: 100%; }}
-        .invoice-title-line {{ width: 30mm; border-top: 2px solid #5a9fc5; }}
+        .invoice-main-title {{ font-size: 23px; font-weight: 800; letter-spacing: 0.8px; color: #3d434a; line-height: 1; margin-bottom: 0.8mm; direction: ltr; }}
+        .invoice-sub-title {{ font-size: 16px; font-weight: 700; color: #3d434a; line-height: 1; margin-bottom: 1.2mm; direction: rtl; text-align: center; width: 100%; }}
+        .invoice-title-line {{ width: 30mm; border-top: 2px solid {titleAccent}; }}
         .meta-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; }}
         .meta-card, .client-card, .total-card {{ border: 1px solid #cfeaf8; border-radius: 18px; background: #ffffff; padding: 3.2mm 3.8mm; }}
-        .meta-label, .section-label {{ font-size: 12.5px; color: #111111; margin-bottom: 1mm; }}
-        .meta-value {{ font-size: 17px; font-weight: 800; color: #111111; }}
+        .meta-label, .section-label {{ font-size: 12.5px; color: #3d434a; margin-bottom: 1mm; }}
+        .meta-value {{ font-size: 17px; font-weight: 800; color: #3d434a; }}
         .client-row {{ display: grid; grid-template-columns: 0.78fr 1.22fr; gap: 4mm; align-items: stretch; margin-bottom: 2.8mm; direction: ltr; break-inside: avoid; page-break-inside: avoid; }}
-        .client-card {{ background: linear-gradient(135deg, #d7f0ff 0%, #c7e9ff 100%); border: 1px solid #abd9f4; direction: rtl; text-align: right; display: flex; flex-direction: column; justify-content: center; }}
+        .client-card {{ background: linear-gradient(135deg, {metaGradientStart} 0%, {metaGradientEnd} 100%); border: 1px solid {metaBorder}; direction: rtl; text-align: right; display: flex; flex-direction: column; justify-content: center; }}
         .client-side-card {{ background: #f4fbff; direction: rtl; text-align: right; display: flex; align-items: stretch; }}
-        .client-title {{ font-size: 14.5px; font-weight: 800; color: #111111; margin: 0 0 1.4mm 0; text-align: right; }}
+        .client-title {{ font-size: 14.5px; font-weight: 800; color: #3d434a; margin: 0 0 1.4mm 0; text-align: right; }}
         .client-name-wrap {{ background: transparent; border-radius: 0; padding: 0; margin: 0 0 1.2mm 0; text-align: right; }}
-        .client-name {{ font-size: 19.5px; font-weight: 800; color: #111111; margin: 0 0 1.1mm 0; line-height: 1.4; text-align: right; }}
-        .muted {{ color: #111111; font-size: 14px; }}
-        .id-text {{ color: #111111; font-size: 13.8px; font-weight: 700; margin-top: 0; text-align: right; }}
-        .side-meta-wrap {{ width: 100%; background: linear-gradient(135deg, #d7f0ff 0%, #c7e9ff 100%); border: 1px solid #abd9f4; border-radius: 14px; padding: 2.5mm 3mm; }}
+        .client-name {{ font-size: 19.5px; font-weight: 800; color: #3d434a; margin: 0 0 1.1mm 0; line-height: 1.4; text-align: right; }}
+        .muted {{ color: #3d434a; font-size: 14px; }}
+        .id-text {{ color: #3d434a; font-size: 13.8px; font-weight: 700; margin-top: 0; text-align: right; }}
+        .side-meta-wrap {{ width: 100%; background: linear-gradient(135deg, {metaGradientStart} 0%, {metaGradientEnd} 100%); border: 1px solid {metaBorder}; border-radius: 14px; padding: 2.5mm 3mm; }}
         .side-meta-item + .side-meta-item {{ margin-top: 2mm; padding-top: 2mm; border-top: 1px solid #9fcee9; }}
         .side-meta-item {{ display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 3mm; direction: rtl; background: transparent; border-radius: 0; padding: 0; }}
-        .side-meta-item .meta-label {{ margin: 0; text-align: right; direction: rtl; font-size: 15px; font-weight: 800; color: #111111; }}
-        .side-meta-item .meta-value {{ min-width: 26mm; text-align: left; direction: ltr; font-size: 15px; font-weight: 800; color: #111111; }}
-        .employee-line {{ color: #111111; font-size: 14px; font-weight: 800; direction: rtl; text-align: right; align-self: center; justify-self: end; white-space: nowrap; }}
+        .side-meta-item .meta-label {{ margin: 0; text-align: right; direction: rtl; font-size: 15px; font-weight: 800; color: #3d434a; }}
+        .side-meta-item .meta-value {{ min-width: 26mm; text-align: left; direction: ltr; font-size: 15px; font-weight: 800; color: #3d434a; }}
+        .employee-line {{ color: {employeeColor}; font-size: 14px; font-weight: 800; direction: rtl; text-align: right; align-self: center; justify-self: end; white-space: nowrap; }}
         table {{ width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; margin-top: 1.2mm; border: 1px solid #cae8f9; border-radius: 18px; overflow: hidden; font-family: 'Cairo', 'Segoe UI', sans-serif; }}
-        thead th {{ background: linear-gradient(135deg, #b8e3fb 0%, #9fd4f3 100%); color: #111111; font-size: 15px; font-weight: 800; padding: 3.6mm 2.5mm; border-bottom: 1px solid #90c7e8; font-family: 'Cairo', 'Segoe UI', sans-serif; }}
-        tbody td {{ padding: 3.6mm 2.5mm; border-bottom: 1px solid #e7f4fb; font-size: 14px; vertical-align: top; font-family: 'Cairo', 'Segoe UI', sans-serif; color: #111111; }}
+        thead th {{ background: linear-gradient(135deg, {tableHeaderStart} 0%, {tableHeaderEnd} 100%); color: #3d434a; font-size: 15px; font-weight: 800; padding: 3.6mm 2.5mm; border-bottom: 1px solid {tableHeaderBorder}; font-family: 'Cairo', 'Segoe UI', sans-serif; }}
+        tbody td {{ padding: 3.6mm 2.5mm; border-bottom: 1px solid #e7f4fb; font-size: 14px; vertical-align: top; font-family: 'Cairo', 'Segoe UI', sans-serif; color: #3d434a; }}
         tbody tr:nth-child(odd) td {{ background: #fafdff; }}
         tbody tr:nth-child(even) td {{ background: #f1f9fe; }}
         tbody tr:last-child td {{ border-bottom: 0; }}
         .num {{ text-align: center; }}
         .service {{ text-align: right; }}
         .gov {{ color: #17873a; font-weight: 700; }}
-        .total {{ color: #111111; font-weight: 800; }}
+        .total {{ color: #3d434a; font-weight: 800; }}
         .stamp-wrap {{ display: flex; justify-content: center; margin-top: 3mm; break-inside: avoid; page-break-inside: avoid; }}
         .stamp-image {{ max-width: 34mm; max-height: 34mm; width: auto; height: auto; object-fit: contain; }}
         .footer-row {{ display: flex; justify-content: flex-end; align-items: center; gap: 4mm; margin-top: 2.2mm; break-inside: avoid; page-break-inside: avoid; }}
-        .total-card {{ min-width: 54mm; border: 1px solid #b8ddf1; border-radius: 14px; background: #dff3ff; color: #111111; padding: 2.4mm 3mm; }}
-        .total-label {{ font-size: 12.5px; color: #111111; margin-bottom: 0.8mm; font-weight: 700; }}
-        .total-value {{ font-size: 19px; font-weight: 700; color: #111111; }}
+        .total-card {{ min-width: 54mm; border: 1px solid {totalBorder}; border-radius: 14px; background: {totalBackground}; color: {darkSurfaceText}; padding: 2.4mm 3mm; }}
+        .total-label {{ font-size: 12.5px; color: #3d434a; margin-bottom: 0.8mm; font-weight: 700; }}
+        .total-value {{ font-size: 19px; font-weight: 700; color: {darkSurfaceText}; }}
         .bottom-section {{ margin-top: auto; display: flex; flex-direction: column; gap: 4mm; }}
         .signature-row {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18mm; margin-top: 0; align-items: end; direction: rtl; break-inside: avoid; page-break-inside: avoid; }}
         .signature-block {{ text-align: center; direction: rtl; }}
-        .signature-line {{ width: 88%; margin: 0 auto; border-top: 2px dotted #78aecd; padding-top: 3.2mm; color: #111111; direction: rtl; }}
+        .signature-line {{ width: 88%; margin: 0 auto; border-top: 2px dotted {signatureBorder}; padding-top: 3.2mm; color: #3d434a; direction: rtl; }}
         .signature-ar {{ font-size: 13px; font-weight: 700; margin-bottom: 1.2mm; }}
         .signature-en {{ font-size: 15px; font-weight: 800; }}
-        .invoice-footer {{ margin-top: 0; background: linear-gradient(135deg, #e9f8ff 0%, #d7f0ff 100%); border: 1px solid #b9e4fb; border-radius: 18px; padding: 3.1mm 5mm; text-align: center; color: #111111; font-size: 14px; font-weight: 700; direction: rtl; break-inside: avoid; page-break-inside: avoid; }}
+        .invoice-footer {{ margin-top: 0; background: linear-gradient(135deg, {footerGradientStart} 0%, {footerGradientEnd} 100%); border: 1px solid {footerBorder}; border-radius: 18px; padding: 3.1mm 5mm; text-align: center; color: {footerTextColor}; font-size: 14px; font-weight: 700; direction: rtl; break-inside: avoid; page-break-inside: avoid; }}
         .invoice-footer-text {{ display: inline-flex; align-items: center; justify-content: center; gap: 3mm; flex-wrap: wrap; direction: rtl; }}
         @media print {{
             body {{ background: #ffffff !important; }}
@@ -340,8 +560,8 @@ namespace ProWalid.ViewModels
         <div class='invoice-heading-row'>
             <div class='invoice-heading-spacer'></div>
             <div class='invoice-heading-block'>
-                <div class='invoice-main-title'>INVOICE</div>
-                <div class='invoice-sub-title'>فاتورة</div>
+                <div class='invoice-main-title'>{Escape(templateTitle)}</div>
+                <div class='invoice-sub-title'>{Escape(templateSubtitle)}</div>
                 <div class='invoice-title-line'></div>
             </div>
             <div class='employee-line'>اسم الموظف / Employee: {Escape(EmployeeName)}</div>
@@ -350,12 +570,7 @@ namespace ProWalid.ViewModels
         <table>
             <thead>
                 <tr>
-                    <th style='width:10%;'>#</th>
-                    <th style='width:38%;'>الخدمة / Service</th>
-                    <th style='width:12%;'>الكمية / Qty</th>
-                    <th style='width:14%;'>سعر الوحدة / Unit Price</th>
-                    <th style='width:12%;'>GOV-FEES</th>
-                    <th style='width:14%;'>الإجمالي / Total</th>
+                    {tableHeadColumns}
                 </tr>
             </thead>
             <tbody>
@@ -391,13 +606,6 @@ namespace ProWalid.ViewModels
         </div>
 
         <div class='invoice-footer'>
-            <div class='invoice-footer-text'>
-                <span>{Escape(CompanyName)}</span>
-                <span>-</span>
-                <span>{Escape(CompanyEmail)}</span>
-                <span>-</span>
-                <span>{Escape(CompanyPhone)}</span>
-            </div>
         </div>
         </div>
     </div>

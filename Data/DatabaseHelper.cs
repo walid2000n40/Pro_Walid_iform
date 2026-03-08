@@ -34,6 +34,7 @@ namespace ProWalid.Data
                     CustomerId INTEGER NOT NULL DEFAULT 0,
                     TransactionStatus TEXT NOT NULL DEFAULT 'معلق',
                     InvoiceNumber TEXT NOT NULL UNIQUE,
+                    InvoiceTemplateKey TEXT NOT NULL DEFAULT '',
                     CompanyName TEXT NOT NULL,
                     EmployeeName TEXT NOT NULL,
                     TransactionDate TEXT NOT NULL,
@@ -82,11 +83,13 @@ namespace ProWalid.Data
             await connection.ExecuteAsync(createTransactionsTable);
             await EnsureTransactionsCustomerIdColumnAsync(connection);
             await EnsureTransactionsStatusColumnAsync(connection);
+            await EnsureTransactionsInvoiceTemplateKeyColumnAsync(connection);
             await connection.ExecuteAsync(createItemsTable);
             await EnsureTransactionItemsGovFeesColumnAsync(connection);
             await connection.ExecuteAsync(createAttachmentsTable);
             await connection.ExecuteAsync(createCustomersTable);
             await EnsureCustomersCustomerNumberColumnAsync(connection);
+            await BackfillHazemInvoiceTemplateKeysAsync(connection);
         }
 
         private static async Task EnsureTransactionsCustomerIdColumnAsync(SqliteConnection connection)
@@ -105,6 +108,29 @@ namespace ProWalid.Data
             {
                 await connection.ExecuteAsync("ALTER TABLE Transactions ADD COLUMN TransactionStatus TEXT NOT NULL DEFAULT 'معلق'");
             }
+        }
+
+        private static async Task EnsureTransactionsInvoiceTemplateKeyColumnAsync(SqliteConnection connection)
+        {
+            var transactionColumns = await connection.QueryAsync("PRAGMA table_info(Transactions)");
+            if (!transactionColumns.Any(column => string.Equals((string)column.name, "InvoiceTemplateKey", StringComparison.OrdinalIgnoreCase)))
+            {
+                await connection.ExecuteAsync("ALTER TABLE Transactions ADD COLUMN InvoiceTemplateKey TEXT NOT NULL DEFAULT ''");
+            }
+        }
+
+        private static async Task BackfillHazemInvoiceTemplateKeysAsync(SqliteConnection connection)
+        {
+            await connection.ExecuteAsync(@"
+                UPDATE Transactions
+                SET InvoiceTemplateKey = 'hazem'
+                WHERE (InvoiceTemplateKey IS NULL OR TRIM(InvoiceTemplateKey) = '')
+                  AND CustomerId IN (
+                      SELECT Id
+                      FROM Customers
+                      WHERE Name LIKE '%حازم%'
+                         OR LOWER(Name) LIKE '%hazem%'
+                  )");
         }
 
         private static async Task EnsureTransactionItemsGovFeesColumnAsync(SqliteConnection connection)
@@ -157,6 +183,7 @@ namespace ProWalid.Data
                         @"UPDATE Transactions 
                           SET CustomerId = @CustomerId,
                               TransactionStatus = @TransactionStatus,
+                              InvoiceTemplateKey = @InvoiceTemplateKey,
                               CompanyName = @CompanyName, 
                               EmployeeName = @EmployeeName, 
                               TransactionDate = @TransactionDate, 
@@ -167,6 +194,7 @@ namespace ProWalid.Data
                             Id = existingId.Value,
                             transaction.CustomerId,
                             transaction.TransactionStatus,
+                            transaction.InvoiceTemplateKey,
                             transaction.CompanyName,
                             transaction.EmployeeName,
                             TransactionDate = transaction.TransactionDate.ToString("yyyy-MM-dd"),
@@ -200,14 +228,15 @@ namespace ProWalid.Data
                 else
                 {
                     transactionId = await connection.QuerySingleAsync<long>(
-                        @"INSERT INTO Transactions (CustomerId, TransactionStatus, InvoiceNumber, CompanyName, EmployeeName, TransactionDate, GrandTotal) 
-                          VALUES (@CustomerId, @TransactionStatus, @InvoiceNumber, @CompanyName, @EmployeeName, @TransactionDate, @GrandTotal);
+                        @"INSERT INTO Transactions (CustomerId, TransactionStatus, InvoiceNumber, InvoiceTemplateKey, CompanyName, EmployeeName, TransactionDate, GrandTotal) 
+                          VALUES (@CustomerId, @TransactionStatus, @InvoiceNumber, @InvoiceTemplateKey, @CompanyName, @EmployeeName, @TransactionDate, @GrandTotal);
                           SELECT last_insert_rowid();",
                         new
                         {
                             transaction.CustomerId,
                             transaction.TransactionStatus,
                             transaction.InvoiceNumber,
+                            transaction.InvoiceTemplateKey,
                             transaction.CompanyName,
                             transaction.EmployeeName,
                             TransactionDate = transaction.TransactionDate.ToString("yyyy-MM-dd"),
@@ -320,6 +349,7 @@ namespace ProWalid.Data
                             CustomerId = trans.CustomerId != null ? (long)trans.CustomerId : 0,
                             TransactionStatus = trans.TransactionStatus != null ? (string)trans.TransactionStatus : "معلق",
                             InvoiceNumber = trans.InvoiceNumber,
+                            InvoiceTemplateKey = trans.InvoiceTemplateKey != null ? (string)trans.InvoiceTemplateKey : string.Empty,
                             CompanyName = trans.CompanyName,
                             EmployeeName = trans.EmployeeName,
                             TransactionDate = DateTimeOffset.Parse((string)trans.TransactionDate)

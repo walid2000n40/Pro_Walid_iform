@@ -14,6 +14,7 @@ namespace ProWalid.ViewModels
 {
     public partial class AddTransactionPageViewModel : ObservableObject
     {
+        private const string HazemInvoiceTemplateKey = "hazem";
         private Frame _frame;
         private Transaction _originalTransaction;
         private bool _isEditMode;
@@ -101,6 +102,7 @@ namespace ProWalid.ViewModels
                 }
 
                 InvoiceNumber = transaction.InvoiceNumber;
+                _originalTransaction.InvoiceTemplateKey = transaction.InvoiceTemplateKey;
                 CompanyName = transaction.CompanyName;
                 EmployeeName = transaction.EmployeeName;
                 TransactionDate = transaction.TransactionDate;
@@ -167,6 +169,23 @@ namespace ProWalid.ViewModels
             InvoiceNumber = await _databaseHelper.GetNextInvoiceNumberAsync();
         }
 
+        private bool ShouldUseHazemTemplate()
+        {
+            return !string.IsNullOrWhiteSpace(SelectedCustomerName)
+                && (SelectedCustomerName.Contains("حازم", StringComparison.OrdinalIgnoreCase)
+                    || SelectedCustomerName.Contains("hazem", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private string ResolveInvoiceTemplateKey()
+        {
+            if (_isEditMode && !string.IsNullOrWhiteSpace(_originalTransaction?.InvoiceTemplateKey))
+            {
+                return _originalTransaction.InvoiceTemplateKey;
+            }
+
+            return ShouldUseHazemTemplate() ? HazemInvoiceTemplateKey : string.Empty;
+        }
+
         private async Task ShowMessageAsync(string title, string message)
         {
             if (_frame?.XamlRoot == null)
@@ -222,6 +241,7 @@ namespace ProWalid.ViewModels
                 CustomerId = SelectedCustomerId,
                 TransactionStatus = _originalTransaction?.TransactionStatus ?? "معلق",
                 InvoiceNumber = InvoiceNumber,
+                InvoiceTemplateKey = ResolveInvoiceTemplateKey(),
                 CompanyName = CompanyName,
                 EmployeeName = EmployeeName,
                 TransactionDate = TransactionDate

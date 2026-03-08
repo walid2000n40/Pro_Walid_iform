@@ -17,6 +17,9 @@ namespace ProWalid.Models
         private string invoiceNumber = string.Empty;
 
         [ObservableProperty]
+        private string invoiceTemplateKey = string.Empty;
+
+        [ObservableProperty]
         private string companyName = string.Empty;
 
         [ObservableProperty]

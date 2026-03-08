@@ -43,6 +43,7 @@ namespace ProWalid.Views
             base.OnNavigatedTo(e);
             ViewModel.SetFrame(Frame);
             await ViewModel.LoadAsync(e.Parameter as InvoiceSummaryRow);
+            SyncSelectedTemplateFromPivot();
             await RenderPrintPreviewAsync();
         }
 
@@ -96,6 +97,38 @@ namespace ProWalid.Views
         private async void RefreshPrintPreviewButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         {
             await RenderPrintPreviewAsync();
+        }
+
+        private async void PreviewTemplatesPivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (PreviewTemplatesPivot == null)
+            {
+                return;
+            }
+
+            SyncSelectedTemplateFromPivot();
+
+            if (PreviewTemplatesPivot.SelectedItem is PivotItem selectedItem
+                && string.Equals(selectedItem.Tag?.ToString(), "A4", StringComparison.OrdinalIgnoreCase))
+            {
+                await RenderPrintPreviewAsync();
+            }
+        }
+
+        private void SyncSelectedTemplateFromPivot()
+        {
+            if (PreviewTemplatesPivot?.SelectedItem is not PivotItem selectedItem)
+            {
+                return;
+            }
+
+            var templateKey = selectedItem.Tag?.ToString();
+            if (string.IsNullOrWhiteSpace(templateKey))
+            {
+                return;
+            }
+
+            ViewModel.SelectPreviewTemplate(templateKey);
         }
 
         private async void PrintInvoiceButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
