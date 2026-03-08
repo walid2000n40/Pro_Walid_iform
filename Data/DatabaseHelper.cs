@@ -32,6 +32,7 @@ namespace ProWalid.Data
                 CREATE TABLE IF NOT EXISTS Transactions (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
                     CustomerId INTEGER NOT NULL DEFAULT 0,
+                    TransactionStatus TEXT NOT NULL DEFAULT 'معلق',
                     InvoiceNumber TEXT NOT NULL UNIQUE,
                     CompanyName TEXT NOT NULL,
                     EmployeeName TEXT NOT NULL,
@@ -48,7 +49,7 @@ namespace ProWalid.Data
                     Quantity REAL NOT NULL,
                     UnitPrice REAL NOT NULL,
                     Profit REAL NOT NULL DEFAULT 0,
-                    Discount REAL NOT NULL DEFAULT 0,
+                    GovFees TEXT NOT NULL DEFAULT '',
                     AttachmentPath TEXT,
                     FOREIGN KEY (TransactionId) REFERENCES Transactions(Id) ON DELETE CASCADE
                 )";
@@ -69,6 +70,7 @@ namespace ProWalid.Data
             var createCustomersTable = @"
                 CREATE TABLE IF NOT EXISTS Customers (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    CustomerNumber INTEGER NOT NULL DEFAULT 0,
                     Name TEXT NOT NULL,
                     Phone TEXT,
                     Email TEXT,
@@ -79,9 +81,12 @@ namespace ProWalid.Data
 
             await connection.ExecuteAsync(createTransactionsTable);
             await EnsureTransactionsCustomerIdColumnAsync(connection);
+            await EnsureTransactionsStatusColumnAsync(connection);
             await connection.ExecuteAsync(createItemsTable);
+            await EnsureTransactionItemsGovFeesColumnAsync(connection);
             await connection.ExecuteAsync(createAttachmentsTable);
             await connection.ExecuteAsync(createCustomersTable);
+            await EnsureCustomersCustomerNumberColumnAsync(connection);
         }
 
         private static async Task EnsureTransactionsCustomerIdColumnAsync(SqliteConnection connection)
@@ -90,6 +95,44 @@ namespace ProWalid.Data
             if (!transactionColumns.Any(column => string.Equals((string)column.name, "CustomerId", StringComparison.OrdinalIgnoreCase)))
             {
                 await connection.ExecuteAsync("ALTER TABLE Transactions ADD COLUMN CustomerId INTEGER NOT NULL DEFAULT 0");
+            }
+        }
+
+        private static async Task EnsureTransactionsStatusColumnAsync(SqliteConnection connection)
+        {
+            var transactionColumns = await connection.QueryAsync("PRAGMA table_info(Transactions)");
+            if (!transactionColumns.Any(column => string.Equals((string)column.name, "TransactionStatus", StringComparison.OrdinalIgnoreCase)))
+            {
+                await connection.ExecuteAsync("ALTER TABLE Transactions ADD COLUMN TransactionStatus TEXT NOT NULL DEFAULT 'معلق'");
+            }
+        }
+
+        private static async Task EnsureTransactionItemsGovFeesColumnAsync(SqliteConnection connection)
+        {
+            var itemColumns = await connection.QueryAsync("PRAGMA table_info(TransactionItems)");
+            if (!itemColumns.Any(column => string.Equals((string)column.name, "GovFees", StringComparison.OrdinalIgnoreCase)))
+            {
+                await connection.ExecuteAsync("ALTER TABLE TransactionItems ADD COLUMN GovFees TEXT NOT NULL DEFAULT ''");
+
+                if (itemColumns.Any(column => string.Equals((string)column.name, "Discount", StringComparison.OrdinalIgnoreCase)))
+                {
+                    await connection.ExecuteAsync(@"UPDATE TransactionItems
+                                                    SET GovFees = CASE
+                                                        WHEN Discount IS NULL OR Discount = 0 THEN ''
+                                                        ELSE CAST(Discount AS TEXT)
+                                                    END
+                                                    WHERE GovFees = '' OR GovFees IS NULL");
+                }
+            }
+        }
+
+        private static async Task EnsureCustomersCustomerNumberColumnAsync(SqliteConnection connection)
+        {
+            var customerColumns = await connection.QueryAsync("PRAGMA table_info(Customers)");
+            if (!customerColumns.Any(column => string.Equals((string)column.name, "CustomerNumber", StringComparison.OrdinalIgnoreCase)))
+            {
+                await connection.ExecuteAsync("ALTER TABLE Customers ADD COLUMN CustomerNumber INTEGER NOT NULL DEFAULT 0");
+                await connection.ExecuteAsync("UPDATE Customers SET CustomerNumber = Id WHERE CustomerNumber = 0 OR CustomerNumber IS NULL");
             }
         }
 
@@ -113,6 +156,7 @@ namespace ProWalid.Data
                     await connection.ExecuteAsync(
                         @"UPDATE Transactions 
                           SET CustomerId = @CustomerId,
+                              TransactionStatus = @TransactionStatus,
                               CompanyName = @CompanyName, 
                               EmployeeName = @EmployeeName, 
                               TransactionDate = @TransactionDate, 
@@ -122,6 +166,7 @@ namespace ProWalid.Data
                         {
                             Id = existingId.Value,
                             transaction.CustomerId,
+                            transaction.TransactionStatus,
                             transaction.CompanyName,
                             transaction.EmployeeName,
                             TransactionDate = transaction.TransactionDate.ToString("yyyy-MM-dd"),
@@ -155,12 +200,13 @@ namespace ProWalid.Data
                 else
                 {
                     transactionId = await connection.QuerySingleAsync<long>(
-                        @"INSERT INTO Transactions (CustomerId, InvoiceNumber, CompanyName, EmployeeName, TransactionDate, GrandTotal) 
-                          VALUES (@CustomerId, @InvoiceNumber, @CompanyName, @EmployeeName, @TransactionDate, @GrandTotal);
+                        @"INSERT INTO Transactions (CustomerId, TransactionStatus, InvoiceNumber, CompanyName, EmployeeName, TransactionDate, GrandTotal) 
+                          VALUES (@CustomerId, @TransactionStatus, @InvoiceNumber, @CompanyName, @EmployeeName, @TransactionDate, @GrandTotal);
                           SELECT last_insert_rowid();",
                         new
                         {
                             transaction.CustomerId,
+                            transaction.TransactionStatus,
                             transaction.InvoiceNumber,
                             transaction.CompanyName,
                             transaction.EmployeeName,
@@ -182,7 +228,7 @@ namespace ProWalid.Data
                                   Quantity = @Quantity, 
                                   UnitPrice = @UnitPrice, 
                                   Profit = @Profit, 
-                                  Discount = @Discount, 
+                                  GovFees = @GovFees, 
                                   AttachmentPath = @AttachmentPath 
                               WHERE Id = @Id",
                             new
@@ -192,7 +238,7 @@ namespace ProWalid.Data
                                 item.Quantity,
                                 item.UnitPrice,
                                 item.Profit,
-                                item.Discount,
+                                item.GovFees,
                                 item.AttachmentPath
                             },
                             dbTransaction);
@@ -202,8 +248,8 @@ namespace ProWalid.Data
                     else
                     {
                         itemId = await connection.QuerySingleAsync<long>(
-                            @"INSERT INTO TransactionItems (TransactionId, ServiceName, Quantity, UnitPrice, Profit, Discount, AttachmentPath) 
-                              VALUES (@TransactionId, @ServiceName, @Quantity, @UnitPrice, @Profit, @Discount, @AttachmentPath);
+                            @"INSERT INTO TransactionItems (TransactionId, ServiceName, Quantity, UnitPrice, Profit, GovFees, AttachmentPath) 
+                              VALUES (@TransactionId, @ServiceName, @Quantity, @UnitPrice, @Profit, @GovFees, @AttachmentPath);
                               SELECT last_insert_rowid();",
                             new
                             {
@@ -212,7 +258,7 @@ namespace ProWalid.Data
                                 item.Quantity,
                                 item.UnitPrice,
                                 item.Profit,
-                                item.Discount,
+                                item.GovFees,
                                 item.AttachmentPath
                             },
                             dbTransaction);
@@ -264,7 +310,7 @@ namespace ProWalid.Data
                 @"SELECT t.*, ti.* 
                   FROM Transactions t 
                   LEFT JOIN TransactionItems ti ON t.Id = ti.TransactionId 
-                  ORDER BY t.Id DESC",
+                  ORDER BY t.TransactionDate DESC, t.Id DESC",
                 (trans, item) =>
                 {
                     if (!transactionDict.TryGetValue((long)trans.Id, out var transaction))
@@ -272,6 +318,7 @@ namespace ProWalid.Data
                         transaction = new Transaction
                         {
                             CustomerId = trans.CustomerId != null ? (long)trans.CustomerId : 0,
+                            TransactionStatus = trans.TransactionStatus != null ? (string)trans.TransactionStatus : "معلق",
                             InvoiceNumber = trans.InvoiceNumber,
                             CompanyName = trans.CompanyName,
                             EmployeeName = trans.EmployeeName,
@@ -292,7 +339,7 @@ namespace ProWalid.Data
                                 Quantity = (double)item.Quantity,
                                 UnitPrice = (double)item.UnitPrice,
                                 Profit = (double)item.Profit,
-                                Discount = (double)item.Discount,
+                                GovFees = item.GovFees ?? string.Empty,
                                 AttachmentPath = item.AttachmentPath ?? string.Empty
                             };
                             transaction.Items.Add(transactionItem);
@@ -328,21 +375,23 @@ namespace ProWalid.Data
             return rowsAffected > 0;
         }
 
-        public async Task<int> GetNextInvoiceNumberAsync()
+        public async Task<string> GetNextInvoiceNumberAsync()
         {
             using var connection = new SqliteConnection(_connectionString);
             await connection.OpenAsync();
 
-            var lastInvoice = await connection.QueryFirstOrDefaultAsync<string>(
-                "SELECT InvoiceNumber FROM Transactions ORDER BY Id DESC LIMIT 1");
+            var invoiceNumbers = await connection.QueryAsync<string>(
+                "SELECT InvoiceNumber FROM Transactions WHERE InvoiceNumber IS NOT NULL AND TRIM(InvoiceNumber) <> ''");
 
-            if (string.IsNullOrEmpty(lastInvoice))
-                return 811;
+            const int seedInvoiceNumber = 870;
 
-            if (int.TryParse(lastInvoice, out int lastNumber))
-                return lastNumber + 1;
+            var maxExistingInvoiceNumber = invoiceNumbers
+                .Select(number => int.TryParse(number, out var parsedNumber) ? parsedNumber : 0)
+                .DefaultIfEmpty(0)
+                .Max();
 
-            return 811;
+            var nextInvoiceNumber = Math.Max(seedInvoiceNumber, maxExistingInvoiceNumber + 1);
+            return nextInvoiceNumber.ToString("D5");
         }
 
         public async Task SaveAttachmentsAsync(long transactionItemId, List<Attachment> attachments)
@@ -419,9 +468,20 @@ namespace ProWalid.Data
             await connection.OpenAsync();
 
             var customers = await connection.QueryAsync<Customer>(
-                "SELECT * FROM Customers ORDER BY Name");
+                "SELECT * FROM Customers ORDER BY CASE WHEN CustomerNumber > 0 THEN CustomerNumber ELSE Id END, Name");
 
             return customers.ToList();
+        }
+
+        public async Task<long> GetNextCustomerNumberAsync()
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var lastCustomerNumber = await connection.QueryFirstOrDefaultAsync<long?>(
+                "SELECT MAX(CASE WHEN CustomerNumber > 0 THEN CustomerNumber ELSE Id END) FROM Customers");
+
+            return (lastCustomerNumber ?? 0) + 1;
         }
 
         public async Task<long> SaveCustomerAsync(Customer customer)
@@ -433,7 +493,8 @@ namespace ProWalid.Data
             {
                 await connection.ExecuteAsync(
                     @"UPDATE Customers 
-                      SET Name = @Name, Phone = @Phone, Email = @Email, 
+                      SET CustomerNumber = @CustomerNumber,
+                          Name = @Name, Phone = @Phone, Email = @Email, 
                           Address = @Address, Notes = @Notes 
                       WHERE Id = @Id",
                     customer);
@@ -442,8 +503,8 @@ namespace ProWalid.Data
             else
             {
                 return await connection.QuerySingleAsync<long>(
-                    @"INSERT INTO Customers (Name, Phone, Email, Address, Notes) 
-                      VALUES (@Name, @Phone, @Email, @Address, @Notes);
+                    @"INSERT INTO Customers (CustomerNumber, Name, Phone, Email, Address, Notes) 
+                      VALUES (@CustomerNumber, @Name, @Phone, @Email, @Address, @Notes);
                       SELECT last_insert_rowid();",
                     customer);
             }

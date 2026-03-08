@@ -8,6 +8,9 @@ namespace ProWalid.Models
         private long id;
 
         [ObservableProperty]
+        private long customerNumber;
+
+        [ObservableProperty]
         private string name = string.Empty;
 
         [ObservableProperty]
@@ -21,5 +24,8 @@ namespace ProWalid.Models
 
         [ObservableProperty]
         private string notes = string.Empty;
+
+        [ObservableProperty]
+        private bool isSelected;
     }
 }

@@ -21,7 +21,7 @@ namespace ProWalid.Models
         private double profit;
 
         [ObservableProperty]
-        private double discount;
+        private string govFees = string.Empty;
 
         [ObservableProperty]
         private string attachmentPath = string.Empty;

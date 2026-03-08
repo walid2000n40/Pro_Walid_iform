@@ -11,6 +11,9 @@ namespace ProWalid.Models
         private long customerId;
 
         [ObservableProperty]
+        private string transactionStatus = "معلق";
+
+        [ObservableProperty]
         private string invoiceNumber = string.Empty;
 
         [ObservableProperty]
@@ -25,7 +28,7 @@ namespace ProWalid.Models
         [ObservableProperty]
         private ObservableCollection<TransactionItemDetail> items = new();
 
-        public double GrandTotal => Items.Sum(item => item.Total + item.Profit - item.Discount);
+        public double GrandTotal => Items.Sum(item => item.Total);
 
         public int ItemsCount => Items.Count;
 

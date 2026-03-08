@@ -53,11 +53,12 @@
 
                         <StackPanel Grid.Column="0" Spacing="10" Margin="0,0,20,0">
                             <TextBlock Text="رقم الفاتورة" FontWeight="SemiBold" FontSize="16"/>
-                            <Border BorderBrush="{Binding InvoiceNumber, Converter={StaticResource ValidationBrushConverter}}"
+                            <Border BorderBrush="#D6D6D6"
                                     BorderThickness="2"
                                     CornerRadius="6">
                                 <TextBox Text="{Binding InvoiceNumber, Mode=OneWay}"
                                          IsReadOnly="True"
+                                         PlaceholderText="رقم مؤقت يُثبت عند الحفظ الناجح"
                                          Background="#F5F5F5"
                                          FontSize="17"
                                          Height="48"
@@ -198,11 +199,12 @@
 
                                             <StackPanel Grid.Column="4" Spacing="10" Margin="0,0,16,0">
                                                 <TextBlock Text="الفائدة" FontSize="15" FontWeight="SemiBold"/>
-                                                <Border BorderBrush="{Binding Profit, Converter={StaticResource ValidationBrushConverter}, ConverterParameter=numeric}"
+                                                <Border BorderBrush="#D6D6D6"
                                                         BorderThickness="2"
                                                         CornerRadius="6">
                                                     <TextBox Text="{Binding Profit, Mode=TwoWay, Converter={StaticResource NumericTextConverter}}"
-                                                             PlaceholderText="الفائدة"
+                                                             PlaceholderText="قيمة للعرض فقط"
+                                                             Background="#FAFAFA"
                                                              InputScope="Number"
                                                              FontSize="16"
                                                              Height="46"/>
@@ -210,13 +212,13 @@
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="5" Spacing="10" Margin="0,0,16,0">
-                                                <TextBlock Text="الخصم" FontSize="15" FontWeight="SemiBold"/>
-                                                <Border BorderBrush="{Binding Discount, Converter={StaticResource ValidationBrushConverter}, ConverterParameter=numeric}"
+                                                <TextBlock Text="GOV-FEES" FontSize="15" FontWeight="SemiBold"/>
+                                                <Border BorderBrush="#D6D6D6"
                                                         BorderThickness="2"
                                                         CornerRadius="6">
-                                                    <TextBox Text="{Binding Discount, Mode=TwoWay, Converter={StaticResource NumericTextConverter}}"
-                                                             PlaceholderText="الخصم"
-                                                             InputScope="Number"
+                                                    <TextBox Text="{Binding GovFees, Mode=TwoWay}"
+                                                             PlaceholderText="قيمة حكومية للعرض فقط"
+                                                             Background="#FAFAFA"
                                                              FontSize="16"
                                                              Height="46"/>
                                                 </Border>

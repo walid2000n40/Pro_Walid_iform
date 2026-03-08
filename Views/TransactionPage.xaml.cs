@@ -1,6 +1,9 @@
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Navigation;
+using ProWalid.Models;
 using ProWalid.ViewModels;
+using System.Threading.Tasks;
 
 namespace ProWalid.Views
 {
@@ -20,6 +23,34 @@ namespace ProWalid.Views
         {
             base.OnNavigatedTo(e);
             ViewModel.SetFrame(this.Frame);
+        }
+
+        private async void PendingStatusButton_Click(object sender, RoutedEventArgs e)
+        {
+            await ApplyStatusAsync("معلق");
+        }
+
+        private async void DeliveredStatusButton_Click(object sender, RoutedEventArgs e)
+        {
+            await ApplyStatusAsync("تم التسليم");
+        }
+
+        private async Task ApplyStatusAsync(string status)
+        {
+            if (ViewModel?.SetSelectedTransactionStatusCommand == null)
+            {
+                return;
+            }
+
+            await ViewModel.SetSelectedTransactionStatusCommand.ExecuteAsync(status);
+        }
+
+        private void CustomerListView_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (e.ClickedItem is Customer customer)
+            {
+                ViewModel.SelectedCustomer = customer;
+            }
         }
     }
 }

@@ -44,9 +44,13 @@ namespace ProWalid.ViewModels
 
         public ObservableCollection<TransactionItemWithDetails> AllItems { get; } = new();
 
-        public string SelectedCustomerHeaderText => SelectedCustomer == null ? "لم يتم اختيار عميل بعد" : $"العميل المحدد: {SelectedCustomer.Name}";
+        public string SelectedCustomerHeaderText => SelectedCustomer == null
+            ? "لم يتم اختيار عميل بعد"
+            : $"العميل المحدد: {SelectedCustomer.Name} - ID {SelectedCustomer.CustomerNumber}";
 
         public bool HasSelectedCustomer => SelectedCustomer != null;
+
+        public bool HasSelectedTransaction => SelectedTransaction != null;
 
         public int TransactionCount => Transactions.Count;
 
@@ -77,10 +81,14 @@ namespace ProWalid.ViewModels
         private async void LoadCustomersAsync()
         {
             var loadedCustomers = await _databaseHelper.GetAllCustomersAsync();
+            Customers.Clear();
             foreach (var customer in loadedCustomers)
             {
                 Customers.Add(customer);
             }
+
+            SortCustomers();
+            OnPropertyChanged(nameof(Customers));
         }
 
         partial void OnSelectedCustomerChanged(Customer? value)
@@ -88,6 +96,11 @@ namespace ProWalid.ViewModels
             OnPropertyChanged(nameof(SelectedCustomerHeaderText));
             OnPropertyChanged(nameof(HasSelectedCustomer));
             ApplyCustomerFilter();
+        }
+
+        partial void OnSelectedTransactionChanged(Transaction? value)
+        {
+            OnPropertyChanged(nameof(HasSelectedTransaction));
         }
 
         [RelayCommand]
@@ -99,10 +112,14 @@ namespace ProWalid.ViewModels
         [RelayCommand]
         private async Task AddCustomerAsync()
         {
+            var nextCustomerNumber = await _databaseHelper.GetNextCustomerNumberAsync();
             var nameBox = new TextBox { PlaceholderText = "اسم العميل" };
-            var phoneBox = new TextBox { PlaceholderText = "رقم الهاتف" };
-            var emailBox = new TextBox { PlaceholderText = "البريد الإلكتروني (اختياري)" };
-            var addressBox = new TextBox { PlaceholderText = "العنوان (اختياري)" };
+            var customerNumberBox = new NumberBox
+            {
+                Value = nextCustomerNumber,
+                Minimum = 1,
+                SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact
+            };
 
             var dialog = new ContentDialog
             {
@@ -112,14 +129,34 @@ namespace ProWalid.ViewModels
                     Spacing = 12,
                     Children =
                     {
-                        new TextBlock { Text = "اسم العميل:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
-                        nameBox,
-                        new TextBlock { Text = "رقم الهاتف:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
-                        phoneBox,
-                        new TextBlock { Text = "البريد الإلكتروني:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
-                        emailBox,
-                        new TextBlock { Text = "العنوان:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
-                        addressBox
+                        new StackPanel
+                        {
+                            Orientation = Microsoft.UI.Xaml.Controls.Orientation.Horizontal,
+                            Spacing = 12,
+                            Children =
+                            {
+                                new StackPanel
+                                {
+                                    Width = 260,
+                                    Spacing = 6,
+                                    Children =
+                                    {
+                                        new TextBlock { Text = "اسم العميل", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                                        nameBox
+                                    }
+                                },
+                                new StackPanel
+                                {
+                                    Width = 180,
+                                    Spacing = 6,
+                                    Children =
+                                    {
+                                        new TextBlock { Text = "رقم ID", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                                        customerNumberBox
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 PrimaryButtonText = "حفظ",
@@ -145,17 +182,32 @@ namespace ProWalid.ViewModels
                     return;
                 }
 
+                var customerNumber = Convert.ToInt64(customerNumberBox.Value);
+                if (customerNumber <= 0)
+                {
+                    await ShowMessageAsync("خطأ", "يرجى إدخال رقم ID صالح للعميل.");
+                    return;
+                }
+
+                if (Customers.Any(c => c.CustomerNumber == customerNumber))
+                {
+                    await ShowMessageAsync("خطأ", "رقم ID هذا مستخدم بالفعل لعميل آخر.");
+                    return;
+                }
+
                 var newCustomer = new Customer
                 {
+                    CustomerNumber = customerNumber,
                     Name = nameBox.Text,
-                    Phone = phoneBox.Text,
-                    Email = emailBox.Text,
-                    Address = addressBox.Text
+                    Phone = string.Empty,
+                    Email = string.Empty,
+                    Address = string.Empty
                 };
 
                 var customerId = await _databaseHelper.SaveCustomerAsync(newCustomer);
                 newCustomer.Id = customerId;
                 Customers.Add(newCustomer);
+                SortCustomers();
                 SelectedCustomer = newCustomer;
             }
         }
@@ -177,14 +229,11 @@ namespace ProWalid.ViewModels
             }
 
             var nameBox = new TextBox { Text = SelectedCustomer.Name };
-            var phoneBox = new TextBox { Text = SelectedCustomer.Phone };
-            var emailBox = new TextBox { Text = SelectedCustomer.Email };
-            var addressBox = new TextBox { Text = SelectedCustomer.Address };
-            var idText = new TextBlock 
-            { 
-                Text = $"رقم العميل: {SelectedCustomer.Id}",
-                FontWeight = Microsoft.UI.Text.FontWeights.Bold,
-                Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.DarkBlue)
+            var customerNumberBox = new NumberBox
+            {
+                Value = SelectedCustomer.CustomerNumber > 0 ? SelectedCustomer.CustomerNumber : SelectedCustomer.Id,
+                Minimum = 1,
+                SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact
             };
 
             var dialog = new ContentDialog
@@ -195,15 +244,34 @@ namespace ProWalid.ViewModels
                     Spacing = 12,
                     Children =
                     {
-                        idText,
-                        new TextBlock { Text = "اسم العميل:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
-                        nameBox,
-                        new TextBlock { Text = "رقم الهاتف:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
-                        phoneBox,
-                        new TextBlock { Text = "البريد الإلكتروني:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
-                        emailBox,
-                        new TextBlock { Text = "العنوان:", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
-                        addressBox
+                        new StackPanel
+                        {
+                            Orientation = Microsoft.UI.Xaml.Controls.Orientation.Horizontal,
+                            Spacing = 12,
+                            Children =
+                            {
+                                new StackPanel
+                                {
+                                    Width = 260,
+                                    Spacing = 6,
+                                    Children =
+                                    {
+                                        new TextBlock { Text = "اسم العميل", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                                        nameBox
+                                    }
+                                },
+                                new StackPanel
+                                {
+                                    Width = 180,
+                                    Spacing = 6,
+                                    Children =
+                                    {
+                                        new TextBlock { Text = "رقم ID", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                                        customerNumberBox
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 PrimaryButtonText = "حفظ التعديلات",
@@ -229,12 +297,28 @@ namespace ProWalid.ViewModels
                     return;
                 }
 
+                var customerNumber = Convert.ToInt64(customerNumberBox.Value);
+                if (customerNumber <= 0)
+                {
+                    await ShowMessageAsync("خطأ", "يرجى إدخال رقم ID صالح للعميل.");
+                    return;
+                }
+
+                if (Customers.Any(c => c.Id != SelectedCustomer.Id && c.CustomerNumber == customerNumber))
+                {
+                    await ShowMessageAsync("خطأ", "رقم ID هذا مستخدم بالفعل لعميل آخر.");
+                    return;
+                }
+
+                SelectedCustomer.CustomerNumber = customerNumber;
                 SelectedCustomer.Name = nameBox.Text;
-                SelectedCustomer.Phone = phoneBox.Text;
-                SelectedCustomer.Email = emailBox.Text;
-                SelectedCustomer.Address = addressBox.Text;
+                SelectedCustomer.Phone = string.Empty;
+                SelectedCustomer.Email = string.Empty;
+                SelectedCustomer.Address = string.Empty;
 
                 await _databaseHelper.SaveCustomerAsync(SelectedCustomer);
+                SortCustomers();
+                OnPropertyChanged(nameof(SelectedCustomerHeaderText));
                 ApplyCustomerFilter();
                 
                 var successDialog = new ContentDialog
@@ -280,7 +364,7 @@ namespace ProWalid.ViewModels
                         },
                         new TextBlock 
                         { 
-                            Text = $"رقم العميل: {SelectedCustomer.Id}",
+                            Text = $"رقم العميل: {(SelectedCustomer.CustomerNumber > 0 ? SelectedCustomer.CustomerNumber : SelectedCustomer.Id)}",
                             Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Gray)
                         },
                         new TextBlock 
@@ -300,9 +384,14 @@ namespace ProWalid.ViewModels
 
             if (result == ContentDialogResult.Primary)
             {
-                await _databaseHelper.DeleteCustomerAsync(SelectedCustomer.Id);
+                var deletedCustomerId = SelectedCustomer.Id;
+                await _databaseHelper.DeleteCustomerAsync(deletedCustomerId);
                 Customers.Remove(SelectedCustomer);
-                SelectedCustomer = null;
+
+                if (SelectedCustomer?.Id == deletedCustomerId)
+                {
+                    SelectedCustomer = null;
+                }
             }
         }
 
@@ -327,7 +416,7 @@ namespace ProWalid.ViewModels
 
             if (SelectedCustomer != null)
             {
-                foreach (var transaction in _allTransactions.Where(t => CustomerMatchesTransaction(SelectedCustomer, t)))
+                foreach (var transaction in GetOrderedTransactions(_allTransactions.Where(t => CustomerMatchesTransaction(SelectedCustomer, t))))
                 {
                     Transactions.Add(transaction);
                 }
@@ -342,6 +431,28 @@ namespace ProWalid.ViewModels
         private static bool CustomerMatchesTransaction(Customer customer, Transaction transaction)
         {
             return transaction.CustomerId > 0 && transaction.CustomerId == customer.Id;
+        }
+
+        private IEnumerable<Transaction> GetOrderedTransactions(IEnumerable<Transaction> source)
+        {
+            return source
+                .OrderBy(transaction => string.Equals(transaction.TransactionStatus, "تم التسليم", StringComparison.Ordinal))
+                .ThenByDescending(transaction => transaction.TransactionDate)
+                .ThenByDescending(transaction => transaction.InvoiceNumber);
+        }
+
+        private void SortCustomers()
+        {
+            var orderedCustomers = Customers
+                .OrderBy(customer => customer.CustomerNumber > 0 ? customer.CustomerNumber : customer.Id)
+                .ThenBy(customer => customer.Name)
+                .ToList();
+
+            Customers.Clear();
+            foreach (var customer in orderedCustomers)
+            {
+                Customers.Add(customer);
+            }
         }
 
         private void RefreshAllItems()
@@ -365,7 +476,7 @@ namespace ProWalid.ViewModels
                         Quantity = item.Quantity,
                         UnitPrice = item.UnitPrice,
                         Profit = item.Profit,
-                        Discount = item.Discount,
+                        GovFees = item.GovFees,
                         CompanyName = transaction.CompanyName,
                         EmployeeName = transaction.EmployeeName,
                         AttachmentPath = item.AttachmentPath,
@@ -373,7 +484,7 @@ namespace ProWalid.ViewModels
                         IsFirstItemInTransaction = isFirst,
                         IsLastItemInTransaction = isLast,
                         TransactionTotal = transaction.GrandTotal,
-                        TransactionStatus = "مكتملة"
+                        TransactionStatus = transaction.TransactionStatus
                     };
 
                     foreach (var attachment in item.Attachments)
@@ -576,7 +687,7 @@ namespace ProWalid.ViewModels
             var attachmentsCount = selectedItems.Sum(item => item.Attachments.Count);
             var message = new StringBuilder();
             message.AppendLine($"رقم الفاتورة: {SelectedTransaction.InvoiceNumber}");
-            message.AppendLine("الحالة: مكتملة");
+            message.AppendLine($"الحالة: {SelectedTransaction.TransactionStatus}");
             message.AppendLine($"عدد البنود: {SelectedTransaction.Items.Count}");
             message.AppendLine($"عدد المرفقات: {attachmentsCount}");
             message.AppendLine($"الإجمالي: {SelectedTransaction.GrandTotal} درهم إماراتي");
@@ -585,16 +696,39 @@ namespace ProWalid.ViewModels
         }
 
         [RelayCommand]
+        private async Task SetSelectedTransactionStatusAsync(string status)
+        {
+            if (SelectedTransaction == null)
+            {
+                await ShowMessageAsync("الحالة", "يرجى تحديد معاملة أولاً.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(status))
+            {
+                return;
+            }
+
+            SelectedTransaction.TransactionStatus = status;
+            await _databaseHelper.SaveTransactionAsync(SelectedTransaction);
+            ApplyCustomerFilter();
+        }
+
+        [RelayCommand]
         private async Task ShowInvoicesAsync()
         {
-            if (Transactions.Count == 0)
+            if (_frame == null)
+            {
+                return;
+            }
+
+            if (_allTransactions.Count == 0)
             {
                 await ShowMessageAsync("الفواتير", "لا توجد فواتير متاحة حالياً.");
                 return;
             }
 
-            var invoices = string.Join(Environment.NewLine, Transactions.Select(t => $"- {t.InvoiceNumber} | {t.CompanyName}"));
-            await ShowMessageAsync("الفواتير", invoices);
+            _frame.Navigate(typeof(InvoicesPage), SelectedCustomer);
         }
 
         [RelayCommand]

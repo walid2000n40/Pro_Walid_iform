@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:local="using:ProWalid.Views"
+    xmlns:models="using:ProWalid.Models"
     xmlns:converters="using:ProWalid.Converters"
     mc:Ignorable="d"
     FontFamily="{StaticResource AppFontFamily}"
@@ -22,9 +23,11 @@
     <Page.Resources>
         <converters:StringToBoolConverter x:Key="StringToBoolConverter"/>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:TransactionStatusToBrushConverter x:Key="TransactionStatusToBrushConverter"/>
         <Style x:Key="ModernActionButtonStyle" TargetType="Button">
-            <Setter Property="Height" Value="32"/>
-            <Setter Property="Padding" Value="11,0"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -47,6 +50,236 @@
             <Setter Property="Background" Value="#EEF9F0"/>
             <Setter Property="BorderBrush" Value="#84BE8C"/>
             <Setter Property="Foreground" Value="#1B5E20"/>
+        </Style>
+        <Style x:Key="RaisedHeaderActionButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="RaisedNeutralHeaderActionButtonStyle" TargetType="Button" BasedOn="{StaticResource RaisedHeaderActionButtonStyle}">
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="#1B1B1B"/>
+            <Setter Property="BorderBrush" Value="#D6D6D6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal"/>
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="#F5F5F5"/>
+                                            <Setter Target="RootBorder.BorderBrush" Value="#C0C0C0"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="#EBEBEB"/>
+                                            <Setter Target="RootBorder.BorderBrush" Value="#ABABAB"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Opacity" Value="0.5"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Border x:Name="RootBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{TemplateBinding CornerRadius}">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Padding="{TemplateBinding Padding}"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="RaisedPrimaryHeaderActionButtonStyle" TargetType="Button" BasedOn="{StaticResource RaisedHeaderActionButtonStyle}">
+            <Setter Property="Background" Value="#E3F2FD"/>
+            <Setter Property="Foreground" Value="#0B5394"/>
+            <Setter Property="BorderBrush" Value="#5D98EB"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal"/>
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="#106EBE"/>
+                                            <Setter Target="RootBorder.BorderBrush" Value="#005A9E"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="#005A9E"/>
+                                            <Setter Target="RootBorder.BorderBrush" Value="#004578"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Opacity" Value="0.5"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Border x:Name="RootBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{TemplateBinding CornerRadius}">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Padding="{TemplateBinding Padding}"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="RaisedReportsButtonStyle" TargetType="Button" BasedOn="{StaticResource RaisedHeaderActionButtonStyle}">
+            <Setter Property="Background" Value="#EDE8FF"/>
+            <Setter Property="Foreground" Value="#4F52B2"/>
+            <Setter Property="BorderBrush" Value="#C9C7F7"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal"/>
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="#4F52B2"/>
+                                            <Setter Target="RootBorder.BorderBrush" Value="#43469B"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="#43469B"/>
+                                            <Setter Target="RootBorder.BorderBrush" Value="#383B85"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Opacity" Value="0.5"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Border x:Name="RootBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{TemplateBinding CornerRadius}">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Padding="{TemplateBinding Padding}"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="RaisedDangerHeaderActionButtonStyle" TargetType="Button" BasedOn="{StaticResource RaisedHeaderActionButtonStyle}">
+            <Setter Property="Background" Value="#FEECEC"/>
+            <Setter Property="Foreground" Value="#A52613"/>
+            <Setter Property="BorderBrush" Value="#E28A8A"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal"/>
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="#A52613"/>
+                                            <Setter Target="RootBorder.BorderBrush" Value="#8C1D0B"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="#8C1D0B"/>
+                                            <Setter Target="RootBorder.BorderBrush" Value="#751606"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Opacity" Value="0.5"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Border x:Name="RootBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{TemplateBinding CornerRadius}">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Padding="{TemplateBinding Padding}"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="RaisedSuccessHeaderActionButtonStyle" TargetType="Button" BasedOn="{StaticResource RaisedHeaderActionButtonStyle}">
+            <Setter Property="Background" Value="#E8F5E9"/>
+            <Setter Property="Foreground" Value="#1B5E20"/>
+            <Setter Property="BorderBrush" Value="#84BE8C"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal"/>
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="#0C6A0C"/>
+                                            <Setter Target="RootBorder.BorderBrush" Value="#095809"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="#095809"/>
+                                            <Setter Target="RootBorder.BorderBrush" Value="#064706"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Opacity" Value="0.5"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Border x:Name="RootBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{TemplateBinding CornerRadius}">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Padding="{TemplateBinding Padding}"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Page.Resources>
 
@@ -103,11 +336,11 @@
                         </StackPanel>
                     </Button>
                     
-                    <Button Command="{Binding SaveCustomerCommand}"
+                    <Button Command="{Binding EditCustomerCommand}"
                             Style="{StaticResource PrimaryModernActionButtonStyle}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <SymbolIcon Symbol="Save" Foreground="#0B5394"/>
-                            <TextBlock Text="حفظ" VerticalAlignment="Center"/>
+                            <SymbolIcon Symbol="Edit" Foreground="#0B5394"/>
+                            <TextBlock Text="تعديل" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                     
@@ -123,8 +356,9 @@
                 <ScrollViewer Grid.Row="2"
                               Visibility="{Binding IsCustomerPanelVisible, Converter={StaticResource BoolToVisibilityConverter}}">
                     <ListView ItemsSource="{Binding Customers}"
-                              SelectedItem="{Binding SelectedCustomer, Mode=TwoWay}"
-                              SelectionMode="Single"
+                              SelectionMode="None"
+                              IsItemClickEnabled="True"
+                              ItemClick="CustomerListView_ItemClick"
                               Padding="0"
                               Background="Transparent"
                               BorderThickness="0">
@@ -156,7 +390,7 @@
                             </Style>
                         </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="models:Customer">
                                 <Border BorderBrush="#75CDEE"
                                         BorderThickness="1.5"
                                         CornerRadius="16"
@@ -167,44 +401,57 @@
                                         <ThemeShadow />
                                     </Border.Shadow>
                                     <Border Background="#F4FDFF"
-                                            CornerRadius="15"
-                                            Padding="14,12">
-                                        <Grid ColumnSpacing="10">
+                                             CornerRadius="15"
+                                             Padding="14,12">
+                                        <Grid ColumnSpacing="10" FlowDirection="LeftToRight">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
 
-                                            <Border Width="40"
-                                                    Height="40"
-                                                    CornerRadius="20"
-                                                    Background="#CBEFFF"
-                                                    BorderBrush="#8ED8F8"
-                                                    BorderThickness="1"
-                                                    VerticalAlignment="Top">
-                                                <SymbolIcon Symbol="Contact" Foreground="#0B6FA4"/>
-                                            </Border>
+                                            <Grid Grid.Column="0"
+                                                  ColumnSpacing="10"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Stretch"
+                                                  MinWidth="0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
 
-                                            <StackPanel Grid.Column="1" Spacing="6">
-                                                <TextBlock Text="{Binding Name}"
-                                                           FontSize="15"
-                                                           FontWeight="Bold"
-                                                           Foreground="#0F3B5F"
-                                                           TextWrapping="WrapWholeWords"/>
-                                                <Border Background="#DDF4FF"
+                                                <Border Grid.Column="0"
+                                                        Background="#DDF4FF"
                                                         BorderBrush="#A7DFF7"
                                                         BorderThickness="1"
                                                         CornerRadius="10"
-                                                        Padding="8,5">
-                                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                                        <SymbolIcon Symbol="Phone" Foreground="#1976A5"/>
-                                                        <TextBlock Text="{Binding Phone}"
+                                                        Padding="10,4"
+                                                        VerticalAlignment="Center"
+                                                        HorizontalAlignment="Left">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <TextBlock Text="ID"
                                                                    FontSize="12"
-                                                                   Foreground="#24506F"
-                                                                   TextWrapping="WrapWholeWords"/>
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="#24506F"/>
+                                                        <TextBlock Text="{Binding CustomerNumber}"
+                                                                   FontSize="12"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="#24506F"/>
                                                     </StackPanel>
                                                 </Border>
-                                            </StackPanel>
+
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{x:Bind Name, Mode=OneWay}"
+                                                           FontSize="15"
+                                                           FontWeight="Bold"
+                                                           Foreground="#0F3B5F"
+                                                           TextAlignment="Right"
+                                                           HorizontalAlignment="Stretch"
+                                                           VerticalAlignment="Center"
+                                                           TextWrapping="NoWrap"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           MaxLines="1"
+                                                           MinWidth="0"
+                                                           Margin="4,0,0,0"/>
+                                            </Grid>
                                         </Grid>
                                     </Border>
                                 </Border>
@@ -245,14 +492,9 @@
                 </StackPanel>
                 
                 <Button Command="{Binding LogoutCommand}"
-                        Style="{StaticResource DangerModernActionButtonStyle}"
+                        Style="{StaticResource RaisedDangerHeaderActionButtonStyle}"
                         HorizontalAlignment="Right"
-                        Padding="18,0">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <SymbolIcon Symbol="LeaveChat" Foreground="#A61B1B"/>
-                        <TextBlock Text="تسجيل الخروج" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
+                        Content="تسجيل الخروج"/>
             </Grid>
 
             <Grid Grid.Row="1" Margin="0,0,0,20" FlowDirection="LeftToRight">
@@ -263,56 +505,41 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left" FlowDirection="RightToLeft">
-                    <Button Command="{Binding ShowInvoicesCommand}" Style="{StaticResource ModernActionButtonStyle}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <SymbolIcon Symbol="Library" Foreground="#12304A"/>
-                            <TextBlock Text="الفواتير"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding ShowReportsCommand}" Style="{StaticResource ModernActionButtonStyle}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <SymbolIcon Symbol="AllApps" Foreground="#12304A"/>
-                            <TextBlock Text="التقارير"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding DownloadAttachmentsCommand}" Style="{StaticResource PrimaryModernActionButtonStyle}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <SymbolIcon Symbol="Download" Foreground="#0B5394"/>
-                            <TextBlock Text="تحميل المرفقات"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding DeleteAttachmentsCommand}" Style="{StaticResource DangerModernActionButtonStyle}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <SymbolIcon Symbol="Delete" Foreground="#A61B1B"/>
-                            <TextBlock Text="حذف المرفقات"/>
-                        </StackPanel>
-                    </Button>
+                    <Button Command="{Binding ShowInvoicesCommand}" Style="{StaticResource RaisedNeutralHeaderActionButtonStyle}" Content="الفواتير"/>
+                    <Button Command="{Binding ShowReportsCommand}" Style="{StaticResource RaisedReportsButtonStyle}" Content="التقارير"/>
+                    <Button Command="{Binding DownloadAttachmentsCommand}" Style="{StaticResource RaisedPrimaryHeaderActionButtonStyle}" Content="تحميل المرفقات"/>
+                    <Button Command="{Binding DeleteAttachmentsCommand}" Style="{StaticResource RaisedDangerHeaderActionButtonStyle}" Content="حذف المرفقات"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" FlowDirection="RightToLeft">
-                    <Button Command="{Binding AddNewTransactionCommand}" Style="{StaticResource PrimaryModernActionButtonStyle}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <SymbolIcon Symbol="Add" Foreground="#0B5394"/>
-                            <TextBlock Text="إضافة معاملة"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding EditTransactionCommand}" Style="{StaticResource ModernActionButtonStyle}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <SymbolIcon Symbol="Edit" Foreground="#12304A"/>
-                            <TextBlock Text="تعديل معاملة"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding DeleteSelectedCommand}" Style="{StaticResource DangerModernActionButtonStyle}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <SymbolIcon Symbol="Delete" Foreground="#A61B1B"/>
-                            <TextBlock Text="حذف معاملة"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding ShowStatusCommand}" Style="{StaticResource SuccessModernActionButtonStyle}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <SymbolIcon Symbol="Accept" Foreground="#1B5E20"/>
-                            <TextBlock Text="الحالة"/>
-                        </StackPanel>
+                    <Button Command="{Binding AddNewTransactionCommand}" Style="{StaticResource RaisedPrimaryHeaderActionButtonStyle}" Content="+ إضافة معاملة"/>
+                    <Button Command="{Binding EditTransactionCommand}" Style="{StaticResource RaisedNeutralHeaderActionButtonStyle}" Content="تعديل معاملة"/>
+                    <Button Command="{Binding DeleteSelectedCommand}" Style="{StaticResource RaisedDangerHeaderActionButtonStyle}" Content="حذف معاملة"/>
+                    <Button Style="{StaticResource RaisedSuccessHeaderActionButtonStyle}"
+                            Content="الحالة"
+                            IsEnabled="{Binding HasSelectedTransaction}">
+                        <Button.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedRight">
+                                <StackPanel Spacing="8" Padding="6" MinWidth="170">
+                                    <Button Content="معلق"
+                                            Click="PendingStatusButton_Click"
+                                            Background="#FDE68A"
+                                            Foreground="#7C5A00"
+                                            BorderBrush="#FACC15"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            HorizontalAlignment="Stretch"/>
+                                    <Button Content="تم التسليم"
+                                            Click="DeliveredStatusButton_Click"
+                                            Background="#BBF7D0"
+                                            Foreground="#166534"
+                                            BorderBrush="#4ADE80"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            HorizontalAlignment="Stretch"/>
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
                     </Button>
                 </StackPanel>
             </Grid>
@@ -361,7 +588,8 @@
                             SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
                             SelectionMode="Single"
                             Padding="0"
-                            Background="White">
+                            Background="White"
+                            FontFamily="{StaticResource AppFontFamily}">
                         <ListView.Resources>
                             <SolidColorBrush x:Key="ListViewItemBackground" Color="White"/>
                             <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="White"/>
@@ -457,7 +685,7 @@
                                             <ThemeShadow />
                                         </Border.Shadow>
                                         <Border Background="#CBEFFF" Padding="10,5" CornerRadius="15,15,0,0">
-                                            <Grid>
+                                            <Grid FlowDirection="RightToLeft">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="Auto"/>
@@ -466,12 +694,23 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
 
-                                                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,16,0"/>
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3">
+                                                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
                                                     <TextBlock Text="فاتورة رقم:" Foreground="#0F3B5F" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                                     <TextBlock Text="{Binding InvoiceNumber}" Foreground="#0F3B5F" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
                                                 </StackPanel>
-                                                <TextBlock Grid.Column="2" Text="{Binding TransactionStatus}" Foreground="#1E587C" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                                <Border Grid.Column="2"
+                                                        Background="{Binding TransactionStatus, Converter={StaticResource TransactionStatusToBrushConverter}}"
+                                                        CornerRadius="8"
+                                                        Padding="8,3"
+                                                        Margin="12,0,0,0"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding TransactionStatus}"
+                                                               Foreground="{Binding TransactionStatus, Converter={StaticResource TransactionStatusToBrushConverter}, ConverterParameter=Foreground}"
+                                                               FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               VerticalAlignment="Center"/>
+                                                </Border>
                                                 <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="3">
                                                     <TextBlock Text="الإجمالي:" Foreground="#0F3B5F" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                                     <TextBlock Text="{Binding TransactionTotal}" Foreground="#0F3B5F" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
@@ -504,24 +743,24 @@
                                         <ItemsControl Grid.Column="7" ItemsSource="{Binding Attachments}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4,0">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
-                                                    <StackPanel Orientation="Horizontal" Spacing="4"/>
+                                                    <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="4" />
                                                 </ItemsPanelTemplate>
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <Button Command="{Binding DataContext.OpenAttachmentCommand, ElementName=TransactionPageRoot}"
                                                             CommandParameter="{Binding}"
-                                                            Width="32"
-                                                            Height="32"
+                                                            Width="28"
+                                                            Height="28"
                                                             Padding="0"
-                                                            Background="#DDF4FF"
-                                                            BorderBrush="#8ED8F8"
+                                                            Background="#EEF7FF"
+                                                            BorderBrush="#CFE8FF"
                                                             BorderThickness="1"
-                                                            CornerRadius="10"
+                                                            CornerRadius="8"
                                                             ToolTipService.ToolTip="{Binding OriginalFileName}">
                                                         <Grid>
                                                             <FontIcon Glyph="&#xE8A5;"
-                                                                      FontSize="16"
+                                                                      FontSize="14"
                                                                       Foreground="#C62828"
                                                                       Visibility="{Binding IsPdfAttachment, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                                             <SymbolIcon Symbol="Pictures"

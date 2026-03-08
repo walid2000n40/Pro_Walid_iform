@@ -14,7 +14,6 @@ namespace ProWalid.ViewModels
 {
     public partial class AddTransactionPageViewModel : ObservableObject
     {
-        private static int _lastInvoiceNumber = 811;
         private Frame _frame;
         private Transaction _originalTransaction;
         private bool _isEditMode;
@@ -45,18 +44,19 @@ namespace ProWalid.ViewModels
         [ObservableProperty]
         private string selectedCustomerName = string.Empty;
 
+        [ObservableProperty]
+        private long selectedCustomerNumber;
+
         public string SelectedCustomerContextText => string.IsNullOrWhiteSpace(SelectedCustomerName)
             ? "العميل: غير محدد"
-            : $"العميل المحدد: {SelectedCustomerName}";
+            : $"العميل المحدد: {SelectedCustomerName} - ID {SelectedCustomerNumber}";
 
-        public double GrandTotal => Items.Sum(item => item.Total + item.Profit - item.Discount);
+        public double GrandTotal => Items.Sum(item => item.Total);
 
         public AddTransactionPageViewModel()
         {
             _databaseHelper = new DatabaseHelper();
             _attachmentManager = new AttachmentManager();
-            
-            InitializeAsync();
 
             Items.CollectionChanged += (s, e) =>
             {
@@ -66,15 +66,10 @@ namespace ProWalid.ViewModels
             AddItemCommand.Execute(null);
         }
 
-        private async void InitializeAsync()
-        {
-            _lastInvoiceNumber = await _databaseHelper.GetNextInvoiceNumberAsync();
-            InvoiceNumber = _lastInvoiceNumber.ToString();
-        }
-
         public void SetFrame(Frame frame)
         {
             _frame = frame;
+            _ = EnsureProvisionalInvoiceNumberAsync();
         }
 
         public void LoadCustomer(Customer customer)
@@ -86,6 +81,8 @@ namespace ProWalid.ViewModels
 
             SelectedCustomerId = customer.Id;
             SelectedCustomerName = customer.Name;
+            SelectedCustomerNumber = customer.CustomerNumber > 0 ? customer.CustomerNumber : customer.Id;
+            _ = EnsureProvisionalInvoiceNumberAsync();
         }
 
         public async void LoadTransaction(Transaction transaction)
@@ -96,9 +93,11 @@ namespace ProWalid.ViewModels
                 _originalTransaction = transaction;
                 PageTitle = "تعديل معاملة";
                 SelectedCustomerId = transaction.CustomerId;
-                if (TransactionViewModel.Instance?.SelectedCustomer?.Id == transaction.CustomerId)
+                var matchedCustomer = TransactionViewModel.Instance?.Customers?.FirstOrDefault(customer => customer.Id == transaction.CustomerId);
+                if (matchedCustomer != null)
                 {
-                    SelectedCustomerName = TransactionViewModel.Instance.SelectedCustomer.Name;
+                    SelectedCustomerName = matchedCustomer.Name;
+                    SelectedCustomerNumber = matchedCustomer.CustomerNumber > 0 ? matchedCustomer.CustomerNumber : matchedCustomer.Id;
                 }
 
                 InvoiceNumber = transaction.InvoiceNumber;
@@ -116,7 +115,7 @@ namespace ProWalid.ViewModels
                         Quantity = item.Quantity,
                         UnitPrice = item.UnitPrice,
                         Profit = item.Profit,
-                        Discount = item.Discount,
+                        GovFees = item.GovFees,
                         AttachmentPath = item.AttachmentPath
                     };
 
@@ -128,9 +127,7 @@ namespace ProWalid.ViewModels
 
                     newItem.PropertyChanged += (s, e) =>
                     {
-                        if (e.PropertyName == nameof(TransactionItemDetail.Total) ||
-                            e.PropertyName == nameof(TransactionItemDetail.Profit) ||
-                            e.PropertyName == nameof(TransactionItemDetail.Discount))
+                        if (e.PropertyName == nameof(TransactionItemDetail.Total))
                         {
                             OnPropertyChanged(nameof(GrandTotal));
                         }
@@ -147,9 +144,7 @@ namespace ProWalid.ViewModels
             var newItem = new TransactionItemDetail();
             newItem.PropertyChanged += (s, e) =>
             {
-                if (e.PropertyName == nameof(TransactionItemDetail.Total) ||
-                    e.PropertyName == nameof(TransactionItemDetail.Profit) ||
-                    e.PropertyName == nameof(TransactionItemDetail.Discount))
+                if (e.PropertyName == nameof(TransactionItemDetail.Total))
                 {
                     OnPropertyChanged(nameof(GrandTotal));
                 }
@@ -157,13 +152,37 @@ namespace ProWalid.ViewModels
             Items.Add(newItem);
         }
 
-        [RelayCommand]
-        private void RemoveItem(TransactionItemDetail item)
+        private async Task EnsureProvisionalInvoiceNumberAsync(bool forceRefresh = false)
         {
-            if (Items.Count > 1)
+            if (_isEditMode)
             {
-                Items.Remove(item);
+                return;
             }
+
+            if (!forceRefresh && !string.IsNullOrWhiteSpace(InvoiceNumber))
+            {
+                return;
+            }
+
+            InvoiceNumber = await _databaseHelper.GetNextInvoiceNumberAsync();
+        }
+
+        private async Task ShowMessageAsync(string title, string message)
+        {
+            if (_frame?.XamlRoot == null)
+            {
+                return;
+            }
+
+            var dialog = new ContentDialog
+            {
+                Title = title,
+                Content = message,
+                CloseButtonText = "إغلاق",
+                XamlRoot = _frame.XamlRoot
+            };
+
+            await dialog.ShowAsync();
         }
 
         [RelayCommand]
@@ -171,37 +190,37 @@ namespace ProWalid.ViewModels
         {
             if (SelectedCustomerId <= 0)
             {
-                System.Diagnostics.Debug.WriteLine("يجب اختيار عميل قبل حفظ المعاملة");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(InvoiceNumber))
-            {
-                System.Diagnostics.Debug.WriteLine("رقم الفاتورة مطلوب");
+                await ShowMessageAsync("تعذر الحفظ", "يجب اختيار عميل قبل حفظ المعاملة.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(CompanyName))
             {
-                System.Diagnostics.Debug.WriteLine("اسم الشركة مطلوب");
+                await ShowMessageAsync("تعذر الحفظ", "اسم الشركة مطلوب.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(EmployeeName))
             {
-                System.Diagnostics.Debug.WriteLine("اسم الموظف مطلوب");
+                await ShowMessageAsync("تعذر الحفظ", "اسم الموظف مطلوب.");
                 return;
             }
 
             if (Items.Count == 0)
             {
-                System.Diagnostics.Debug.WriteLine("يجب إضافة بند واحد على الأقل");
+                await ShowMessageAsync("تعذر الحفظ", "يجب إضافة بند واحد على الأقل.");
                 return;
+            }
+
+            if (!_isEditMode)
+            {
+                await EnsureProvisionalInvoiceNumberAsync();
             }
 
             var transaction = new Transaction
             {
                 CustomerId = SelectedCustomerId,
+                TransactionStatus = _originalTransaction?.TransactionStatus ?? "معلق",
                 InvoiceNumber = InvoiceNumber,
                 CompanyName = CompanyName,
                 EmployeeName = EmployeeName,
@@ -212,7 +231,7 @@ namespace ProWalid.ViewModels
             {
                 if (string.IsNullOrWhiteSpace(item.ServiceName))
                 {
-                    System.Diagnostics.Debug.WriteLine("اسم الخدمة مطلوب لكل بند");
+                    await ShowMessageAsync("تعذر الحفظ", "اسم الخدمة مطلوب لكل بند.");
                     return;
                 }
 
@@ -223,7 +242,7 @@ namespace ProWalid.ViewModels
                     Quantity = item.Quantity,
                     UnitPrice = item.UnitPrice,
                     Profit = item.Profit,
-                    Discount = item.Discount,
+                    GovFees = item.GovFees,
                     AttachmentPath = item.AttachmentPath
                 };
 
@@ -247,13 +266,37 @@ namespace ProWalid.ViewModels
                 transaction.Items.Add(newItem);
             }
 
-            await _databaseHelper.SaveTransactionAsync(transaction);
-            
-            TransactionViewModel.Instance?.AddOrUpdateTransaction(transaction);
-
-            if (_frame != null && _frame.CanGoBack)
+            try
             {
-                _frame.GoBack();
+                await _databaseHelper.SaveTransactionAsync(transaction);
+                TransactionViewModel.Instance?.AddOrUpdateTransaction(transaction);
+
+                if (_frame != null && _frame.CanGoBack)
+                {
+                    _frame.GoBack();
+                }
+            }
+            catch (Exception ex) when (!_isEditMode && ex.Message.Contains("InvoiceNumber", StringComparison.OrdinalIgnoreCase))
+            {
+                await EnsureProvisionalInvoiceNumberAsync(forceRefresh: true);
+                transaction.InvoiceNumber = InvoiceNumber;
+
+                await _databaseHelper.SaveTransactionAsync(transaction);
+                TransactionViewModel.Instance?.AddOrUpdateTransaction(transaction);
+
+                if (_frame != null && _frame.CanGoBack)
+                {
+                    _frame.GoBack();
+                }
+            }
+            catch (Exception ex)
+            {
+                if (!_isEditMode)
+                {
+                    await EnsureProvisionalInvoiceNumberAsync(forceRefresh: true);
+                }
+
+                await ShowMessageAsync("فشل حفظ المعاملة", ex.Message);
             }
         }
 
