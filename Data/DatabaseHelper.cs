@@ -80,6 +80,26 @@ namespace ProWalid.Data
                     CreatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )";
 
+            var createSavedInvoicesTable = @"
+                CREATE TABLE IF NOT EXISTS SavedInvoices (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    SavedInvoiceNumber TEXT NOT NULL UNIQUE,
+                    RootInvoiceNumber TEXT NOT NULL DEFAULT '',
+                    SourceInvoiceNumber TEXT NOT NULL DEFAULT '',
+                    GroupedSequenceNumber INTEGER NOT NULL DEFAULT 0,
+                    SavedKind TEXT NOT NULL DEFAULT 'single',
+                    TemplateKey TEXT NOT NULL DEFAULT '',
+                    CustomerId INTEGER NOT NULL DEFAULT 0,
+                    CustomerName TEXT NOT NULL DEFAULT '',
+                    CompanyName TEXT NOT NULL DEFAULT '',
+                    InvoiceDate TEXT NOT NULL,
+                    TotalAmount REAL NOT NULL DEFAULT 0,
+                    Notes TEXT NOT NULL DEFAULT '',
+                    PrintHtml TEXT NOT NULL DEFAULT '',
+                    PayloadJson TEXT NOT NULL DEFAULT '',
+                    SavedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )";
+
             await connection.ExecuteAsync(createTransactionsTable);
             await EnsureTransactionsCustomerIdColumnAsync(connection);
             await EnsureTransactionsStatusColumnAsync(connection);
@@ -89,6 +109,7 @@ namespace ProWalid.Data
             await connection.ExecuteAsync(createAttachmentsTable);
             await connection.ExecuteAsync(createCustomersTable);
             await EnsureCustomersCustomerNumberColumnAsync(connection);
+            await connection.ExecuteAsync(createSavedInvoicesTable);
             await BackfillHazemInvoiceTemplateKeysAsync(connection);
         }
 
@@ -501,6 +522,226 @@ namespace ProWalid.Data
                 "SELECT * FROM Customers ORDER BY CASE WHEN CustomerNumber > 0 THEN CustomerNumber ELSE Id END, Name");
 
             return customers.ToList();
+        }
+
+        public async Task<int> GetSavedInvoicesCountAsync(long? customerId = null)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var count = await connection.QueryFirstOrDefaultAsync<long>(
+                @"SELECT COUNT(1)
+                  FROM SavedInvoices
+                  WHERE (@CustomerId IS NULL OR CustomerId = @CustomerId)",
+                new { CustomerId = customerId });
+
+            return (int)count;
+        }
+
+        public async Task<int> GetNextGroupedSavedInvoiceSequenceAsync()
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var maxSequence = await connection.QueryFirstOrDefaultAsync<int?>(
+                @"SELECT MAX(GroupedSequenceNumber)
+                  FROM SavedInvoices
+                  WHERE GroupedSequenceNumber > 0");
+
+            const int groupedSeed = 309;
+            return maxSequence.HasValue && maxSequence.Value >= groupedSeed
+                ? maxSequence.Value + 1
+                : groupedSeed;
+        }
+
+        public async Task<List<SavedInvoiceRecord>> GetAllSavedInvoicesAsync(long? customerId = null)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var rows = (await connection.QueryAsync(
+                @"SELECT Id,
+                         SavedInvoiceNumber,
+                         RootInvoiceNumber,
+                         SourceInvoiceNumber,
+                         GroupedSequenceNumber,
+                         SavedKind,
+                         TemplateKey,
+                         CustomerId,
+                         CustomerName,
+                         CompanyName,
+                         InvoiceDate AS InvoiceDateText,
+                         TotalAmount,
+                         Notes,
+                         PrintHtml,
+                         PayloadJson,
+                         SavedAt
+                  FROM SavedInvoices
+                  WHERE (@CustomerId IS NULL OR CustomerId = @CustomerId)
+                  ORDER BY datetime(SavedAt) DESC, Id DESC",
+                new { CustomerId = customerId })).ToList();
+
+            var records = rows
+                .Select(row => new SavedInvoiceRecord
+                {
+                    Id = row.Id != null ? (long)row.Id : 0,
+                    SavedInvoiceNumber = row.SavedInvoiceNumber?.ToString() ?? string.Empty,
+                    RootInvoiceNumber = row.RootInvoiceNumber?.ToString() ?? string.Empty,
+                    SourceInvoiceNumber = row.SourceInvoiceNumber?.ToString() ?? string.Empty,
+                    GroupedSequenceNumber = row.GroupedSequenceNumber != null ? (int)row.GroupedSequenceNumber : 0,
+                    SavedKind = row.SavedKind?.ToString() ?? "single",
+                    TemplateKey = row.TemplateKey?.ToString() ?? string.Empty,
+                    CustomerId = row.CustomerId != null ? (long)row.CustomerId : 0,
+                    CustomerName = row.CustomerName?.ToString() ?? string.Empty,
+                    CompanyName = row.CompanyName?.ToString() ?? string.Empty,
+                    InvoiceDateText = row.InvoiceDateText?.ToString() ?? string.Empty,
+                    TotalAmount = row.TotalAmount != null ? (double)row.TotalAmount : 0,
+                    Notes = row.Notes?.ToString() ?? string.Empty,
+                    PrintHtml = row.PrintHtml?.ToString() ?? string.Empty,
+                    PayloadJson = row.PayloadJson?.ToString() ?? string.Empty,
+                    SavedAt = row.SavedAt != null
+                        ? DateTimeOffset.TryParse(row.SavedAt.ToString(), out DateTimeOffset parsedSavedAt)
+                            ? parsedSavedAt
+                            : DateTimeOffset.Now
+                        : DateTimeOffset.Now
+                })
+                .ToList();
+
+            for (var index = 0; index < records.Count; index++)
+            {
+                records[index].SerialNumber = index + 1;
+            }
+
+            return records;
+        }
+
+        public async Task SaveSavedInvoiceRecordsAsync(IEnumerable<SavedInvoiceRecord> records)
+        {
+            var recordList = records
+                .Where(record => record != null && !string.IsNullOrWhiteSpace(record.SavedInvoiceNumber))
+                .ToList();
+
+            if (recordList.Count == 0)
+            {
+                return;
+            }
+
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var dbTransaction = connection.BeginTransaction();
+            try
+            {
+                foreach (var record in recordList)
+                {
+                    var existingId = await connection.QueryFirstOrDefaultAsync<long?>(
+                        "SELECT Id FROM SavedInvoices WHERE SavedInvoiceNumber = @SavedInvoiceNumber",
+                        new { record.SavedInvoiceNumber },
+                        dbTransaction);
+
+                    if (existingId.HasValue)
+                    {
+                        await connection.ExecuteAsync(
+                            @"UPDATE SavedInvoices
+                              SET RootInvoiceNumber = @RootInvoiceNumber,
+                                  SourceInvoiceNumber = @SourceInvoiceNumber,
+                                  GroupedSequenceNumber = @GroupedSequenceNumber,
+                                  SavedKind = @SavedKind,
+                                  TemplateKey = @TemplateKey,
+                                  CustomerId = @CustomerId,
+                                  CustomerName = @CustomerName,
+                                  CompanyName = @CompanyName,
+                                  InvoiceDate = @InvoiceDateText,
+                                  TotalAmount = @TotalAmount,
+                                  Notes = @Notes,
+                                  PrintHtml = @PrintHtml,
+                                  PayloadJson = @PayloadJson,
+                                  SavedAt = @SavedAt
+                              WHERE Id = @Id",
+                            new
+                            {
+                                Id = existingId.Value,
+                                record.RootInvoiceNumber,
+                                record.SourceInvoiceNumber,
+                                record.GroupedSequenceNumber,
+                                record.SavedKind,
+                                record.TemplateKey,
+                                record.CustomerId,
+                                record.CustomerName,
+                                record.CompanyName,
+                                record.InvoiceDateText,
+                                record.TotalAmount,
+                                record.Notes,
+                                record.PrintHtml,
+                                record.PayloadJson,
+                                SavedAt = record.SavedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                            },
+                            dbTransaction);
+                    }
+                    else
+                    {
+                        await connection.ExecuteAsync(
+                            @"INSERT INTO SavedInvoices (
+                                  SavedInvoiceNumber,
+                                  RootInvoiceNumber,
+                                  SourceInvoiceNumber,
+                                  GroupedSequenceNumber,
+                                  SavedKind,
+                                  TemplateKey,
+                                  CustomerId,
+                                  CustomerName,
+                                  CompanyName,
+                                  InvoiceDate,
+                                  TotalAmount,
+                                  Notes,
+                                  PrintHtml,
+                                  PayloadJson,
+                                  SavedAt)
+                              VALUES (
+                                  @SavedInvoiceNumber,
+                                  @RootInvoiceNumber,
+                                  @SourceInvoiceNumber,
+                                  @GroupedSequenceNumber,
+                                  @SavedKind,
+                                  @TemplateKey,
+                                  @CustomerId,
+                                  @CustomerName,
+                                  @CompanyName,
+                                  @InvoiceDateText,
+                                  @TotalAmount,
+                                  @Notes,
+                                  @PrintHtml,
+                                  @PayloadJson,
+                                  @SavedAt)",
+                            new
+                            {
+                                record.SavedInvoiceNumber,
+                                record.RootInvoiceNumber,
+                                record.SourceInvoiceNumber,
+                                record.GroupedSequenceNumber,
+                                record.SavedKind,
+                                record.TemplateKey,
+                                record.CustomerId,
+                                record.CustomerName,
+                                record.CompanyName,
+                                record.InvoiceDateText,
+                                record.TotalAmount,
+                                record.Notes,
+                                record.PrintHtml,
+                                record.PayloadJson,
+                                SavedAt = record.SavedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                            },
+                            dbTransaction);
+                    }
+                }
+
+                dbTransaction.Commit();
+            }
+            catch
+            {
+                dbTransaction.Rollback();
+                throw;
+            }
         }
 
         public async Task<long> GetNextCustomerNumberAsync()

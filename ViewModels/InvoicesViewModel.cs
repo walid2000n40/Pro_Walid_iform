@@ -16,6 +16,7 @@ namespace ProWalid.ViewModels
 {
     public partial class InvoicesViewModel : ObservableObject
     {
+        private const long GroupedInvoiceCustomerId = 3;
         private static readonly HashSet<long> FinalAggregationCustomerIds = new() { 2, 4, 7, 8 };
 
         private readonly DatabaseHelper _databaseHelper;
@@ -28,6 +29,9 @@ namespace ProWalid.ViewModels
         [ObservableProperty]
         private string pageSubtitle = "ملخص الفواتير والمعاملات المحفوظة لجميع العملاء";
 
+        [ObservableProperty]
+        private int savedInvoicesCount;
+
         public string HeaderTitle => _selectedCustomer == null ? "الفواتير والتقارير" : $"الفواتير والتقارير - {_selectedCustomer.Name}";
 
         public int InvoicesCount => InvoiceRows.Count;
@@ -38,7 +42,7 @@ namespace ProWalid.ViewModels
 
         public string CustomerScopeText => _selectedCustomer == null ? "كل العملاء" : $"العميل المحدد: {_selectedCustomer.Name}";
 
-        public string SavedInvoicesBadgeText => InvoicesCount.ToString();
+        public string SavedInvoicesBadgeText => SavedInvoicesCount.ToString();
 
         public int SelectedInvoicesCount => InvoiceRows.Count(row => row.IsSelected);
 
@@ -85,6 +89,8 @@ namespace ProWalid.ViewModels
                 .OrderByDescending(transaction => transaction.TransactionDate)
                 .ThenByDescending(transaction => transaction.InvoiceNumber)
                 .ToList();
+
+            SavedInvoicesCount = await _databaseHelper.GetSavedInvoicesCountAsync(customer?.Id);
 
             foreach (var row in InvoiceRows)
             {
@@ -152,13 +158,7 @@ namespace ProWalid.ViewModels
         [RelayCommand]
         private async Task ShowSavedInvoicesAsync()
         {
-            if (InvoiceRows.Count == 0)
-            {
-                await ShowMessageAsync("الفواتير المحفوظة", "لا توجد فواتير محفوظة حالياً.");
-                return;
-            }
-
-            await ShowMessageAsync("الفواتير المحفوظة", $"إجمالي الفواتير المحفوظة: {InvoicesCount}\n{TotalAmountText}");
+            _frame?.Navigate(typeof(SavedInvoicesPage), _selectedCustomer);
         }
 
         [RelayCommand]
@@ -170,28 +170,91 @@ namespace ProWalid.ViewModels
         [RelayCommand]
         private async Task ShowGroupedInvoiceAsync()
         {
-            if (InvoiceRows.Count == 0)
+            var selectedRows = InvoiceRows
+                .Where(row => row.IsSelected)
+                .ToList();
+
+            if (_selectedCustomer != null && _selectedCustomer.Id != GroupedInvoiceCustomerId)
             {
-                await ShowMessageAsync("فاتورة مجمعة", "لا توجد بيانات لإنشاء فاتورة مجمعة.");
+                await ShowMessageAsync("فاتورة مجمعة", "فاتورة مجمعة مفعلة فقط للعميل ذي المعرف 3.");
                 return;
             }
 
-            var grouped = InvoiceRows
-                .GroupBy(row => row.CustomerName)
-                .Select(group => $"- {group.Key}: {group.Count()} فاتورة | {group.Sum(item => item.TotalAmount):N2} درهم")
-                .ToList();
-
-            var text = new StringBuilder();
-            text.AppendLine("الفاتورة المجمعة");
-            text.AppendLine(string.Empty);
-            foreach (var line in grouped)
+            if (selectedRows.Count < 2)
             {
-                text.AppendLine(line);
+                await ShowMessageAsync("فاتورة مجمعة", "يجب تحديد معاملتين أو أكثر لإنشاء فاتورة مجمعة.");
+                return;
             }
 
-            text.AppendLine(string.Empty);
-            text.AppendLine(TotalAmountText);
-            await ShowMessageAsync("فاتورة مجمعة", text.ToString());
+            var customerIds = selectedRows
+                .Select(row => row.Transaction.CustomerId)
+                .Distinct()
+                .ToList();
+
+            if (customerIds.Count != 1 || customerIds[0] != GroupedInvoiceCustomerId)
+            {
+                await ShowMessageAsync("فاتورة مجمعة", "الفاتورة المجمعة متاحة فقط عند تحديد معاملات العميل 3 فقط.");
+                return;
+            }
+
+            var groupedItems = selectedRows
+                .SelectMany(row => row.Transaction.Items.Select(item => new
+                {
+                    Row = row,
+                    Item = item,
+                    Employee = string.IsNullOrWhiteSpace(row.EmployeeName) ? row.Transaction.EmployeeName : row.EmployeeName
+                }))
+                .Where(entry => !string.IsNullOrWhiteSpace(entry.Item.ServiceName))
+                .GroupBy(entry => new
+                {
+                    ServiceName = entry.Item.ServiceName.Trim(),
+                    UnitPrice = Math.Round(entry.Item.UnitPrice, 2)
+                })
+                .OrderBy(group => group.Key.ServiceName)
+                .ThenBy(group => group.Key.UnitPrice)
+                .Select((group, index) => new InvoicePreviewLineItem
+                {
+                    LineNumber = index + 1,
+                    Description = group.Key.ServiceName,
+                    Quantity = group.Sum(entry => entry.Item.Quantity),
+                    UnitPrice = group.First().Item.UnitPrice,
+                    EmployeeNames = string.Join(" - ", group
+                        .Select(entry => entry.Employee)
+                        .Where(name => !string.IsNullOrWhiteSpace(name))
+                        .Distinct(StringComparer.OrdinalIgnoreCase))
+                })
+                .ToList();
+
+            if (groupedItems.Count == 0)
+            {
+                await ShowMessageAsync("فاتورة مجمعة", "لم يتم العثور على بنود صالحة للتجميع داخل معاملات العميل 3.");
+                return;
+            }
+
+            var customer = (await _databaseHelper.GetAllCustomersAsync())
+                .FirstOrDefault(item => item.Id == GroupedInvoiceCustomerId);
+
+            var displayCompanyName = selectedRows
+                .Select(row => !string.IsNullOrWhiteSpace(row.Transaction.CompanyName) ? row.Transaction.CompanyName : row.CompanyName)
+                .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))
+                ?? selectedRows.First().CustomerName;
+
+            var request = new GroupedInvoicePreviewRequest
+            {
+                CustomerId = GroupedInvoiceCustomerId,
+                CustomerName = customer?.Name ?? selectedRows.First().CustomerName,
+                CompanyName = displayCompanyName,
+                CustomerIdText = customer == null
+                    ? $"ID {GroupedInvoiceCustomerId}"
+                    : $"ID {(customer.CustomerNumber > 0 ? customer.CustomerNumber : customer.Id)}",
+                InvoiceNumber = $"GRP-{GroupedInvoiceCustomerId}-{DateTime.Now:yyyyMMddHHmm}",
+                InvoiceDate = DateTimeOffset.Now,
+                Notes = $"Grouped invoice for customer 3 based on {selectedRows.Count} selected transactions. Similar items are merged using service name and unit price, with employee names listed for each grouped line before the total.",
+                Items = groupedItems,
+                SourceInvoiceNumbers = selectedRows.Select(row => row.InvoiceNumber).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+            };
+
+            _frame?.Navigate(typeof(InvoicePreviewPage), request);
         }
 
         [RelayCommand]

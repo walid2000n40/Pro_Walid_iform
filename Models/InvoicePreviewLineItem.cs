@@ -19,9 +19,14 @@ namespace ProWalid.Models
         [ObservableProperty]
         private string govFees = string.Empty;
 
+        [ObservableProperty]
+        private string employeeNames = string.Empty;
+
         public double Total => Quantity * UnitPrice;
 
         public string GovFeesDisplay => string.IsNullOrWhiteSpace(GovFees) ? "-" : GovFees;
+
+        public string EmployeeNamesDisplay => string.IsNullOrWhiteSpace(EmployeeNames) ? "-" : EmployeeNames;
 
         partial void OnQuantityChanged(double value)
         {

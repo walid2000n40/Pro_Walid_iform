@@ -4,11 +4,13 @@ using Microsoft.UI.Xaml.Controls;
 using ProWalid.Data;
 using ProWalid.Models;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ProWalid.ViewModels
@@ -16,6 +18,7 @@ namespace ProWalid.ViewModels
     public partial class InvoicePreviewViewModel : ObservableObject
     {
         public const string FluentTemplateKey = "fluent";
+        public const string GroupedInvoiceTemplateKey = "grouped";
         public const string ErpTemplateKey = "erp";
         public const string PremiumTemplateKey = "premium";
         public const string HazemTemplateKey = "hazem";
@@ -23,6 +26,10 @@ namespace ProWalid.ViewModels
 
         private Frame? _frame;
         private readonly DatabaseHelper _databaseHelper = new();
+        private InvoiceSummaryRow? _currentInvoiceRow;
+        private GroupedInvoicePreviewRequest? _currentGroupedRequest;
+        private SavedInvoiceRecord? _currentSavedInvoiceRecord;
+        private string _savedPrintHtml = string.Empty;
 
         [ObservableProperty]
         private string companyName = "انفورم للطباعة والتصوير";
@@ -79,7 +86,15 @@ namespace ProWalid.ViewModels
 
         public ObservableCollection<InvoiceSummaryRow> FinalAggregationRows { get; } = new();
 
+        public bool IsSavedInvoicePreview => _currentSavedInvoiceRecord != null;
+
+        public bool IsGroupedInvoicePreview => string.Equals(SelectedPreviewTemplateKey, GroupedInvoiceTemplateKey, StringComparison.OrdinalIgnoreCase);
+
         public bool IsFinalAggregationPreview => string.Equals(SelectedPreviewTemplateKey, FinalAggregationTemplateKey, StringComparison.OrdinalIgnoreCase);
+
+        public bool CanSaveInvoice => !IsSavedInvoicePreview
+            && !IsFinalAggregationPreview
+            && (_currentInvoiceRow != null || _currentGroupedRequest != null);
 
         public double Subtotal => IsFinalAggregationPreview
             ? FinalAggregationRows.Sum(row => row.PrintingFeesAmount)
@@ -105,6 +120,20 @@ namespace ProWalid.ViewModels
 
         public async Task LoadAsync(object? parameter)
         {
+            ResetPreviewContext();
+
+            if (parameter is SavedInvoicePreviewRequest savedRequest)
+            {
+                LoadSavedInvoicePreview(savedRequest.Record);
+                return;
+            }
+
+            if (parameter is GroupedInvoicePreviewRequest groupedRequest)
+            {
+                LoadGroupedInvoicePreview(groupedRequest);
+                return;
+            }
+
             if (parameter is System.Collections.Generic.IEnumerable<InvoiceSummaryRow> rows)
             {
                 var selectedRows = rows.Where(row => row?.Transaction != null).ToList();
@@ -120,6 +149,8 @@ namespace ProWalid.ViewModels
                 LoadSamplePreview();
                 return;
             }
+
+            _currentInvoiceRow = row;
 
             var customer = (await _databaseHelper.GetAllCustomersAsync())
                 .FirstOrDefault(item => item.Id == row.Transaction.CustomerId);
@@ -161,6 +192,115 @@ namespace ProWalid.ViewModels
                     Quantity = item.Quantity,
                     UnitPrice = item.UnitPrice,
                     GovFees = item.GovFees
+                });
+            }
+
+            RefreshTotals();
+        }
+
+        private void LoadSavedInvoicePreview(SavedInvoiceRecord record)
+        {
+            _currentSavedInvoiceRecord = record;
+            _savedPrintHtml = record.PrintHtml ?? string.Empty;
+
+            SavedInvoicePayload? payload = null;
+            if (!string.IsNullOrWhiteSpace(record.PayloadJson))
+            {
+                try
+                {
+                    payload = JsonSerializer.Deserialize<SavedInvoicePayload>(record.PayloadJson);
+                }
+                catch
+                {
+                    payload = null;
+                }
+            }
+
+            if (payload != null)
+            {
+                CompanyName = payload.CompanyName;
+                CompanySubtitle = payload.CompanySubtitle;
+                CompanyPhone = payload.CompanyPhone;
+                CompanyEmail = payload.CompanyEmail;
+                CompanyAddress = payload.CompanyAddress;
+                TaxNumber = payload.TaxNumber;
+                CustomerName = payload.CustomerName;
+                CustomerIdText = payload.CustomerIdText;
+                InvoiceNumber = payload.InvoiceNumber;
+                InvoiceDate = payload.InvoiceDate;
+                DueDate = payload.DueDate;
+                InvoiceStatus = payload.InvoiceStatus;
+                Notes = payload.Notes;
+                EmployeeName = payload.EmployeeName;
+                IsHazemInvoice = payload.IsHazemInvoice;
+                SelectedPreviewTemplateKey = string.IsNullOrWhiteSpace(payload.SelectedPreviewTemplateKey)
+                    ? FluentTemplateKey
+                    : payload.SelectedPreviewTemplateKey;
+
+                Items.Clear();
+                foreach (var item in payload.Items)
+                {
+                    Items.Add(new InvoicePreviewLineItem
+                    {
+                        LineNumber = item.LineNumber,
+                        Description = item.Description,
+                        Quantity = item.Quantity,
+                        UnitPrice = item.UnitPrice,
+                        GovFees = item.GovFees,
+                        EmployeeNames = item.EmployeeNames
+                    });
+                }
+            }
+            else
+            {
+                CustomerName = string.IsNullOrWhiteSpace(record.CompanyName) ? record.CustomerName : record.CompanyName;
+                CustomerIdText = $"ID {record.CustomerId}";
+                InvoiceNumber = record.SavedInvoiceNumber;
+                InvoiceDate = record.InvoiceDateText;
+                DueDate = record.InvoiceDateText;
+                InvoiceStatus = record.IsGrouped ? "Grouped Invoice" : "Saved Invoice";
+                EmployeeName = string.Empty;
+                Notes = record.Notes;
+                IsHazemInvoice = false;
+                SelectedPreviewTemplateKey = string.IsNullOrWhiteSpace(record.TemplateKey) ? FluentTemplateKey : record.TemplateKey;
+                Items.Clear();
+            }
+
+            FinalAggregationRows.Clear();
+            RefreshTotals();
+        }
+
+        private void LoadGroupedInvoicePreview(GroupedInvoicePreviewRequest request)
+        {
+            _currentGroupedRequest = request;
+            CustomerName = !string.IsNullOrWhiteSpace(request.CompanyName)
+                ? request.CompanyName
+                : request.CustomerName;
+            CustomerIdText = request.CustomerIdText;
+            InvoiceNumber = request.InvoiceNumber;
+            InvoiceDate = request.InvoiceDate.ToString("yyyy/MM/dd");
+            DueDate = InvoiceDate;
+            InvoiceStatus = "Grouped Invoice";
+            EmployeeName = "Multiple Employees";
+            IsHazemInvoice = false;
+            SelectedPreviewTemplateKey = GroupedInvoiceTemplateKey;
+            Notes = string.IsNullOrWhiteSpace(request.Notes)
+                ? "Grouped invoice for customer 3. Similar items are merged by service name and unit price across all saved transactions, with employee names listed for each grouped line."
+                : request.Notes;
+
+            FinalAggregationRows.Clear();
+            Items.Clear();
+
+            foreach (var item in request.Items)
+            {
+                Items.Add(new InvoicePreviewLineItem
+                {
+                    LineNumber = item.LineNumber,
+                    Description = item.Description,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice,
+                    GovFees = item.GovFees,
+                    EmployeeNames = item.EmployeeNames
                 });
             }
 
@@ -219,6 +359,7 @@ namespace ProWalid.ViewModels
 
         private void LoadSamplePreview()
         {
+            ResetPreviewContext();
             CompanyName = "انفورم للطباعة والتصوير";
             CompanySubtitle = "Inform Typing Photo Copy";
             CompanyPhone = "Mob: 971528047909 / 528047909";
@@ -255,7 +396,7 @@ namespace ProWalid.ViewModels
             var normalizedTemplateKey = NormalizeTemplateKey(templateKey);
             if (string.Equals(SelectedPreviewTemplateKey, normalizedTemplateKey, StringComparison.OrdinalIgnoreCase))
             {
-                PrintHtml = BuildPrintHtml();
+                PrintHtml = GetEffectivePrintHtml();
                 return;
             }
 
@@ -264,7 +405,7 @@ namespace ProWalid.ViewModels
 
         partial void OnSelectedPreviewTemplateKeyChanged(string value)
         {
-            PrintHtml = BuildPrintHtml();
+            PrintHtml = GetEffectivePrintHtml();
         }
 
         private static bool IsHazemCustomer(string customerName)
@@ -291,6 +432,11 @@ namespace ProWalid.ViewModels
                 return ErpTemplateKey;
             }
 
+            if (string.Equals(templateKey, GroupedInvoiceTemplateKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return GroupedInvoiceTemplateKey;
+            }
+
             if (string.Equals(templateKey, PremiumTemplateKey, StringComparison.OrdinalIgnoreCase))
             {
                 return PremiumTemplateKey;
@@ -311,27 +457,369 @@ namespace ProWalid.ViewModels
 
         private void RefreshTotals()
         {
+            OnPropertyChanged(nameof(IsSavedInvoicePreview));
             OnPropertyChanged(nameof(IsHazemInvoice));
+            OnPropertyChanged(nameof(IsGroupedInvoicePreview));
             OnPropertyChanged(nameof(IsFinalAggregationPreview));
+            OnPropertyChanged(nameof(CanSaveInvoice));
             OnPropertyChanged(nameof(Subtotal));
             OnPropertyChanged(nameof(Vat));
             OnPropertyChanged(nameof(GrandTotal));
             OnPropertyChanged(nameof(SubtotalText));
             OnPropertyChanged(nameof(VatText));
             OnPropertyChanged(nameof(GrandTotalText));
-            PrintHtml = BuildPrintHtml();
+            PrintHtml = GetEffectivePrintHtml();
+        }
+
+        public async Task<string> SaveCurrentInvoiceAsync()
+        {
+            if (IsSavedInvoicePreview)
+            {
+                return "هذه الفاتورة محفوظة بالفعل ضمن سجل الفواتير المحفوظة.";
+            }
+
+            if (IsFinalAggregationPreview)
+            {
+                return "هذا النموذج ليس فاتورة قابلة للحفظ ضمن سجل الفواتير المحفوظة حالياً.";
+            }
+
+            if (_currentGroupedRequest != null)
+            {
+                var sourceInvoiceNumbers = _currentGroupedRequest.SourceInvoiceNumbers
+                    .Where(number => !string.IsNullOrWhiteSpace(number))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (sourceInvoiceNumbers.Count == 0)
+                {
+                    return "تعذر حفظ الفاتورة المجمعة لأن أرقام الفواتير الأصلية غير متوفرة.";
+                }
+
+                var groupedSequence = await _databaseHelper.GetNextGroupedSavedInvoiceSequenceAsync();
+                var groupedNumber = groupedSequence.ToString("D5");
+                var payloadJson = BuildSavedInvoicePayloadJson();
+                var savedAt = DateTimeOffset.Now;
+
+                var records = sourceInvoiceNumbers
+                    .Select(sourceInvoiceNumber => new SavedInvoiceRecord
+                    {
+                        SavedInvoiceNumber = $"{sourceInvoiceNumber}-{groupedNumber}",
+                        RootInvoiceNumber = groupedNumber,
+                        SourceInvoiceNumber = sourceInvoiceNumber,
+                        GroupedSequenceNumber = groupedSequence,
+                        SavedKind = "grouped",
+                        TemplateKey = SelectedPreviewTemplateKey,
+                        CustomerId = _currentGroupedRequest.CustomerId,
+                        CustomerName = CustomerName,
+                        CompanyName = CompanyName,
+                        InvoiceDateText = InvoiceDate,
+                        TotalAmount = GrandTotal,
+                        Notes = Notes,
+                        PrintHtml = PrintHtml,
+                        PayloadJson = payloadJson,
+                        SavedAt = savedAt
+                    })
+                    .ToList();
+
+                await _databaseHelper.SaveSavedInvoiceRecordsAsync(records);
+                _currentSavedInvoiceRecord = records[0];
+                _savedPrintHtml = PrintHtml;
+                RefreshTotals();
+                return $"تم حفظ الفاتورة المجمعة برقم {groupedNumber} وربطها بعدد {records.Count} من الفواتير الأصلية.";
+            }
+
+            if (_currentInvoiceRow?.Transaction == null)
+            {
+                return "لا توجد فاتورة حالية صالحة للحفظ.";
+            }
+
+            var record = new SavedInvoiceRecord
+            {
+                SavedInvoiceNumber = InvoiceNumber,
+                RootInvoiceNumber = InvoiceNumber,
+                SourceInvoiceNumber = InvoiceNumber,
+                GroupedSequenceNumber = 0,
+                SavedKind = "single",
+                TemplateKey = SelectedPreviewTemplateKey,
+                CustomerId = _currentInvoiceRow.Transaction.CustomerId,
+                CustomerName = CustomerName,
+                CompanyName = CompanyName,
+                InvoiceDateText = InvoiceDate,
+                TotalAmount = GrandTotal,
+                Notes = Notes,
+                PrintHtml = PrintHtml,
+                PayloadJson = BuildSavedInvoicePayloadJson(),
+                SavedAt = DateTimeOffset.Now
+            };
+
+            await _databaseHelper.SaveSavedInvoiceRecordsAsync(new[] { record });
+            _currentSavedInvoiceRecord = record;
+            _savedPrintHtml = PrintHtml;
+            RefreshTotals();
+            return $"تم حفظ الفاتورة {InvoiceNumber} في سجل الفواتير المحفوظة.";
+        }
+
+        private void ResetPreviewContext()
+        {
+            _currentInvoiceRow = null;
+            _currentGroupedRequest = null;
+            _currentSavedInvoiceRecord = null;
+            _savedPrintHtml = string.Empty;
+        }
+
+        private string GetEffectivePrintHtml()
+        {
+            return IsSavedInvoicePreview && !string.IsNullOrWhiteSpace(_savedPrintHtml)
+                ? _savedPrintHtml
+                : BuildPrintHtml();
+        }
+
+        private string BuildSavedInvoicePayloadJson()
+        {
+            var payload = new SavedInvoicePayload
+            {
+                CompanyName = CompanyName,
+                CompanySubtitle = CompanySubtitle,
+                CompanyPhone = CompanyPhone,
+                CompanyEmail = CompanyEmail,
+                CompanyAddress = CompanyAddress,
+                TaxNumber = TaxNumber,
+                CustomerName = CustomerName,
+                CustomerIdText = CustomerIdText,
+                InvoiceNumber = InvoiceNumber,
+                InvoiceDate = InvoiceDate,
+                DueDate = DueDate,
+                InvoiceStatus = InvoiceStatus,
+                Notes = Notes,
+                EmployeeName = EmployeeName,
+                IsHazemInvoice = IsHazemInvoice,
+                SelectedPreviewTemplateKey = SelectedPreviewTemplateKey,
+                Items = Items.Select(item => new SavedInvoiceLineItemPayload
+                {
+                    LineNumber = item.LineNumber,
+                    Description = item.Description,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice,
+                    GovFees = item.GovFees,
+                    EmployeeNames = item.EmployeeNames
+                }).ToList()
+            };
+
+            return JsonSerializer.Serialize(payload);
         }
 
         private string BuildPrintHtml()
         {
             return NormalizeTemplateKey(SelectedPreviewTemplateKey) switch
             {
+                GroupedInvoiceTemplateKey => BuildGroupedInvoicePrintHtml(),
                 ErpTemplateKey => BuildErpPrintHtml(),
                 PremiumTemplateKey => BuildPremiumPrintHtml(),
                 HazemTemplateKey => BuildHazemPrintHtml(),
                 FinalAggregationTemplateKey => BuildFinalAggregationPrintHtml(),
                 _ => BuildFluentPrintHtml()
             };
+        }
+
+        private string BuildGroupedInvoicePrintHtml()
+        {
+            var logoDataUri = GetImageDataUri("Assets", "invoice", "LOGO1.png");
+            var stampDataUri = GetImageDataUri("Assets", "invoice", "STAMP (1).png");
+
+            var phoneLines = (CompanyPhone ?? string.Empty)
+                .Split(new[] { '/', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(part => part.Replace("Mob:", string.Empty, StringComparison.OrdinalIgnoreCase).Trim())
+                .Where(part => !string.IsNullOrWhiteSpace(part))
+                .ToArray();
+
+            var phoneLinesHtml = string.Join(string.Empty, phoneLines.Select(part => $"<div class='contact-line'>Mob: {Escape(part)}</div>"));
+
+            var rows = new StringBuilder();
+            foreach (var item in Items)
+            {
+                rows.Append($@"
+                    <tr>
+                        <td class='num'>{item.LineNumber}</td>
+                        <td class='service'>{Escape(item.Description)}</td>
+                        <td class='num'>{item.Quantity:0.##}</td>
+                        <td class='num'>{item.UnitPrice:N2}</td>
+                        <td class='employees'>{Escape(item.EmployeeNamesDisplay)}</td>
+                        <td class='num total'>{item.Total:N2}</td>
+                    </tr>");
+            }
+
+            return $@"<!DOCTYPE html>
+<html lang='en' dir='ltr'>
+<head>
+    <meta charset='utf-8' />
+    <title>{Escape(InvoiceNumber)}</title>
+    <style>
+        @page {{ size: A4; margin: 4mm; }}
+        * {{ box-sizing: border-box; }}
+        html, body {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; forced-color-adjust: none; }}
+        body {{ margin: 0; background: #eff7fc; font-family: 'Segoe UI', Arial, sans-serif; color: #3d434a; font-size: 14px; }}
+        body, body * {{ font-family: 'Segoe UI', Arial, sans-serif; }}
+        .sheet {{ width: 100%; min-height: calc(297mm - 8mm); margin: 0 auto; background: #ffffff; padding: 4mm 4.5mm 5mm 4.5mm; display: flex; flex-direction: column; }}
+        .content-section {{ display: block; }}
+        .hero {{ position: relative; background: linear-gradient(135deg, #e9f8ff 0%, #d7f0ff 100%); border: 1px solid #b9e4fb; border-radius: 22px; padding: 2.9mm 4.2mm; margin-bottom: 2.8mm; break-inside: avoid; page-break-inside: avoid; }}
+        .hero-grid {{ display: grid; grid-template-columns: 28mm minmax(0, 1fr) 58mm; gap: 3.2mm; align-items: start; direction: ltr; }}
+        .hero-logo-wrap {{ display: flex; align-items: center; justify-content: flex-start; min-height: 100%; }}
+        .hero-logo {{ max-width: 28mm; max-height: 21mm; width: auto; height: auto; object-fit: contain; }}
+        .hero-brand {{ direction: ltr; text-align: center; padding: 0 4mm; }}
+        .brand-name {{ font-size: 24px; font-weight: 800; color: #3d434a; margin: 0 0 0.8mm 0; }}
+        .brand-subtitle {{ font-size: 15px; font-weight: 700; color: #3d434a; margin: 0 0 1.2mm 0; }}
+        .tax-line {{ font-size: 13px; font-weight: 700; color: #3d434a; margin-top: 1mm; }}
+        .hero-contact {{ direction: ltr; text-align: left; background: rgba(255, 255, 255, 0.58); border: 1px solid #b9def2; border-radius: 16px; padding: 1.9mm 2.5mm; }}
+        .contact-line {{ font-size: 12px; font-weight: 700; color: #3d434a; line-height: 1.45; white-space: nowrap; }}
+        .contact-line + .contact-line {{ margin-top: 0.5mm; }}
+        .client-row {{ display: grid; grid-template-columns: 1.22fr 0.78fr; gap: 4mm; align-items: stretch; margin-bottom: 2.8mm; direction: ltr; break-inside: avoid; page-break-inside: avoid; }}
+        .client-card, .meta-card, .total-card {{ border: 1px solid #cfeaf8; border-radius: 18px; background: #ffffff; padding: 3.2mm 3.8mm; }}
+        .client-card {{ background: linear-gradient(135deg, #d7f0ff 0%, #c7e9ff 100%); border: 1px solid #abd9f4; direction: ltr; text-align: left; display: flex; flex-direction: column; justify-content: center; }}
+        .client-side-card {{ background: #f4fbff; direction: ltr; text-align: left; display: flex; align-items: stretch; }}
+        .client-title {{ font-size: 14.5px; font-weight: 800; color: #3d434a; margin: 0 0 1.4mm 0; text-align: left; }}
+        .client-name {{ font-size: 19.5px; font-weight: 800; color: #3d434a; margin: 0 0 1.1mm 0; line-height: 1.4; text-align: left; }}
+        .id-text {{ color: #3d434a; font-size: 13.8px; font-weight: 700; margin-top: 0; text-align: left; }}
+        .side-meta-wrap {{ width: 100%; background: linear-gradient(135deg, #d7f0ff 0%, #c7e9ff 100%); border: 1px solid #abd9f4; border-radius: 14px; padding: 2.5mm 3mm; }}
+        .side-meta-item + .side-meta-item {{ margin-top: 2mm; padding-top: 2mm; border-top: 1px solid #9fcee9; }}
+        .side-meta-item {{ display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 3mm; direction: ltr; background: transparent; border-radius: 0; padding: 0; }}
+        .side-meta-item .meta-label {{ margin: 0; text-align: left; direction: ltr; font-size: 15px; font-weight: 800; color: #3d434a; }}
+        .side-meta-item .meta-value {{ min-width: 26mm; text-align: right; direction: ltr; font-size: 15px; font-weight: 800; color: #3d434a; }}
+        .invoice-heading-row {{ display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 4mm; margin: 0 0 2.1mm 0; direction: ltr; break-inside: avoid; page-break-inside: avoid; }}
+        .invoice-heading-block {{ display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; direction: ltr; }}
+        .invoice-heading-spacer {{ min-height: 1px; }}
+        .invoice-main-title {{ font-size: 23px; font-weight: 800; letter-spacing: 0.8px; color: #3d434a; line-height: 1; margin-bottom: 0.8mm; direction: ltr; }}
+        .invoice-sub-title {{ font-size: 16px; font-weight: 700; color: #3d434a; line-height: 1; margin-bottom: 1.2mm; direction: ltr; text-align: center; width: 100%; }}
+        .invoice-title-line {{ width: 30mm; border-top: 2px solid #5a9fc5; }}
+        .employee-line {{ color: #7f1d1d; font-size: 14px; font-weight: 800; direction: ltr; text-align: right; align-self: center; justify-self: end; white-space: nowrap; }}
+        table {{ width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; margin-top: 1.2mm; border: 1px solid #cae8f9; border-radius: 18px; overflow: hidden; }}
+        thead th {{ background: linear-gradient(135deg, #b8e3fb 0%, #9fd4f3 100%); color: #3d434a; font-size: 15px; font-weight: 800; padding: 3.6mm 2.5mm; border-bottom: 1px solid #90c7e8; text-align: left; }}
+        tbody td {{ padding: 3.6mm 2.5mm; border-bottom: 1px solid #e7f4fb; font-size: 14px; vertical-align: top; color: #3d434a; }}
+        tbody tr:nth-child(odd) td {{ background: #fafdff; }}
+        tbody tr:nth-child(even) td {{ background: #f1f9fe; }}
+        tbody tr:last-child td {{ border-bottom: 0; }}
+        .num {{ text-align: center; }}
+        .service {{ text-align: left; }}
+        .employees {{ text-align: left; }}
+        .total {{ color: #3d434a; font-weight: 800; }}
+        .footer-row {{ display: flex; justify-content: flex-end; align-items: center; gap: 4mm; margin-top: 2.2mm; break-inside: avoid; page-break-inside: avoid; }}
+        .total-card {{ min-width: 54mm; border: 1px solid #b8ddf1; border-radius: 14px; background: #dff3ff; color: #3d434a; padding: 2.4mm 3mm; }}
+        .total-label {{ font-size: 12.5px; color: #3d434a; margin-bottom: 0.8mm; font-weight: 700; }}
+        .total-value {{ font-size: 19px; font-weight: 700; color: #3d434a; }}
+        .stamp-wrap {{ display: flex; justify-content: center; margin-top: 3mm; break-inside: avoid; page-break-inside: avoid; }}
+        .stamp-image {{ max-width: 34mm; max-height: 34mm; width: auto; height: auto; object-fit: contain; }}
+        .bottom-section {{ margin-top: auto; display: flex; flex-direction: column; gap: 4mm; }}
+        .signature-row {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18mm; margin-top: 0; align-items: end; direction: ltr; break-inside: avoid; page-break-inside: avoid; }}
+        .signature-block {{ text-align: center; direction: ltr; }}
+        .signature-line {{ width: 88%; margin: 0 auto; border-top: 2px dotted #78aecd; padding-top: 3.2mm; color: #3d434a; direction: ltr; }}
+        .signature-ar {{ font-size: 13px; font-weight: 700; margin-bottom: 1.2mm; }}
+        .signature-en {{ font-size: 15px; font-weight: 800; }}
+        .invoice-footer {{ margin-top: 0; background: linear-gradient(135deg, #e9f8ff 0%, #d7f0ff 100%); border: 1px solid #b9e4fb; border-radius: 18px; padding: 3.1mm 5mm; text-align: center; color: #3d434a; font-size: 14px; font-weight: 700; direction: ltr; break-inside: avoid; page-break-inside: avoid; }}
+        @media print {{
+            body {{ background: #ffffff !important; }}
+            html, body {{ width: 210mm; min-height: 297mm; }}
+            .sheet {{ width: 100%; min-height: calc(297mm - 8mm); margin: 0; padding: 1.5mm 1.8mm 2mm 1.8mm; }}
+            .hero, .meta-card, .client-card, .client-side-card, .total-card, .invoice-footer, thead th, tbody td {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+        }}
+    </style>
+</head>
+<body>
+    <div class='sheet'>
+        <div class='content-section'>
+            <div class='hero'>
+                <div class='hero-grid'>
+                    <div class='hero-logo-wrap'>
+                        {(string.IsNullOrWhiteSpace(logoDataUri) ? string.Empty : $"<img class='hero-logo' src='{logoDataUri}' alt='Logo' />")}
+                    </div>
+                    <div class='hero-brand'>
+                        <div class='brand-name'>{Escape(CompanyName)}</div>
+                        <div class='brand-subtitle'>{Escape(CompanySubtitle)}</div>
+                        <div class='tax-line'>{Escape(TaxNumber)}</div>
+                    </div>
+                    <div class='hero-contact'>
+                        {phoneLinesHtml}
+                        <div class='contact-line'>{Escape(CompanyEmail)}</div>
+                        <div class='contact-line'>{Escape(CompanyAddress)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class='client-row'>
+                <div class='client-card'>
+                    <div class='client-title'>Client Details</div>
+                    <div class='client-name'>{Escape(CustomerName)}</div>
+                    <div class='id-text'>Customer ID: {Escape(CustomerIdText)}</div>
+                </div>
+                <div class='meta-card client-side-card'>
+                    <div class='side-meta-wrap'>
+                        <div class='side-meta-item'>
+                            <div class='meta-label'>Invoice No</div>
+                            <div class='meta-value'>{Escape(InvoiceNumber)}</div>
+                        </div>
+                        <div class='side-meta-item'>
+                            <div class='meta-label'>Date</div>
+                            <div class='meta-value'>{Escape(InvoiceDate)}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class='invoice-heading-row'>
+                <div class='employee-line'>Employee Scope: {Escape(EmployeeName)}</div>
+                <div class='invoice-heading-block'>
+                    <div class='invoice-main-title'>INVOICE</div>
+                    <div class='invoice-sub-title'>GROUPED INVOICE</div>
+                    <div class='invoice-title-line'></div>
+                </div>
+                <div class='invoice-heading-spacer'></div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style='width:10%;'>#</th>
+                        <th style='width:28%;'>Service</th>
+                        <th style='width:12%;'>Qty</th>
+                        <th style='width:14%;'>Unit Price</th>
+                        <th style='width:20%;'>Employee Names</th>
+                        <th style='width:16%;'>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows}
+                </tbody>
+            </table>
+
+            <div class='footer-row'>
+                <div class='total-card'>
+                    <div class='total-label'>Grand Total</div>
+                    <div class='total-value'>{Escape(GrandTotalText)}</div>
+                </div>
+            </div>
+
+            {(string.IsNullOrWhiteSpace(stampDataUri) ? string.Empty : $"<div class='stamp-wrap'><img class='stamp-image' src='{stampDataUri}' alt='Stamp' /></div>")}
+        </div>
+
+        <div class='bottom-section'>
+            <div class='signature-row'>
+                <div class='signature-block'>
+                    <div class='signature-line'>
+                        <div class='signature-ar'>Inform Typing Photo Copy</div>
+                        <div class='signature-en'>Authorized Signature</div>
+                    </div>
+                </div>
+                <div class='signature-block'>
+                    <div class='signature-line'>
+                        <div class='signature-ar'>Receiver Signature</div>
+                        <div class='signature-en'>Customer Signature</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class='invoice-footer'></div>
+        </div>
+    </div>
+</body>
+</html>";
         }
 
         private string BuildFinalAggregationPrintHtml()
@@ -536,7 +1024,8 @@ namespace ProWalid.ViewModels
             bool useGovFeesColumn,
             string employeeColor,
             string darkSurfaceText = "#3d434a",
-            string footerTextColor = "#3d434a")
+            string footerTextColor = "#3d434a",
+            bool useEmployeeNamesColumn = false)
         {
             var logoDataUri = GetImageDataUri("Assets", "invoice", "LOGO1.png");
             var stampDataUri = GetImageDataUri("Assets", "invoice", "STAMP (1).png");
@@ -556,6 +1045,13 @@ namespace ProWalid.ViewModels
                     <th style='width:14%;'>سعر الوحدة / Unit Price</th>
                     <th style='width:12%;'>GOV-FEES</th>
                     <th style='width:16%;'>الإجمالي / Total</th>"
+                : useEmployeeNamesColumn
+                    ? @"<th style='width:10%;'>#</th>
+                    <th style='width:28%;'>الخدمة / Service</th>
+                    <th style='width:12%;'>الكمية / Qty</th>
+                    <th style='width:14%;'>سعر الوحدة / Unit Price</th>
+                    <th style='width:20%;'>أسماء الموظفين / Employees</th>
+                    <th style='width:16%;'>الإجمالي / Total</th>"
                 : @"<th style='width:12%;'>#</th>
                     <th style='width:42%;'>الخدمة / Service</th>
                     <th style='width:14%;'>الكمية / Qty</th>
@@ -573,6 +1069,16 @@ namespace ProWalid.ViewModels
                         <td class='num'>{item.Quantity:0.##}</td>
                         <td class='num'>{item.UnitPrice:N2}</td>
                         <td class='num gov'>{Escape(item.GovFeesDisplay)}</td>
+                        <td class='num total'>{item.Total:N2}</td>
+                    </tr>"
+                    : useEmployeeNamesColumn
+                        ? $@"
+                    <tr>
+                        <td class='num'>{item.LineNumber}</td>
+                        <td class='service'>{Escape(item.Description)}</td>
+                        <td class='num'>{item.Quantity:0.##}</td>
+                        <td class='num'>{item.UnitPrice:N2}</td>
+                        <td class='service'>{Escape(item.EmployeeNamesDisplay)}</td>
                         <td class='num total'>{item.Total:N2}</td>
                     </tr>"
                     : $@"

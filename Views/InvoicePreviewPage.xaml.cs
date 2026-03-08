@@ -27,6 +27,8 @@ namespace ProWalid.Views
         private const uint PdfRenderPixelWidth = 2480;
         private const uint PdfRenderPixelHeight = 3508;
         private const double PdfCaptureZoomFactor = 2480d / A4PreviewWidth;
+        private bool _pendingAutoPrint;
+        private bool _forceA4Preview;
 
         public InvoicePreviewViewModel ViewModel { get; }
 
@@ -41,10 +43,28 @@ namespace ProWalid.Views
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
+            _pendingAutoPrint = e.Parameter is SavedInvoicePreviewRequest savedRequest && savedRequest.AutoPrint;
+            _forceA4Preview = _pendingAutoPrint;
             ViewModel.SetFrame(Frame);
             await ViewModel.LoadAsync(e.Parameter);
-            ApplyViewModelTemplateToPivot();
+            if (_forceA4Preview)
+            {
+                SelectPivotItemByTag("A4");
+            }
+            else
+            {
+                ApplyViewModelTemplateToPivot();
+            }
+
             await RenderPrintPreviewAsync();
+
+            if (_pendingAutoPrint)
+            {
+                _pendingAutoPrint = false;
+                await EnsurePrintWebViewAsync();
+                await Task.Delay(180);
+                await A4PrintWebView.ExecuteScriptAsync("window.print();");
+            }
         }
 
         protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -141,6 +161,16 @@ namespace ProWalid.Views
             }
 
             var templateKey = ViewModel.SelectedPreviewTemplateKey;
+            SelectPivotItemByTag(templateKey);
+        }
+
+        private void SelectPivotItemByTag(string? templateKey)
+        {
+            if (PreviewTemplatesPivot == null || string.IsNullOrWhiteSpace(templateKey))
+            {
+                return;
+            }
+
             foreach (var item in PreviewTemplatesPivot.Items)
             {
                 if (item is PivotItem pivotItem
@@ -154,6 +184,21 @@ namespace ProWalid.Views
                     return;
                 }
             }
+        }
+
+        private async void SaveInvoiceButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            var message = await ViewModel.SaveCurrentInvoiceAsync();
+
+            var dialog = new ContentDialog
+            {
+                Title = "حفظ الفاتورة",
+                Content = message,
+                CloseButtonText = "إغلاق",
+                XamlRoot = this.XamlRoot
+            };
+
+            await dialog.ShowAsync();
         }
 
         private async void PrintInvoiceButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
