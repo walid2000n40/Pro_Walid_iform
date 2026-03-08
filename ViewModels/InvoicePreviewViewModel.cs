@@ -194,6 +194,14 @@ namespace ProWalid.ViewModels
             var logoDataUri = GetImageDataUri("Assets", "invoice", "LOGO1.png");
             var stampDataUri = GetImageDataUri("Assets", "invoice", "STAMP (1).png");
 
+            var phoneLines = (CompanyPhone ?? string.Empty)
+                .Split(new[] { '/', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(part => part.Replace("Mob:", string.Empty, StringComparison.OrdinalIgnoreCase).Trim())
+                .Where(part => !string.IsNullOrWhiteSpace(part))
+                .ToArray();
+
+            var phoneLinesHtml = string.Join(string.Empty, phoneLines.Select(part => $"<div class='contact-line'>Mob: {Escape(part)}</div>"));
+
             var rows = new StringBuilder();
             foreach (var item in Items)
             {
@@ -213,69 +221,77 @@ namespace ProWalid.ViewModels
     <meta charset='utf-8' />
     <title>{Escape(InvoiceNumber)}</title>
     <style>
-        @page {{ size: A4; margin: 9mm 10mm 10mm 10mm; }}
+        @page {{ size: A4; margin: 4mm; }}
         * {{ box-sizing: border-box; }}
         html, body {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; forced-color-adjust: none; }}
-        body {{ margin: 0; background: #eff7fc; font-family: 'Cairo', 'Segoe UI', sans-serif; color: #17324d; }}
-        .sheet {{ width: 210mm; min-height: 297mm; margin: 0 auto; background: #ffffff; padding: 7mm 10mm 10mm 10mm; display: flex; flex-direction: column; }}
+        body {{ margin: 0; background: #eff7fc; font-family: 'Cairo', 'Segoe UI', sans-serif; color: #111111; font-size: 14px; }}
+        body, body * {{ font-family: 'Cairo', 'Segoe UI', sans-serif; }}
+        .sheet {{ width: 100%; min-height: calc(297mm - 8mm); margin: 0 auto; background: #ffffff; padding: 4mm 4.5mm 5mm 4.5mm; display: flex; flex-direction: column; }}
         .content-section {{ display: block; }}
-        .hero {{ position: relative; background: linear-gradient(135deg, #e9f8ff 0%, #d7f0ff 100%); border: 1px solid #b9e4fb; border-radius: 22px; padding: 4.1mm 5.2mm; margin-bottom: 3.4mm; }}
-        .hero-grid {{ display: grid; grid-template-columns: 32mm 1fr; gap: 4mm; align-items: center; direction: ltr; }}
+        .hero {{ position: relative; background: linear-gradient(135deg, #e9f8ff 0%, #d7f0ff 100%); border: 1px solid #b9e4fb; border-radius: 22px; padding: 2.9mm 4.2mm; margin-bottom: 2.8mm; break-inside: avoid; page-break-inside: avoid; }}
+        .hero-grid {{ display: grid; grid-template-columns: 28mm minmax(0, 1fr) 58mm; gap: 3.2mm; align-items: start; direction: ltr; }}
         .hero-logo-wrap {{ display: flex; align-items: center; justify-content: flex-start; min-height: 100%; }}
         .hero-logo {{ max-width: 28mm; max-height: 21mm; width: auto; height: auto; object-fit: contain; }}
-        .hero-invoice-title {{ position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; direction: ltr; width: 42mm; pointer-events: none; }}
-        .invoice-main-title {{ font-size: 21px; font-weight: 800; letter-spacing: 0.8px; color: #0d4f7a; line-height: 1; margin-bottom: 0.8mm; }}
-        .invoice-sub-title {{ font-size: 14px; font-weight: 700; color: #1f5e84; line-height: 1; margin-bottom: 1mm; direction: rtl; text-align: center; width: 100%; }}
-        .invoice-title-line {{ width: 26mm; border-top: 1px solid #78aecd; }}
-        .hero-brand {{ direction: rtl; text-align: right; padding-left: 44mm; }}
-        .brand-name {{ font-size: 22px; font-weight: 800; color: #0d4f7a; margin: 0 0 0.8mm 0; }}
-        .brand-subtitle {{ font-size: 13px; font-weight: 700; color: #286489; margin: 0 0 1.4mm 0; }}
-        .brand-line {{ font-size: 11px; color: #3b6787; margin: 0.6mm 0; }}
+        .hero-brand {{ direction: rtl; text-align: center; padding: 0 4mm; }}
+        .brand-name {{ font-size: 24px; font-weight: 800; color: #111111; margin: 0 0 0.8mm 0; }}
+        .brand-subtitle {{ font-size: 15px; font-weight: 700; color: #111111; margin: 0 0 1.2mm 0; }}
+        .brand-line {{ font-size: 13px; color: #111111; margin: 0.45mm 0; }}
+        .tax-line {{ font-size: 13px; font-weight: 700; color: #111111; margin-top: 1mm; }}
+        .hero-contact {{ direction: rtl; text-align: right; background: rgba(255, 255, 255, 0.58); border: 1px solid #b9def2; border-radius: 16px; padding: 1.9mm 2.5mm; }}
+        .contact-line {{ font-size: 12px; font-weight: 700; color: #111111; line-height: 1.45; white-space: nowrap; }}
+        .contact-line + .contact-line {{ margin-top: 0.5mm; }}
+        .invoice-heading-row {{ display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 4mm; margin: 0 0 2.1mm 0; direction: ltr; break-inside: avoid; page-break-inside: avoid; }}
+        .invoice-heading-block {{ display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; direction: rtl; }}
+        .invoice-heading-spacer {{ min-height: 1px; }}
+        .invoice-main-title {{ font-size: 23px; font-weight: 800; letter-spacing: 0.8px; color: #111111; line-height: 1; margin-bottom: 0.8mm; direction: ltr; }}
+        .invoice-sub-title {{ font-size: 16px; font-weight: 700; color: #111111; line-height: 1; margin-bottom: 1.2mm; direction: rtl; text-align: center; width: 100%; }}
+        .invoice-title-line {{ width: 30mm; border-top: 2px solid #5a9fc5; }}
         .meta-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; }}
         .meta-card, .client-card, .total-card {{ border: 1px solid #cfeaf8; border-radius: 18px; background: #ffffff; padding: 3.2mm 3.8mm; }}
-        .meta-label, .section-label {{ font-size: 10.5px; color: #5d7b95; margin-bottom: 1mm; }}
-        .meta-value {{ font-size: 15px; font-weight: 800; color: #144b71; }}
-        .client-row {{ display: grid; grid-template-columns: 0.78fr 1.22fr; gap: 4mm; align-items: stretch; margin-bottom: 3.6mm; direction: ltr; }}
-        .client-card {{ background: #f7fcff; }}
-        .client-side-card {{ background: #f7fcff; direction: rtl; text-align: right; }}
-        .client-title {{ font-size: 12.5px; font-weight: 700; color: #15507c; margin-bottom: 1.2mm; text-align: center; }}
-        .client-name-wrap {{ background: rgba(255, 255, 255, 0.72); border-radius: 12px; padding: 2.2mm 3mm; margin: 1.2mm 0 1.6mm 0; text-align: center; }}
-        .client-name {{ font-size: 17.5px; font-weight: 800; color: #0f3556; margin: 0; line-height: 1.4; }}
-        .muted {{ color: #648099; font-size: 12px; }}
-        .id-text {{ color: #0e5b86; font-size: 11.5px; font-weight: 700; margin-top: 1mm; text-align: center; }}
-        .side-meta-item + .side-meta-item {{ margin-top: 2.2mm; }}
-        .side-meta-item {{ display: flex; align-items: center; justify-content: space-between; gap: 2.5mm; direction: ltr; background: rgba(255, 255, 255, 0.72); border-radius: 12px; padding: 2.1mm 2.7mm; }}
-        .side-meta-item .meta-label {{ margin: 0; text-align: right; direction: rtl; flex: 1; }}
-        .side-meta-item .meta-value {{ min-width: 25mm; text-align: left; direction: ltr; font-size: 16px; }}
-        .employee-row {{ display: flex; justify-content: flex-start; direction: ltr; margin: 0 0 2.2mm 0; }}
-        .employee-line {{ color: #8b1e1e; font-size: 13.5px; font-weight: 800; direction: rtl; text-align: right; padding-left: 6mm; }}
-        table {{ width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; margin-top: 2mm; border: 1px solid #cae8f9; border-radius: 18px; overflow: hidden; }}
-        thead th {{ background: #dff3ff; color: #114566; font-size: 13px; font-weight: 800; padding: 3.6mm 2.5mm; border-bottom: 1px solid #c6e8fa; }}
-        tbody td {{ padding: 3.6mm 2.5mm; border-bottom: 1px solid #e7f4fb; font-size: 12px; vertical-align: top; }}
+        .meta-label, .section-label {{ font-size: 12.5px; color: #111111; margin-bottom: 1mm; }}
+        .meta-value {{ font-size: 17px; font-weight: 800; color: #111111; }}
+        .client-row {{ display: grid; grid-template-columns: 0.78fr 1.22fr; gap: 4mm; align-items: stretch; margin-bottom: 2.8mm; direction: ltr; break-inside: avoid; page-break-inside: avoid; }}
+        .client-card {{ background: linear-gradient(135deg, #d7f0ff 0%, #c7e9ff 100%); border: 1px solid #abd9f4; direction: rtl; text-align: right; display: flex; flex-direction: column; justify-content: center; }}
+        .client-side-card {{ background: #f4fbff; direction: rtl; text-align: right; display: flex; align-items: stretch; }}
+        .client-title {{ font-size: 14.5px; font-weight: 800; color: #111111; margin: 0 0 1.4mm 0; text-align: right; }}
+        .client-name-wrap {{ background: transparent; border-radius: 0; padding: 0; margin: 0 0 1.2mm 0; text-align: right; }}
+        .client-name {{ font-size: 19.5px; font-weight: 800; color: #111111; margin: 0 0 1.1mm 0; line-height: 1.4; text-align: right; }}
+        .muted {{ color: #111111; font-size: 14px; }}
+        .id-text {{ color: #111111; font-size: 13.8px; font-weight: 700; margin-top: 0; text-align: right; }}
+        .side-meta-wrap {{ width: 100%; background: linear-gradient(135deg, #d7f0ff 0%, #c7e9ff 100%); border: 1px solid #abd9f4; border-radius: 14px; padding: 2.5mm 3mm; }}
+        .side-meta-item + .side-meta-item {{ margin-top: 2mm; padding-top: 2mm; border-top: 1px solid #9fcee9; }}
+        .side-meta-item {{ display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 3mm; direction: rtl; background: transparent; border-radius: 0; padding: 0; }}
+        .side-meta-item .meta-label {{ margin: 0; text-align: right; direction: rtl; font-size: 15px; font-weight: 800; color: #111111; }}
+        .side-meta-item .meta-value {{ min-width: 26mm; text-align: left; direction: ltr; font-size: 15px; font-weight: 800; color: #111111; }}
+        .employee-line {{ color: #111111; font-size: 14px; font-weight: 800; direction: rtl; text-align: right; align-self: center; justify-self: end; white-space: nowrap; }}
+        table {{ width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; margin-top: 1.2mm; border: 1px solid #cae8f9; border-radius: 18px; overflow: hidden; font-family: 'Cairo', 'Segoe UI', sans-serif; }}
+        thead th {{ background: linear-gradient(135deg, #b8e3fb 0%, #9fd4f3 100%); color: #111111; font-size: 15px; font-weight: 800; padding: 3.6mm 2.5mm; border-bottom: 1px solid #90c7e8; font-family: 'Cairo', 'Segoe UI', sans-serif; }}
+        tbody td {{ padding: 3.6mm 2.5mm; border-bottom: 1px solid #e7f4fb; font-size: 14px; vertical-align: top; font-family: 'Cairo', 'Segoe UI', sans-serif; color: #111111; }}
         tbody tr:nth-child(odd) td {{ background: #fafdff; }}
         tbody tr:nth-child(even) td {{ background: #f1f9fe; }}
         tbody tr:last-child td {{ border-bottom: 0; }}
         .num {{ text-align: center; }}
         .service {{ text-align: right; }}
-        .gov {{ color: #7a5a00; font-weight: 700; }}
-        .total {{ color: #0b7a75; font-weight: 800; }}
-        .stamp-wrap {{ display: flex; justify-content: center; margin-top: 3.4mm; }}
+        .gov {{ color: #17873a; font-weight: 700; }}
+        .total {{ color: #111111; font-weight: 800; }}
+        .stamp-wrap {{ display: flex; justify-content: center; margin-top: 3mm; break-inside: avoid; page-break-inside: avoid; }}
         .stamp-image {{ max-width: 34mm; max-height: 34mm; width: auto; height: auto; object-fit: contain; }}
-        .footer-row {{ display: flex; justify-content: flex-end; align-items: center; gap: 4mm; margin-top: 3mm; }}
+        .footer-row {{ display: flex; justify-content: flex-end; align-items: center; gap: 4mm; margin-top: 2.2mm; break-inside: avoid; page-break-inside: avoid; }}
         .total-card {{ min-width: 54mm; border: 1px solid #b8ddf1; border-radius: 14px; background: #dff3ff; color: #111111; padding: 2.4mm 3mm; }}
-        .total-label {{ font-size: 10.5px; color: #111111; margin-bottom: 0.8mm; font-weight: 700; }}
-        .total-value {{ font-size: 17px; font-weight: 700; color: #111111; }}
-        .bottom-section {{ margin-top: auto; }}
-        .signature-row {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18mm; margin-top: 12mm; align-items: end; direction: rtl; }}
+        .total-label {{ font-size: 12.5px; color: #111111; margin-bottom: 0.8mm; font-weight: 700; }}
+        .total-value {{ font-size: 19px; font-weight: 700; color: #111111; }}
+        .bottom-section {{ margin-top: auto; display: flex; flex-direction: column; gap: 4mm; }}
+        .signature-row {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18mm; margin-top: 0; align-items: end; direction: rtl; break-inside: avoid; page-break-inside: avoid; }}
         .signature-block {{ text-align: center; direction: rtl; }}
-        .signature-line {{ width: 88%; margin: 0 auto; border-top: 2px dotted #78aecd; padding-top: 3.2mm; color: #144b71; direction: rtl; }}
-        .signature-ar {{ font-size: 11px; font-weight: 700; margin-bottom: 1.2mm; }}
-        .signature-en {{ font-size: 13px; font-weight: 800; }}
-        .invoice-footer {{ margin-top: 6.5mm; background: linear-gradient(135deg, #e9f8ff 0%, #d7f0ff 100%); border: 1px solid #b9e4fb; border-radius: 18px; padding: 3.1mm 5mm; text-align: center; color: #15507c; font-size: 12px; font-weight: 700; direction: rtl; }}
+        .signature-line {{ width: 88%; margin: 0 auto; border-top: 2px dotted #78aecd; padding-top: 3.2mm; color: #111111; direction: rtl; }}
+        .signature-ar {{ font-size: 13px; font-weight: 700; margin-bottom: 1.2mm; }}
+        .signature-en {{ font-size: 15px; font-weight: 800; }}
+        .invoice-footer {{ margin-top: 0; background: linear-gradient(135deg, #e9f8ff 0%, #d7f0ff 100%); border: 1px solid #b9e4fb; border-radius: 18px; padding: 3.1mm 5mm; text-align: center; color: #111111; font-size: 14px; font-weight: 700; direction: rtl; break-inside: avoid; page-break-inside: avoid; }}
         .invoice-footer-text {{ display: inline-flex; align-items: center; justify-content: center; gap: 3mm; flex-wrap: wrap; direction: rtl; }}
         @media print {{
             body {{ background: #ffffff !important; }}
-            .sheet {{ width: auto; min-height: calc(297mm - 24mm); margin: 0; padding: 0; }}
+            html, body {{ width: 210mm; min-height: 297mm; }}
+            .sheet {{ width: 100%; min-height: calc(297mm - 8mm); margin: 0; padding: 1.5mm 1.8mm 2mm 1.8mm; }}
             .hero, .meta-card, .client-card, .client-side-card, .total-card, .invoice-footer, thead th, tbody td {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
         }}
     </style>
@@ -288,40 +304,46 @@ namespace ProWalid.ViewModels
                 <div class='hero-logo-wrap'>
                     {(string.IsNullOrWhiteSpace(logoDataUri) ? string.Empty : $"<img class='hero-logo' src='{logoDataUri}' alt='Logo' />")}
                 </div>
-                <div class='hero-invoice-title'>
-                    <div class='invoice-main-title'>INVOICE</div>
-                    <div class='invoice-sub-title'>فاتورة</div>
-                    <div class='invoice-title-line'></div>
-                </div>
                 <div class='hero-brand'>
                     <div class='brand-name'>{Escape(CompanyName)}</div>
                     <div class='brand-subtitle'>{Escape(CompanySubtitle)}</div>
-                    <div class='brand-line'>{Escape(CompanyAddress)}</div>
+                    <div class='tax-line'>{Escape(TaxNumber)}</div>
+                </div>
+                <div class='hero-contact'>
+                    {phoneLinesHtml}
+                    <div class='contact-line'>{Escape(CompanyEmail)}</div>
+                    <div class='contact-line'>{Escape(CompanyAddress)}</div>
                 </div>
             </div>
         </div>
 
         <div class='client-row'>
             <div class='meta-card client-side-card'>
-                <div class='side-meta-item'>
-                    <div class='meta-value'>{Escape(InvoiceNumber)}</div>
-                    <div class='meta-label'>رقم الفاتورة / Invoice No</div>
-                </div>
-                <div class='side-meta-item'>
-                    <div class='meta-value'>{Escape(InvoiceDate)}</div>
-                    <div class='meta-label'>التاريخ / Date</div>
+                <div class='side-meta-wrap'>
+                    <div class='side-meta-item'>
+                        <div class='meta-label'>رقم الفاتورة / Invoice No</div>
+                        <div class='meta-value'>{Escape(InvoiceNumber)}</div>
+                    </div>
+                    <div class='side-meta-item'>
+                        <div class='meta-label'>التاريخ / Date</div>
+                        <div class='meta-value'>{Escape(InvoiceDate)}</div>
+                    </div>
                 </div>
             </div>
             <div class='client-card'>
                 <div class='client-title'>بيانات العميل / Client Details</div>
-                <div class='client-name-wrap'>
-                    <div class='client-name'>{Escape(CustomerName)}</div>
-                </div>
+                <div class='client-name'>{Escape(CustomerName)}</div>
                 <div class='id-text'>رقم العميل / Customer ID: {Escape(CustomerIdText)}</div>
             </div>
         </div>
 
-        <div class='employee-row'>
+        <div class='invoice-heading-row'>
+            <div class='invoice-heading-spacer'></div>
+            <div class='invoice-heading-block'>
+                <div class='invoice-main-title'>INVOICE</div>
+                <div class='invoice-sub-title'>فاتورة</div>
+                <div class='invoice-title-line'></div>
+            </div>
             <div class='employee-line'>اسم الموظف / Employee: {Escape(EmployeeName)}</div>
         </div>
 

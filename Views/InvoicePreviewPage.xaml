@@ -745,18 +745,51 @@
                         </Grid>
                     </Border>
 
+                    <Grid x:Name="PdfRenderHost"
+                          Grid.Row="1"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Top"
+                          Opacity="0"
+                          IsHitTestVisible="False"
+                          FlowDirection="LeftToRight"/>
+
                     <Border Grid.Row="1"
                             Background="#FFFFFF"
                             BorderBrush="#D9E6F4"
                             BorderThickness="1"
                             CornerRadius="18"
-                            Padding="10"
+                            Padding="12"
                             FlowDirection="LeftToRight">
-                        <WebView2 x:Name="A4PrintWebView"
-                                  DefaultBackgroundColor="White"
-                                  FlowDirection="LeftToRight"
-                                  HorizontalAlignment="Stretch"
-                                  VerticalAlignment="Stretch"/>
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollMode="Auto"
+                                      VerticalScrollMode="Auto"
+                                      ZoomMode="Disabled"
+                                      Padding="16">
+                            <Grid HorizontalAlignment="Center"
+                                  VerticalAlignment="Top"
+                                  FlowDirection="LeftToRight">
+                                <Border Width="794"
+                                        Height="1123"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Top"
+                                        FlowDirection="LeftToRight"
+                                        Background="White"
+                                        BorderBrush="#C8DCEF"
+                                        BorderThickness="1"
+                                        CornerRadius="10">
+                                    <Grid HorizontalAlignment="Stretch"
+                                          VerticalAlignment="Stretch"
+                                          FlowDirection="LeftToRight">
+                                        <WebView2 x:Name="A4PrintWebView"
+                                                  DefaultBackgroundColor="White"
+                                                  FlowDirection="LeftToRight"
+                                                  HorizontalAlignment="Stretch"
+                                                  VerticalAlignment="Stretch"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </ScrollViewer>
                     </Border>
                 </Grid>
             </PivotItem>
