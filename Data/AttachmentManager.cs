@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ProWalid.Data
@@ -125,6 +127,73 @@ namespace ProWalid.Data
             {
                 System.Diagnostics.Debug.WriteLine($"Error opening attachment: {ex.Message}");
             }
+        }
+
+        public async Task<string> CreateZipForAttachmentsAsync(IEnumerable<ProWalid.Models.Attachment> attachments, string folderName, string zipFileName)
+        {
+            var validAttachments = attachments
+                .Where(attachment => attachment != null && !string.IsNullOrWhiteSpace(attachment.FilePath) && File.Exists(attachment.FilePath))
+                .ToList();
+
+            if (validAttachments.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var downloadsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            Directory.CreateDirectory(downloadsFolder);
+
+            var safeFolderName = SanitizeFileName(string.IsNullOrWhiteSpace(folderName) ? "Attachments" : folderName);
+            var safeZipFileName = SanitizeFileName(string.IsNullOrWhiteSpace(zipFileName) ? "Attachments" : zipFileName);
+            var zipPath = Path.Combine(downloadsFolder, $"{safeZipFileName}.zip");
+
+            if (File.Exists(zipPath))
+            {
+                File.Delete(zipPath);
+            }
+
+            await Task.Run(() =>
+            {
+                using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create);
+                var usedEntryNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var attachment in validAttachments)
+                {
+                    var sourcePath = attachment.FilePath;
+                    var originalName = !string.IsNullOrWhiteSpace(attachment.OriginalFileName)
+                        ? attachment.OriginalFileName
+                        : Path.GetFileName(sourcePath);
+
+                    var safeEntryName = GetUniqueFileName(SanitizeFileName(originalName), usedEntryNames);
+                    var entryPath = Path.Combine(safeFolderName, safeEntryName).Replace('\\', '/');
+                    archive.CreateEntryFromFile(sourcePath, entryPath);
+                }
+            });
+
+            return zipPath;
+        }
+
+        private static string SanitizeFileName(string fileName)
+        {
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var sanitized = new string(fileName.Select(ch => invalidChars.Contains(ch) ? '_' : ch).ToArray()).Trim();
+            return string.IsNullOrWhiteSpace(sanitized) ? "Attachments" : sanitized;
+        }
+
+        private static string GetUniqueFileName(string fileName, ISet<string> usedFileNames)
+        {
+            var baseName = Path.GetFileNameWithoutExtension(fileName);
+            var extension = Path.GetExtension(fileName);
+            var candidate = string.IsNullOrWhiteSpace(fileName) ? $"file{extension}" : fileName;
+            var counter = 1;
+
+            while (!usedFileNames.Add(candidate))
+            {
+                candidate = $"{baseName} ({counter}){extension}";
+                counter++;
+            }
+
+            return candidate;
         }
     }
 }

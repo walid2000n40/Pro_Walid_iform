@@ -612,6 +612,12 @@ namespace ProWalid.ViewModels
         [RelayCommand]
         private async Task DownloadAttachmentsAsync()
         {
+            if (SelectedTransaction == null)
+            {
+                await ShowMessageAsync("تحميل المرفقات", "يرجى تحديد معاملة أولاً.");
+                return;
+            }
+
             var attachments = GetSelectedAttachments();
             if (attachments.Count == 0)
             {
@@ -619,10 +625,23 @@ namespace ProWalid.ViewModels
                 return;
             }
 
-            foreach (var attachment in attachments)
+            var invoiceNumber = string.IsNullOrWhiteSpace(SelectedTransaction.InvoiceNumber)
+                ? "TransactionAttachments"
+                : $"Attachments_{SelectedTransaction.InvoiceNumber}";
+
+            var zipPath = await _attachmentManager.CreateZipForAttachmentsAsync(
+                attachments,
+                invoiceNumber,
+                invoiceNumber);
+
+            if (string.IsNullOrWhiteSpace(zipPath) || !File.Exists(zipPath))
             {
-                await OpenAttachmentAsync(attachment);
+                await ShowMessageAsync("تحميل المرفقات", "تعذر إنشاء الملف المضغوط للمرفقات.");
+                return;
             }
+
+            await _attachmentManager.OpenAttachmentAsync(zipPath);
+            await ShowMessageAsync("تحميل المرفقات", $"تم إنشاء ملف مضغوط للمرفقات بنجاح:\n{zipPath}");
         }
 
         [RelayCommand]
@@ -642,14 +661,22 @@ namespace ProWalid.ViewModels
                 return;
             }
 
+            var itemIds = SelectedTransaction.Items
+                .Select(item => item.Id)
+                .Where(id => id > 0)
+                .ToList();
+
             foreach (var attachment in attachments)
             {
                 _attachmentManager.DeleteAttachment(attachment.FilePath);
             }
 
+            await _databaseHelper.DeleteAttachmentsByTransactionItemIdsAsync(itemIds);
+
             foreach (var item in selectedItems)
             {
                 item.Attachments.Clear();
+                item.AttachmentPath = string.Empty;
             }
 
             foreach (var item in SelectedTransaction.Items)

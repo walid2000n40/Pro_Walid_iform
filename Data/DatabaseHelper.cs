@@ -393,6 +393,26 @@ namespace ProWalid.Data
                 new { Id = attachmentId });
         }
 
+        public async Task DeleteAttachmentsByTransactionItemIdsAsync(IEnumerable<long> transactionItemIds)
+        {
+            var itemIds = transactionItemIds
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+
+            if (itemIds.Count == 0)
+            {
+                return;
+            }
+
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            await connection.ExecuteAsync(
+                "DELETE FROM Attachments WHERE TransactionItemId IN @ItemIds",
+                new { ItemIds = itemIds });
+        }
+
         public async Task<List<Customer>> GetAllCustomersAsync()
         {
             using var connection = new SqliteConnection(_connectionString);
