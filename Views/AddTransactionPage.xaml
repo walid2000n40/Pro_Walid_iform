@@ -362,6 +362,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16">
@@ -409,6 +410,30 @@
                     </StackPanel>
 
                     <Border Grid.Column="2"
+                            Background="#F3E8FF"
+                            BorderBrush="#7C3AED"
+                            BorderThickness="2"
+                            CornerRadius="8"
+                            Padding="24,12"
+                            Margin="0,0,16,0">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Text="إجمالي الفايدة:"
+                                       FontSize="18"
+                                       FontWeight="Bold"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding TotalProfit, Mode=OneWay}"
+                                       FontSize="24"
+                                       FontWeight="Bold"
+                                       Foreground="#6D28D9"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="درهم إماراتي"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="3"
                             Background="#E3F2FD"
                             BorderBrush="#0078D4"
                             BorderThickness="2"

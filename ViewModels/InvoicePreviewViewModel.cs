@@ -19,6 +19,7 @@ namespace ProWalid.ViewModels
         public const string ErpTemplateKey = "erp";
         public const string PremiumTemplateKey = "premium";
         public const string HazemTemplateKey = "hazem";
+        public const string FinalAggregationTemplateKey = "final-aggregation";
 
         private Frame? _frame;
         private readonly DatabaseHelper _databaseHelper = new();
@@ -76,11 +77,17 @@ namespace ProWalid.ViewModels
 
         public ObservableCollection<InvoicePreviewLineItem> Items { get; } = new();
 
-        public double Subtotal => Items.Sum(item => item.Total);
+        public ObservableCollection<InvoiceSummaryRow> FinalAggregationRows { get; } = new();
 
-        public double Vat => IsHazemInvoice ? 0 : Subtotal * 0.05;
+        public bool IsFinalAggregationPreview => string.Equals(SelectedPreviewTemplateKey, FinalAggregationTemplateKey, StringComparison.OrdinalIgnoreCase);
 
-        public double GrandTotal => Subtotal + Vat;
+        public double Subtotal => IsFinalAggregationPreview
+            ? FinalAggregationRows.Sum(row => row.PrintingFeesAmount)
+            : Items.Sum(item => item.Total);
+
+        public double Vat => 0;
+
+        public double GrandTotal => Subtotal;
 
         public string SubtotalText => $"{Subtotal:N2} درهم";
 
@@ -91,13 +98,24 @@ namespace ProWalid.ViewModels
         public InvoicePreviewViewModel()
         {
             Items.CollectionChanged += (_, _) => RefreshTotals();
+            FinalAggregationRows.CollectionChanged += (_, _) => RefreshTotals();
 
             LoadSamplePreview();
         }
 
-        public async Task LoadAsync(InvoiceSummaryRow? row)
+        public async Task LoadAsync(object? parameter)
         {
-            if (row?.Transaction == null)
+            if (parameter is System.Collections.Generic.IEnumerable<InvoiceSummaryRow> rows)
+            {
+                var selectedRows = rows.Where(row => row?.Transaction != null).ToList();
+                if (selectedRows.Count > 0)
+                {
+                    await LoadFinalAggregationAsync(selectedRows);
+                    return;
+                }
+            }
+
+            if (parameter is not InvoiceSummaryRow row || row.Transaction == null)
             {
                 LoadSamplePreview();
                 return;
@@ -130,6 +148,7 @@ namespace ProWalid.ViewModels
                 : "هذه معاينة حقيقية مبنية على بيانات الفاتورة المحفوظة."
                 ;
 
+            FinalAggregationRows.Clear();
             Items.Clear();
 
             var lineNumber = 1;
@@ -142,6 +161,56 @@ namespace ProWalid.ViewModels
                     Quantity = item.Quantity,
                     UnitPrice = item.UnitPrice,
                     GovFees = item.GovFees
+                });
+            }
+
+            RefreshTotals();
+        }
+
+        private async Task LoadFinalAggregationAsync(System.Collections.Generic.IReadOnlyList<InvoiceSummaryRow> rows)
+        {
+            var firstRow = rows[0];
+            var customer = (await _databaseHelper.GetAllCustomersAsync())
+                .FirstOrDefault(item => item.Id == firstRow.Transaction.CustomerId);
+
+            CustomerName = !string.IsNullOrWhiteSpace(firstRow.CompanyName)
+                ? firstRow.CompanyName
+                : !string.IsNullOrWhiteSpace(firstRow.Transaction.CompanyName)
+                    ? firstRow.Transaction.CompanyName
+                    : firstRow.CustomerName;
+
+            CustomerIdText = customer == null
+                ? $"ID {firstRow.Transaction.CustomerId}"
+                : $"ID {(customer.CustomerNumber > 0 ? customer.CustomerNumber : customer.Id)}";
+
+            InvoiceNumber = $"كشف-{firstRow.Transaction.CustomerId}";
+            InvoiceDate = DateTime.Now.ToString("yyyy/MM/dd");
+            DueDate = InvoiceDate;
+            InvoiceStatus = "كشف تجميع نهائي";
+            EmployeeName = string.Empty;
+            IsHazemInvoice = false;
+            SelectedPreviewTemplateKey = FinalAggregationTemplateKey;
+            Notes = "هذا الكشف يعرض رسوم الطباعة للفواتير المحددة فقط، ويتم احتساب رسوم كل فاتورة من إجمالي الفايدة المسجل داخل بنود المعاملة.";
+
+            Items.Clear();
+            FinalAggregationRows.Clear();
+
+            var serial = 1;
+            foreach (var row in rows.OrderBy(item => item.Transaction.TransactionDate).ThenBy(item => item.InvoiceNumber))
+            {
+                FinalAggregationRows.Add(new InvoiceSummaryRow
+                {
+                    SerialNumber = serial++,
+                    InvoiceNumber = row.InvoiceNumber,
+                    TransactionDateText = row.TransactionDateText,
+                    CustomerName = row.CustomerName,
+                    CompanyName = row.CompanyName,
+                    EmployeeName = row.EmployeeName,
+                    Status = row.Status,
+                    TotalAmount = row.TotalAmount,
+                    ItemsCount = row.ItemsCount,
+                    Transaction = row.Transaction,
+                    IsSelected = row.IsSelected
                 });
             }
 
@@ -167,6 +236,7 @@ namespace ProWalid.ViewModels
             SelectedPreviewTemplateKey = FluentTemplateKey;
             Notes = "هذه مجرد معاينة بصرية أولية لاختيار اتجاه التصميم قبل اعتماد النموذج النهائي وحقن بياناتك الحقيقية.";
 
+            FinalAggregationRows.Clear();
             Items.Clear();
             Items.Add(new InvoicePreviewLineItem { LineNumber = 1, Description = "إدارة معاملة متكاملة", Quantity = 1, UnitPrice = 1250, GovFees = "125" });
             Items.Add(new InvoicePreviewLineItem { LineNumber = 2, Description = "إرفاق ومراجعة مستندات", Quantity = 3, UnitPrice = 240, GovFees = "80" });
@@ -231,12 +301,18 @@ namespace ProWalid.ViewModels
                 return HazemTemplateKey;
             }
 
+            if (string.Equals(templateKey, FinalAggregationTemplateKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return FinalAggregationTemplateKey;
+            }
+
             return FluentTemplateKey;
         }
 
         private void RefreshTotals()
         {
             OnPropertyChanged(nameof(IsHazemInvoice));
+            OnPropertyChanged(nameof(IsFinalAggregationPreview));
             OnPropertyChanged(nameof(Subtotal));
             OnPropertyChanged(nameof(Vat));
             OnPropertyChanged(nameof(GrandTotal));
@@ -253,8 +329,82 @@ namespace ProWalid.ViewModels
                 ErpTemplateKey => BuildErpPrintHtml(),
                 PremiumTemplateKey => BuildPremiumPrintHtml(),
                 HazemTemplateKey => BuildHazemPrintHtml(),
+                FinalAggregationTemplateKey => BuildFinalAggregationPrintHtml(),
                 _ => BuildFluentPrintHtml()
             };
+        }
+
+        private string BuildFinalAggregationPrintHtml()
+        {
+            var rows = new StringBuilder();
+            foreach (var row in FinalAggregationRows)
+            {
+                rows.Append($@"
+                    <tr>
+                        <td class='num'>{row.SerialNumber}</td>
+                        <td class='num'>{Escape(row.InvoiceNumber)}</td>
+                        <td class='num total'>{row.PrintingFeesAmount:N2}</td>
+                    </tr>");
+            }
+
+            return $@"<!DOCTYPE html>
+<html lang='ar' dir='rtl'>
+<head>
+    <meta charset='utf-8' />
+    <title>{Escape(InvoiceNumber)}</title>
+    <style>
+        @page {{ size: A4; margin: 8mm; }}
+        * {{ box-sizing: border-box; }}
+        html, body {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; forced-color-adjust: none; }}
+        body {{ margin: 0; background: #f7fbff; font-family: 'Cairo', 'Segoe UI', sans-serif; color: #1f2937; }}
+        .sheet {{ width: 100%; min-height: calc(297mm - 16mm); background: #ffffff; border: 1px solid #dbe7f3; padding: 10mm 9mm; }}
+        .office-name {{ text-align: center; font-size: 28px; font-weight: 800; color: #123b66; margin-bottom: 5mm; }}
+        .company-name {{ text-align: center; font-size: 22px; font-weight: 700; color: #1e4f82; margin-bottom: 3mm; }}
+        .statement-title {{ text-align: center; font-size: 20px; font-weight: 800; color: #166534; margin-bottom: 6mm; }}
+        .meta {{ display: flex; justify-content: space-between; margin-bottom: 5mm; font-size: 14px; font-weight: 700; color: #475569; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 2mm; }}
+        thead th {{ background: #e8f3ff; color: #123b66; border: 1px solid #c7dbef; padding: 12px 10px; font-size: 14px; }}
+        tbody td {{ border: 1px solid #dbe7f3; padding: 12px 10px; font-size: 14px; }}
+        tbody tr:nth-child(odd) td {{ background: #fbfdff; }}
+        tbody tr:nth-child(even) td {{ background: #f3f8fd; }}
+        .num {{ text-align: center; }}
+        .total {{ font-weight: 800; color: #166534; }}
+        .summary {{ margin-top: 6mm; display: flex; justify-content: flex-end; }}
+        .summary-card {{ min-width: 70mm; border: 1px solid #b8ddf1; background: #dff3ff; border-radius: 14px; padding: 12px 14px; }}
+        .summary-label {{ font-size: 14px; color: #123b66; font-weight: 700; margin-bottom: 6px; }}
+        .summary-value {{ font-size: 24px; color: #0f3f71; font-weight: 800; }}
+    </style>
+</head>
+<body>
+    <div class='sheet'>
+        <div class='office-name'>{Escape(CompanyName)}</div>
+        <div class='company-name'>{Escape(CustomerName)}</div>
+        <div class='statement-title'>رسوم الطباعة</div>
+        <div class='meta'>
+            <div>التاريخ: {Escape(InvoiceDate)}</div>
+            <div>عدد الفواتير: {FinalAggregationRows.Count}</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style='width:18%;'>رقم مسلسل</th>
+                    <th style='width:42%;'>رقم الفاتورة</th>
+                    <th style='width:40%;'>رسوم الطباعة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows}
+            </tbody>
+        </table>
+        <div class='summary'>
+            <div class='summary-card'>
+                <div class='summary-label'>إجمالي الكشف</div>
+                <div class='summary-value'>{Escape(GrandTotalText)}</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>";
         }
 
         private string BuildFluentPrintHtml()
@@ -305,7 +455,7 @@ namespace ProWalid.ViewModels
                 footerGradientEnd: "#eef2f7",
                 footerBorder: "#d8e0ea",
                 signatureBorder: "#94a3b8",
-                useGovFeesColumn: true,
+                useGovFeesColumn: false,
                 employeeColor: "#7f1d1d");
         }
 
@@ -331,7 +481,7 @@ namespace ProWalid.ViewModels
                 footerGradientEnd: "#7c3aed",
                 footerBorder: "#c4b5fd",
                 signatureBorder: "#8b5cf6",
-                useGovFeesColumn: true,
+                useGovFeesColumn: false,
                 employeeColor: "#fecaca",
                 darkSurfaceText: "#ffffff",
                 footerTextColor: "#f5f3ff");

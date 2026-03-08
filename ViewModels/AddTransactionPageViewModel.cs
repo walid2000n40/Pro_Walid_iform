@@ -5,6 +5,7 @@ using ProWalid.Models;
 using ProWalid.Data;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
@@ -54,6 +55,8 @@ namespace ProWalid.ViewModels
 
         public double GrandTotal => Items.Sum(item => item.Total);
 
+        public double TotalProfit => Items.Sum(item => item.Profit);
+
         public AddTransactionPageViewModel()
         {
             _databaseHelper = new DatabaseHelper();
@@ -62,6 +65,7 @@ namespace ProWalid.ViewModels
             Items.CollectionChanged += (s, e) =>
             {
                 OnPropertyChanged(nameof(GrandTotal));
+                OnPropertyChanged(nameof(TotalProfit));
             };
 
             AddItemCommand.Execute(null);
@@ -127,14 +131,7 @@ namespace ProWalid.ViewModels
                         newItem.Attachments.Add(attachment);
                     }
 
-                    newItem.PropertyChanged += (s, e) =>
-                    {
-                        if (e.PropertyName == nameof(TransactionItemDetail.Total))
-                        {
-                            OnPropertyChanged(nameof(GrandTotal));
-                        }
-                    };
-
+                    RegisterItem(newItem);
                     Items.Add(newItem);
                 }
             }
@@ -144,14 +141,29 @@ namespace ProWalid.ViewModels
         private void AddItem()
         {
             var newItem = new TransactionItemDetail();
-            newItem.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(TransactionItemDetail.Total))
-                {
-                    OnPropertyChanged(nameof(GrandTotal));
-                }
-            };
+            RegisterItem(newItem);
             Items.Add(newItem);
+        }
+
+        private void RegisterItem(TransactionItemDetail item)
+        {
+            item.PropertyChanged -= TransactionItem_PropertyChanged;
+            item.PropertyChanged += TransactionItem_PropertyChanged;
+        }
+
+        private void TransactionItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(TransactionItemDetail.Total)
+                || e.PropertyName == nameof(TransactionItemDetail.Quantity)
+                || e.PropertyName == nameof(TransactionItemDetail.UnitPrice))
+            {
+                OnPropertyChanged(nameof(GrandTotal));
+            }
+
+            if (e.PropertyName == nameof(TransactionItemDetail.Profit))
+            {
+                OnPropertyChanged(nameof(TotalProfit));
+            }
         }
 
         private async Task EnsureProvisionalInvoiceNumberAsync(bool forceRefresh = false)

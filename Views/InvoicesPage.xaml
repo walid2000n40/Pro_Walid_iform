@@ -44,6 +44,19 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
+
+        <Style x:Key="InvoiceSelectionToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="#EAF4FF"/>
+            <Setter Property="Foreground" Value="#0B62A2"/>
+            <Setter Property="BorderBrush" Value="#0B62A2"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="MinWidth" Value="52"/>
+            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
     </Page.Resources>
 
     <Grid Padding="28,22">
@@ -122,16 +135,6 @@
                             </StackPanel>
                         </Button>
 
-                        <Button Command="{Binding ShowInvoicePreviewCommand}"
-                                Style="{StaticResource ModernToolbarButtonStyle}"
-                                Background="#EEF2FF"
-                                Foreground="#3730A3">
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <SymbolIcon Symbol="Preview" Foreground="#4F46E5"/>
-                                <TextBlock Text="معاينة النماذج" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-
                         <Button Command="{Binding ShowGroupedInvoiceCommand}"
                                 Style="{StaticResource ModernToolbarButtonStyle}"
                                 Background="#FFF4E8"
@@ -195,6 +198,7 @@
                         Padding="14,12">
                     <Grid>
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="72"/>
                             <ColumnDefinition Width="100"/>
                             <ColumnDefinition Width="130"/>
                             <ColumnDefinition Width="130"/>
@@ -205,14 +209,15 @@
                             <ColumnDefinition Width="220"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0" Text="رقم مسلسل" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="1" Text="رقم الفاتورة" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="التاريخ" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="3" Text="العميل" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="4" Text="الشركة" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="5" Text="الموظف" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="6" Text="الحالة" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="7" Text="الإجراءات" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Text="تحديد" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="رقم مسلسل" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="رقم الفاتورة" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="3" Text="التاريخ" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="4" Text="العميل" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="5" Text="الشركة" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="6" Text="الموظف" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="7" Text="الحالة" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="8" Text="الإجراءات" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
                     </Grid>
                 </Border>
 
@@ -241,6 +246,7 @@
                             <Border BorderBrush="#EDF3F9" BorderThickness="0,0,0,1" Padding="14,12">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="72"/>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="130"/>
                                         <ColumnDefinition Width="130"/>
@@ -251,14 +257,20 @@
                                         <ColumnDefinition Width="220"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <TextBlock Grid.Column="0" Text="{Binding SerialNumber}" FontSize="14" Foreground="#244C71" TextAlignment="Center" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding InvoiceNumber}" FontSize="14" FontWeight="Bold" Foreground="#1B4E80" TextAlignment="Center" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding TransactionDateText}" FontSize="14" Foreground="#3A4F63" TextAlignment="Center" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="3" Text="{Binding CustomerName}" FontSize="14" FontWeight="SemiBold" Foreground="#273F58" TextAlignment="Center" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="4" Text="{Binding CompanyName}" FontSize="14" Foreground="#273F58" TextAlignment="Center" TextWrapping="WrapWholeWords" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="5" Text="{Binding EmployeeName}" FontSize="14" Foreground="#273F58" TextAlignment="Center" VerticalAlignment="Center"/>
+                                    <ToggleButton Grid.Column="0"
+                                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                  Style="{StaticResource InvoiceSelectionToggleButtonStyle}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Content="تحديد"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SerialNumber}" FontSize="14" Foreground="#244C71" TextAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding InvoiceNumber}" FontSize="14" FontWeight="Bold" Foreground="#1B4E80" TextAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding TransactionDateText}" FontSize="14" Foreground="#3A4F63" TextAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="4" Text="{Binding CustomerName}" FontSize="14" FontWeight="SemiBold" Foreground="#273F58" TextAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="5" Text="{Binding CompanyName}" FontSize="14" Foreground="#273F58" TextAlignment="Center" TextWrapping="WrapWholeWords" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="6" Text="{Binding EmployeeName}" FontSize="14" Foreground="#273F58" TextAlignment="Center" VerticalAlignment="Center"/>
 
-                                    <Border Grid.Column="6"
+                                    <Border Grid.Column="7"
                                             Background="#EAF6EE"
                                             BorderBrush="#B9E2C2"
                                             BorderThickness="1"
@@ -269,7 +281,7 @@
                                         <TextBlock Text="{Binding Status}" Foreground="#2E7D32" FontSize="13" FontWeight="SemiBold"/>
                                     </Border>
 
-                                    <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <StackPanel Grid.Column="8" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <Button Command="{Binding DataContext.ViewTransactionCommand, ElementName=InvoicesPageRoot}"
                                                 CommandParameter="{Binding}"
                                                 Style="{StaticResource RowActionButtonStyle}"
@@ -299,11 +311,19 @@
                         Padding="16,12">
                     <Grid>
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="1"
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding SelectedPrintingFeesTotalText}"
+                                   FontSize="15"
+                                   FontWeight="Bold"
+                                   Foreground="#6D28D9"
+                                   Margin="0,0,16,0"/>
+
+                        <TextBlock Grid.Column="2"
                                    Text="{Binding TotalAmountText}"
                                    FontSize="15"
                                    FontWeight="Bold"

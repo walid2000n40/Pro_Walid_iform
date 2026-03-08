@@ -7,6 +7,7 @@ using ProWalid.Views;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,8 @@ namespace ProWalid.ViewModels
 {
     public partial class InvoicesViewModel : ObservableObject
     {
+        private static readonly HashSet<long> FinalAggregationCustomerIds = new() { 2, 4, 7, 8 };
+
         private readonly DatabaseHelper _databaseHelper;
         private Frame? _frame;
         private Customer? _selectedCustomer;
@@ -37,6 +40,12 @@ namespace ProWalid.ViewModels
 
         public string SavedInvoicesBadgeText => InvoicesCount.ToString();
 
+        public int SelectedInvoicesCount => InvoiceRows.Count(row => row.IsSelected);
+
+        public double SelectedPrintingFeesTotal => InvoiceRows.Where(row => row.IsSelected).Sum(row => row.PrintingFeesAmount);
+
+        public string SelectedPrintingFeesTotalText => $"رسوم الطباعة المحددة: {SelectedPrintingFeesTotal:N2} درهم";
+
         public InvoicesViewModel()
         {
             _databaseHelper = new DatabaseHelper();
@@ -46,6 +55,9 @@ namespace ProWalid.ViewModels
                 OnPropertyChanged(nameof(TotalAmount));
                 OnPropertyChanged(nameof(TotalAmountText));
                 OnPropertyChanged(nameof(SavedInvoicesBadgeText));
+                OnPropertyChanged(nameof(SelectedInvoicesCount));
+                OnPropertyChanged(nameof(SelectedPrintingFeesTotal));
+                OnPropertyChanged(nameof(SelectedPrintingFeesTotalText));
             };
         }
 
@@ -74,6 +86,11 @@ namespace ProWalid.ViewModels
                 .ThenByDescending(transaction => transaction.InvoiceNumber)
                 .ToList();
 
+            foreach (var row in InvoiceRows)
+            {
+                row.PropertyChanged -= InvoiceRow_PropertyChanged;
+            }
+
             InvoiceRows.Clear();
 
             var serial = 1;
@@ -83,7 +100,7 @@ namespace ProWalid.ViewModels
                     ? name
                     : "غير محدد";
 
-                InvoiceRows.Add(new InvoiceSummaryRow
+                var row = new InvoiceSummaryRow
                 {
                     SerialNumber = serial++,
                     InvoiceNumber = transaction.InvoiceNumber,
@@ -95,13 +112,29 @@ namespace ProWalid.ViewModels
                     TotalAmount = transaction.GrandTotal,
                     ItemsCount = transaction.ItemsCount,
                     Transaction = transaction
-                });
+                };
+
+                row.PropertyChanged += InvoiceRow_PropertyChanged;
+                InvoiceRows.Add(row);
             }
 
             OnPropertyChanged(nameof(InvoicesCount));
             OnPropertyChanged(nameof(TotalAmount));
             OnPropertyChanged(nameof(TotalAmountText));
             OnPropertyChanged(nameof(SavedInvoicesBadgeText));
+            OnPropertyChanged(nameof(SelectedInvoicesCount));
+            OnPropertyChanged(nameof(SelectedPrintingFeesTotal));
+            OnPropertyChanged(nameof(SelectedPrintingFeesTotalText));
+        }
+
+        private void InvoiceRow_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(InvoiceSummaryRow.IsSelected))
+            {
+                OnPropertyChanged(nameof(SelectedInvoicesCount));
+                OnPropertyChanged(nameof(SelectedPrintingFeesTotal));
+                OnPropertyChanged(nameof(SelectedPrintingFeesTotalText));
+            }
         }
 
         [RelayCommand]
@@ -177,21 +210,31 @@ namespace ProWalid.ViewModels
         [RelayCommand]
         private async Task ShowFinalAggregationAsync()
         {
-            if (InvoiceRows.Count == 0)
+            var selectedRows = InvoiceRows.Where(row => row.IsSelected).ToList();
+            if (selectedRows.Count == 0)
             {
-                await ShowMessageAsync("التجميع النهائي", "لا توجد معاملات لإظهار التجميع النهائي.");
+                await ShowMessageAsync("التجميع النهائي", "حدد فاتورة واحدة على الأقل لإنشاء كشف التجميع النهائي.");
                 return;
             }
 
-            var text = new StringBuilder();
-            text.AppendLine("التجميع النهائي");
-            text.AppendLine(string.Empty);
-            text.AppendLine($"عدد الفواتير: {InvoicesCount}");
-            text.AppendLine($"عدد البنود: {InvoiceRows.Sum(row => row.ItemsCount)}");
-            text.AppendLine(TotalAmountText);
-            text.AppendLine($"متوسط الفاتورة: {(InvoiceRows.Count == 0 ? 0 : InvoiceRows.Average(row => row.TotalAmount)):N2} درهم");
+            var customerIds = selectedRows
+                .Select(row => row.Transaction.CustomerId)
+                .Distinct()
+                .ToList();
 
-            await ShowMessageAsync("التجميع النهائي", text.ToString());
+            if (customerIds.Count != 1)
+            {
+                await ShowMessageAsync("التجميع النهائي", "يجب أن تكون كل الفواتير المحددة لنفس العميل فقط.");
+                return;
+            }
+
+            if (!FinalAggregationCustomerIds.Contains(customerIds[0]))
+            {
+                await ShowMessageAsync("التجميع النهائي", "هذا النموذج متاح فقط للعملاء ذوي المعرفات: 2، 4، 7، 8.");
+                return;
+            }
+
+            _frame?.Navigate(typeof(InvoicePreviewPage), selectedRows);
         }
 
         [RelayCommand]

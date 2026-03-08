@@ -1,27 +1,45 @@
-using ProWalid.Models;
+using CommunityToolkit.Mvvm.ComponentModel;
+using System.Linq;
 
 namespace ProWalid.Models
 {
-    public class InvoiceSummaryRow
+    public partial class InvoiceSummaryRow : ObservableObject
     {
-        public int SerialNumber { get; init; }
+        [ObservableProperty]
+        private int serialNumber;
 
-        public string InvoiceNumber { get; init; } = string.Empty;
+        [ObservableProperty]
+        private string invoiceNumber = string.Empty;
 
-        public string TransactionDateText { get; init; } = string.Empty;
+        [ObservableProperty]
+        private string transactionDateText = string.Empty;
 
-        public string CustomerName { get; init; } = string.Empty;
+        [ObservableProperty]
+        private string customerName = string.Empty;
 
-        public string CompanyName { get; init; } = string.Empty;
+        [ObservableProperty]
+        private string companyName = string.Empty;
 
-        public string EmployeeName { get; init; } = string.Empty;
+        [ObservableProperty]
+        private string employeeName = string.Empty;
 
-        public string Status { get; init; } = "محفوظة";
+        [ObservableProperty]
+        private string status = "محفوظة";
 
-        public double TotalAmount { get; init; }
+        [ObservableProperty]
+        private double totalAmount;
 
-        public int ItemsCount { get; init; }
+        [ObservableProperty]
+        private int itemsCount;
 
-        public Transaction Transaction { get; init; } = new();
+        [ObservableProperty]
+        private Transaction transaction = new();
+
+        [ObservableProperty]
+        private bool isSelected;
+
+        public double PrintingFeesAmount => Transaction?.Items?.Sum(item => item.Profit) ?? 0;
+
+        public string PrintingFeesAmountText => $"{PrintingFeesAmount:N2} درهم";
     }
 }

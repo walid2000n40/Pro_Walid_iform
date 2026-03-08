@@ -42,8 +42,8 @@ namespace ProWalid.Views
         {
             base.OnNavigatedTo(e);
             ViewModel.SetFrame(Frame);
-            await ViewModel.LoadAsync(e.Parameter as InvoiceSummaryRow);
-            SyncSelectedTemplateFromPivot();
+            await ViewModel.LoadAsync(e.Parameter);
+            ApplyViewModelTemplateToPivot();
             await RenderPrintPreviewAsync();
         }
 
@@ -106,13 +106,14 @@ namespace ProWalid.Views
                 return;
             }
 
-            SyncSelectedTemplateFromPivot();
-
             if (PreviewTemplatesPivot.SelectedItem is PivotItem selectedItem
                 && string.Equals(selectedItem.Tag?.ToString(), "A4", StringComparison.OrdinalIgnoreCase))
             {
                 await RenderPrintPreviewAsync();
+                return;
             }
+
+            SyncSelectedTemplateFromPivot();
         }
 
         private void SyncSelectedTemplateFromPivot()
@@ -123,12 +124,36 @@ namespace ProWalid.Views
             }
 
             var templateKey = selectedItem.Tag?.ToString();
-            if (string.IsNullOrWhiteSpace(templateKey))
+            if (string.IsNullOrWhiteSpace(templateKey)
+                || string.Equals(templateKey, "A4", StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
 
             ViewModel.SelectPreviewTemplate(templateKey);
+        }
+
+        private void ApplyViewModelTemplateToPivot()
+        {
+            if (PreviewTemplatesPivot == null)
+            {
+                return;
+            }
+
+            var templateKey = ViewModel.SelectedPreviewTemplateKey;
+            foreach (var item in PreviewTemplatesPivot.Items)
+            {
+                if (item is PivotItem pivotItem
+                    && string.Equals(pivotItem.Tag?.ToString(), templateKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!ReferenceEquals(PreviewTemplatesPivot.SelectedItem, pivotItem))
+                    {
+                        PreviewTemplatesPivot.SelectedItem = pivotItem;
+                    }
+
+                    return;
+                }
+            }
         }
 
         private async void PrintInvoiceButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)

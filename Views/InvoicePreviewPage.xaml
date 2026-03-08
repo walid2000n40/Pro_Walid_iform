@@ -53,7 +53,7 @@
                                FontWeight="Bold"
                                Foreground="#123B66"
                                TextAlignment="Right"/>
-                    <TextBlock Text="3 اتجاهات بصرية لاختيار الشكل المناسب قبل اعتماد النموذج النهائي"
+                    <TextBlock Text="نماذج متعددة للمعاينة والطباعة وفق نوع الفاتورة أو الكشف"
                                FontSize="14"
                                Foreground="#52708E"
                                TextAlignment="Right"/>
@@ -359,14 +359,6 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="ضريبة القيمة المضافة"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding VatText}" FontWeight="SemiBold"/>
-                                        </Grid>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="الإجمالي النهائي" FontSize="16" FontWeight="Bold"/>
                                             <TextBlock Grid.Column="1" Text="{Binding GrandTotalText}" FontSize="18" FontWeight="Bold" Foreground="#0F766E"/>
                                         </Grid>
@@ -504,10 +496,6 @@
                                             <StackPanel Orientation="Horizontal" Spacing="6">
                                                 <TextBlock Text="Subtotal:" Foreground="#DDD6FE"/>
                                                 <TextBlock Text="{Binding SubtotalText}" Foreground="#DDD6FE"/>
-                                            </StackPanel>
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <TextBlock Text="VAT:" Foreground="#DDD6FE"/>
-                                                <TextBlock Text="{Binding VatText}" Foreground="#DDD6FE"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
@@ -681,7 +669,6 @@
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
@@ -689,10 +676,132 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="الإجمالي الفرعي" Foreground="#DCEBFF"/>
                                             <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SubtotalText}" Foreground="White" FontWeight="SemiBold"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="الضريبة" Foreground="#DCEBFF" Margin="0,8,0,0"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding VatText}" Foreground="White" FontWeight="SemiBold" Margin="0,8,0,0"/>
-                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="الإجمالي النهائي" Foreground="White" FontWeight="Bold" Margin="0,12,0,0"/>
-                                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding GrandTotalText}" Foreground="#FDE68A" FontSize="18" FontWeight="Bold" Margin="0,12,0,0"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="الإجمالي النهائي" Foreground="White" FontWeight="Bold" Margin="0,12,0,0"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding GrandTotalText}" Foreground="#FDE68A" FontSize="18" FontWeight="Bold" Margin="0,12,0,0"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+            </PivotItem>
+
+            <PivotItem Header="التجميع النهائي"
+                       Tag="final-aggregation">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Border Background="#FFFFFF"
+                            BorderBrush="#D7E8F7"
+                            BorderThickness="1"
+                            CornerRadius="22"
+                            Padding="26"
+                            Margin="0,0,0,18">
+                        <StackPanel Spacing="22">
+                            <StackPanel HorizontalAlignment="Center" Spacing="6">
+                                <TextBlock Text="{Binding CompanyName}"
+                                           FontSize="30"
+                                           FontWeight="Bold"
+                                           Foreground="#123B66"
+                                           TextAlignment="Center"/>
+                                <TextBlock Text="{Binding CustomerName}"
+                                           FontSize="20"
+                                           FontWeight="SemiBold"
+                                           Foreground="#1E4F82"
+                                           TextAlignment="Center"/>
+                                <TextBlock Text="رسوم الطباعة"
+                                           FontSize="22"
+                                           FontWeight="Bold"
+                                           Foreground="#166534"
+                                           TextAlignment="Center"/>
+                            </StackPanel>
+
+                            <Border Background="#F8FBFF"
+                                    BorderBrush="#D9E6F4"
+                                    BorderThickness="1"
+                                    CornerRadius="18"
+                                    Padding="18,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="2" Text="عدد الفواتير:" FontWeight="Bold" Foreground="#27496D" Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding FinalAggregationRows.Count}" Foreground="#123B66" FontWeight="SemiBold" Margin="0,0,20,0"/>
+                                    <TextBlock Grid.Column="0" Text="{Binding InvoiceDate}" Foreground="#52708E" HorizontalAlignment="Left"/>
+                                </Grid>
+                            </Border>
+
+                            <Border Background="#FFFFFF" BorderBrush="#E3EDF7" BorderThickness="1" CornerRadius="18" Padding="0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <Border Grid.Row="0" Background="#EAF2FB" CornerRadius="18,18,0,0" Padding="16,14">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="180"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="رقم مسلسل" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="رقم الفاتورة" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
+                                            <TextBlock Grid.Column="2" Text="رسوم الطباعة" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <ItemsControl Grid.Row="1" ItemsSource="{Binding FinalAggregationRows}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border BorderBrush="#EDF3F9" BorderThickness="0,0,0,1" Padding="16,14">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="120"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="180"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0" Text="{Binding SerialNumber}" FontSize="14" Foreground="#244C71" TextAlignment="Center"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding InvoiceNumber}" FontSize="14" FontWeight="SemiBold" Foreground="#1B4E80" TextAlignment="Center"/>
+                                                        <TextBlock Grid.Column="2" Text="{Binding PrintingFeesAmountText}" FontSize="14" FontWeight="Bold" Foreground="#166534" TextAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Grid>
+                            </Border>
+
+                            <Grid ColumnSpacing="16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="320"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Column="0" Background="#F9FBFE" BorderBrush="#E2EBF4" BorderThickness="1" CornerRadius="18" Padding="16">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="ملاحظات" FontSize="15" FontWeight="Bold" Foreground="#163B63"/>
+                                        <TextBlock Text="{Binding Notes}" TextWrapping="WrapWholeWords" Foreground="#4E6580" LineHeight="26"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Column="1" Background="#0F3F71" CornerRadius="20" Padding="18">
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Text="الملخص المالي" FontSize="16" FontWeight="Bold" Foreground="White"/>
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="إجمالي رسوم الطباعة" Foreground="#DCEBFF"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SubtotalText}" Foreground="White" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="إجمالي الكشف" Foreground="White" FontWeight="Bold" Margin="0,12,0,0"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding GrandTotalText}" Foreground="#FDE68A" FontSize="18" FontWeight="Bold" Margin="0,12,0,0"/>
                                         </Grid>
                                     </StackPanel>
                                 </Border>
