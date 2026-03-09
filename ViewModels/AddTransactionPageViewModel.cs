@@ -15,7 +15,7 @@ namespace ProWalid.ViewModels
 {
     public partial class AddTransactionPageViewModel : ObservableObject
     {
-        private const string HazemInvoiceTemplateKey = "hazem";
+        private const string UniversalInvoiceTemplateKey = InvoicePreviewViewModel.UniversalServerTemplateKey;
         private Frame _frame;
         private Transaction _originalTransaction;
         private bool _isEditMode;
@@ -210,7 +210,7 @@ namespace ProWalid.ViewModels
                 return _originalTransaction.InvoiceTemplateKey;
             }
 
-            return ShouldUseHazemTemplate() ? HazemInvoiceTemplateKey : string.Empty;
+            return UniversalInvoiceTemplateKey;
         }
 
         private async Task ShowMessageAsync(string title, string message)

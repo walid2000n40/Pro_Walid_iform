@@ -18,6 +18,7 @@ namespace ProWalid.ViewModels
     public partial class InvoicePreviewViewModel : ObservableObject
     {
         public const string FluentTemplateKey = "fluent";
+        public const string UniversalServerTemplateKey = "universal-server";
         public const string GroupedInvoiceTemplateKey = "grouped";
         public const string ErpTemplateKey = "erp";
         public const string PremiumTemplateKey = "premium";
@@ -81,7 +82,7 @@ namespace ProWalid.ViewModels
         private string printHtml = string.Empty;
 
         [ObservableProperty]
-        private string selectedPreviewTemplateKey = FluentTemplateKey;
+        private string selectedPreviewTemplateKey = UniversalServerTemplateKey;
 
         public ObservableCollection<InvoicePreviewLineItem> Items { get; } = new();
 
@@ -192,16 +193,19 @@ namespace ProWalid.ViewModels
             EmployeeName = string.IsNullOrWhiteSpace(row.EmployeeName) ? "غير محدد" : row.EmployeeName;
             var resolvedTemplateKey = !string.IsNullOrWhiteSpace(templateKeyOverride)
                 ? templateKeyOverride
-                : IsHazemTransaction(row.Transaction.InvoiceTemplateKey, CustomerName)
-                    ? HazemTemplateKey
-                    : FluentTemplateKey;
+                : ResolveDefaultTemplateKey(row.Transaction.InvoiceTemplateKey, row.Transaction.CustomerId, CustomerName);
 
-            IsHazemInvoice = string.Equals(resolvedTemplateKey, HazemTemplateKey, StringComparison.OrdinalIgnoreCase)
+            IsHazemInvoice = row.Transaction.CustomerId == 1
+                || string.Equals(resolvedTemplateKey, HazemTemplateKey, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(resolvedTemplateKey, HazemServerTemplateKey, StringComparison.OrdinalIgnoreCase)
                 || IsHazemTransaction(row.Transaction.InvoiceTemplateKey, CustomerName);
             SelectedPreviewTemplateKey = NormalizeTemplateKey(resolvedTemplateKey);
-            Notes = IsHazemInvoice
+            Notes = row.Transaction.CustomerId == 1
+                ? "العميل 1 يستخدم النموذج العام الجديد مع عمود خصم معلوماتي لا يؤثر على الإجمالي أو أي منطق محاسبي."
+                : IsHazemInvoice
                 ? "نموذج حازم: كل فاتورة مرتبطة بمعاملة واحدة فقط. قيمة GOV-FEES المعروضة لكل بند هي قيمة معلوماتية فقط ولا تدخل ضمن الإجمالي أو أي منطق محاسبي."
+                : row.Transaction.CustomerId == 3
+                ? "Customer 3 uses the new shared invoice template with an English/LTR presentation while preserving the same invoice data and totals."
                 : "هذه معاينة حقيقية مبنية على بيانات الفاتورة المحفوظة."
                 ;
 
@@ -217,7 +221,8 @@ namespace ProWalid.ViewModels
                     Description = item.ServiceName,
                     Quantity = item.Quantity,
                     UnitPrice = item.UnitPrice,
-                    GovFees = item.GovFees
+                    GovFees = item.GovFees,
+                    EmployeeNames = EmployeeName
                 });
             }
 
@@ -260,7 +265,7 @@ namespace ProWalid.ViewModels
                 EmployeeName = payload.EmployeeName;
                 IsHazemInvoice = payload.IsHazemInvoice;
                 SelectedPreviewTemplateKey = string.IsNullOrWhiteSpace(payload.SelectedPreviewTemplateKey)
-                    ? FluentTemplateKey
+                    ? UniversalServerTemplateKey
                     : payload.SelectedPreviewTemplateKey;
 
                 Items.Clear();
@@ -288,7 +293,7 @@ namespace ProWalid.ViewModels
                 EmployeeName = string.Empty;
                 Notes = record.Notes;
                 IsHazemInvoice = false;
-                SelectedPreviewTemplateKey = string.IsNullOrWhiteSpace(record.TemplateKey) ? FluentTemplateKey : record.TemplateKey;
+                SelectedPreviewTemplateKey = string.IsNullOrWhiteSpace(record.TemplateKey) ? UniversalServerTemplateKey : record.TemplateKey;
                 Items.Clear();
             }
 
@@ -400,7 +405,7 @@ namespace ProWalid.ViewModels
             InvoiceStatus = "معلق";
             EmployeeName = "غير محدد";
             IsHazemInvoice = false;
-            SelectedPreviewTemplateKey = FluentTemplateKey;
+            SelectedPreviewTemplateKey = UniversalServerTemplateKey;
             Notes = "هذه مجرد معاينة بصرية أولية لاختيار اتجاه التصميم قبل اعتماد النموذج النهائي وحقن بياناتك الحقيقية.";
 
             FinalAggregationRows.Clear();
@@ -451,8 +456,32 @@ namespace ProWalid.ViewModels
             return IsHazemCustomer(customerName);
         }
 
+        private static string ResolveDefaultTemplateKey(string invoiceTemplateKey, long customerId, string customerName)
+        {
+            if (string.Equals(invoiceTemplateKey, GroupedInvoiceTemplateKey, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(invoiceTemplateKey, ErpTemplateKey, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(invoiceTemplateKey, PremiumTemplateKey, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(invoiceTemplateKey, HazemServerTemplateKey, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(invoiceTemplateKey, FinalAggregationTemplateKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return invoiceTemplateKey;
+            }
+
+            if (customerId > 0 || IsHazemTransaction(invoiceTemplateKey, customerName) || string.IsNullOrWhiteSpace(invoiceTemplateKey))
+            {
+                return UniversalServerTemplateKey;
+            }
+
+            return UniversalServerTemplateKey;
+        }
+
         private static string NormalizeTemplateKey(string? templateKey)
         {
+            if (string.Equals(templateKey, UniversalServerTemplateKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return UniversalServerTemplateKey;
+            }
+
             if (string.Equals(templateKey, ErpTemplateKey, StringComparison.OrdinalIgnoreCase))
             {
                 return ErpTemplateKey;
@@ -483,7 +512,7 @@ namespace ProWalid.ViewModels
                 return FinalAggregationTemplateKey;
             }
 
-            return FluentTemplateKey;
+            return UniversalServerTemplateKey;
         }
 
         private void RefreshTotals()
@@ -643,14 +672,249 @@ namespace ProWalid.ViewModels
         {
             return NormalizeTemplateKey(SelectedPreviewTemplateKey) switch
             {
+                UniversalServerTemplateKey => BuildUniversalServerPrintHtml(),
                 GroupedInvoiceTemplateKey => BuildGroupedInvoicePrintHtml(),
                 ErpTemplateKey => BuildErpPrintHtml(),
                 PremiumTemplateKey => BuildPremiumPrintHtml(),
                 HazemTemplateKey => BuildHazemPrintHtml(),
                 HazemServerTemplateKey => BuildHazemServerPrintHtml(),
                 FinalAggregationTemplateKey => BuildFinalAggregationPrintHtml(),
-                _ => BuildFluentPrintHtml()
+                _ => BuildUniversalServerPrintHtml()
             };
+        }
+
+        private string BuildUniversalServerPrintHtml()
+        {
+            var logoDataUri = GetPreferredImageDataUri(("Assets", "invoice", "inform-logo.png"), ("Assets", "invoice", "LOGO1.png"));
+            var stampDataUri = GetPreferredImageDataUri(("Assets", "invoice", "1145.png"), ("Assets", "invoice", "STAMP (1).png"));
+            var currentCustomerId = GetCurrentCustomerIdValue();
+            var useEnglishLayout = currentCustomerId == 3;
+            var useDiscountColumn = currentCustomerId == 1;
+            var useEmployeeNamesColumn = currentCustomerId == 3;
+            var showEmployeeLineAboveTable = currentCustomerId == 1;
+
+            var rows = new StringBuilder();
+            foreach (var item in Items)
+            {
+                rows.Append(useDiscountColumn
+                    ? $@"
+              <tr>
+                <td class='fw-bold'>{item.LineNumber}</td>
+                <td class='desc'>{Escape(item.Description)}</td>
+                <td>{item.Quantity:0.##}</td>
+                <td>{item.UnitPrice:N2}</td>
+                <td>{Escape(item.GovFeesDisplay)}</td>
+                <td>{item.Total:N2}</td>
+              </tr>"
+                    : useEmployeeNamesColumn
+                    ? $@"
+              <tr>
+                <td class='fw-bold'>{item.LineNumber}</td>
+                <td class='desc'>{Escape(item.Description)}</td>
+                <td>{item.Quantity:0.##}</td>
+                <td>{item.UnitPrice:N2}</td>
+                <td class='desc'>{Escape(item.EmployeeNamesDisplay)}</td>
+                <td>{item.Total:N2}</td>
+              </tr>"
+                    : $@"
+              <tr>
+                <td class='fw-bold'>{item.LineNumber}</td>
+                <td class='desc'>{Escape(item.Description)}</td>
+                <td>{item.Quantity:0.##}</td>
+                <td>{item.UnitPrice:N2}</td>
+                <td>{item.Total:N2}</td>
+              </tr>");
+            }
+
+            var invoiceDateText = DateTimeOffset.TryParse(InvoiceDate, out var parsedInvoiceDate)
+                ? parsedInvoiceDate.ToString(useEnglishLayout ? "yyyy-MM-dd" : "dd-MM-yyyy")
+                : Escape(InvoiceDate).Replace('/', '-');
+
+            var pageLanguage = useEnglishLayout ? "en" : "ar";
+            var pageDirection = useEnglishLayout ? "ltr" : "rtl";
+            var metaAlignment = useEnglishLayout ? "left" : "right";
+            var descriptionAlignment = useEnglishLayout ? "left" : "right";
+            var titleText = useEnglishLayout ? "INVOICE" : "فاتورة / INVOICE";
+            var invoiceNoLabel = useEnglishLayout ? "Invoice No" : "Invoice No / رقم الفاتورة";
+            var dateLabel = useEnglishLayout ? "Date" : "Date / التاريخ";
+            var invoiceToLabel = useEnglishLayout ? "Invoice To" : "Invoice To / الفاتورة إلى";
+            var customerIdLabel = useEnglishLayout ? "Customer ID" : "رقم العميل";
+            var totalLabel = useEnglishLayout ? "Grand Total" : "Total";
+            var signatureRecipient = useEnglishLayout ? "Recipient Signature" : "توقيع المستلم / Recipient Signature";
+            var signatureName = useEnglishLayout ? "Name" : "الاسم / Name";
+            var officeArabicLine = useEnglishLayout ? string.Empty : "<span class='inv-sig-label' style='font-size:9px;color:#94a3b8;font-weight:600;'>انفورم للطباعة والتصوير</span>";
+            var tableHead = useDiscountColumn
+                ? (useEnglishLayout
+                    ? @"<th style='width:52px;'>SL</th>
+              <th>Item Description</th>
+              <th style='width:80px;'>Qty</th>
+              <th style='width:110px;'>Unit Price</th>
+              <th style='width:96px;'>Discount</th>
+              <th style='width:110px;'>Total</th>"
+                    : @"<th style='width:52px;'>SL / م</th>
+              <th>Item Description / وصف البند</th>
+              <th style='width:80px;'>Qty / العدد</th>
+              <th style='width:110px;'>Unit Price / سعر الوحدة</th>
+              <th style='width:96px;'>Discount / الخصم</th>
+              <th style='width:110px;'>Total / الإجمالي</th>")
+                : useEmployeeNamesColumn
+                ? @"<th style='width:52px;'>SL</th>
+              <th>Item Description</th>
+              <th style='width:80px;'>Qty</th>
+              <th style='width:110px;'>Unit Price</th>
+              <th style='width:140px;'>Employee Names</th>
+              <th style='width:110px;'>Total</th>"
+                : (useEnglishLayout
+                    ? @"<th style='width:52px;'>SL</th>
+              <th>Item Description</th>
+              <th style='width:80px;'>Qty</th>
+              <th style='width:110px;'>Unit Price</th>
+              <th style='width:110px;'>Total</th>"
+                    : @"<th style='width:52px;'>SL / م</th>
+              <th>Item Description / وصف البند</th>
+              <th style='width:80px;'>Qty / العدد</th>
+              <th style='width:110px;'>Unit Price / سعر الوحدة</th>
+              <th style='width:110px;'>Total / الإجمالي</th>");
+
+            return $@"<!DOCTYPE html>
+<html lang='{pageLanguage}' dir='{pageDirection}'>
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>{Escape(InvoiceNumber)}</title>
+  <style>
+    :root {{
+      --v4-blue: #dbeafe;
+      --v4-text: #0f172a;
+      --v4-text-muted: #64748b;
+      --v4-navy: #1e3a8a;
+      --v4-border: rgba(15, 23, 42, 0.12);
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{ margin: 0; background: #ffffff; font-family: 'Cairo', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; color: var(--v4-text); }}
+    .inv4 {{ width: 794px; max-width: 794px; margin: 0 auto; background: #ffffff; overflow: hidden; position: relative; min-height: 1123px; }}
+    .inv4-left-strip {{ position: absolute; left: 0; top: 0; bottom: 0; width: 145px; background: var(--v4-blue); z-index: 0; }}
+    .inv4-bottom-shape {{ position: absolute; left: 0; bottom: 0; width: 170px; height: 122px; background: var(--v4-blue); clip-path: polygon(0 100%, 0 0, 100% 72%, 80% 100%); z-index: 0; opacity: 0.95; }}
+    .inv4-wrap {{ position: relative; z-index: 1; min-height: 1123px; padding: 14px 18px 28px 18px; display: flex; flex-direction: column; }}
+    .inv4-header {{ position: relative; min-height: 54px; margin-bottom: 4px; }}
+    .inv4-brand {{ position: absolute; top: 0; right: 0; display: flex; flex-direction: row; gap: 10px; align-items: center; text-align: right; }}
+    .inv4-logo {{ width: 54px; height: 54px; background: transparent; border: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }}
+    .inv4-logo img {{ width: 100%; height: 100%; object-fit: contain; display: block; }}
+    .inv4-brand .name {{ font-weight: 900; color: var(--v4-navy); line-height: 1.06; font-size: 14px; }}
+    .inv4-brand .name small {{ display: block; font-weight: 800; color: var(--v4-text-muted); font-size: 12px; margin-top: 2px; }}
+    .inv4-subbar {{ display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.95fr); gap: 12px; margin-top: 4px; align-items: stretch; direction: {pageDirection}; }}
+    .inv4-info {{ min-height: 152px; padding: 10px 14px; border-radius: 14px; background: rgba(219,234,254,0.58); border: 1px solid rgba(30,58,138,0.12); display: flex; flex-direction: column; justify-content: center; text-align: center; }}
+    .inv4-info .line {{ font-size: 12px; color: var(--v4-text); margin: 5px 0; line-height: 1.35; }}
+    .inv4-meta {{ min-height: 152px; border: 1px solid var(--v4-border); border-radius: 14px; overflow: hidden; background: rgba(255,255,255,0.98); display: grid; grid-template-rows: repeat(4, 1fr); }}
+    .inv4-meta .row {{ display: flex; align-items: center; padding: 0 12px; border-bottom: 1px solid rgba(15,23,42,0.08); font-size: 12px; min-height: 38px; }}
+    .inv4-meta .row:last-child {{ border-bottom: 0; }}
+    .inv4-meta .k {{ font-weight: 900; color: var(--v4-text); width: 100%; text-align: {metaAlignment}; line-height: 1.4; }}
+    .inv4-meta .inline-no, .inv4-meta .inline-val {{ font-weight: 900; color: var(--v4-navy); margin-{(useEnglishLayout ? "left" : "right")}: 6px; }}
+    .inv4-title {{ text-align: center; margin-top: 8px; margin-bottom: 12px; }}
+    .inv4-title .t {{ font-weight: 900; font-size: 22px; color: var(--v4-navy); }}
+    .inv4-flex-block {{ border-radius: 14px; overflow: hidden; border: 1px solid #000; }}
+    table.inv4-table {{ width: 100%; border-collapse: collapse; border: 0; direction: {pageDirection}; }}
+    table.inv4-table th, table.inv4-table td {{ border: 1px solid #000; padding: 6px 8px; font-size: 12px; text-align: center; }}
+    table.inv4-table thead th {{ background: var(--v4-blue); color: #000; font-weight: 900; font-size: 11px; padding: 4px 6px; }}
+    table.inv4-table td.desc {{ text-align: {descriptionAlignment}; font-weight: 800; }}
+    .inv4-emp-top {{ padding: 0 4px 8px 4px; text-align: {descriptionAlignment}; font-size: 12px; font-weight: 900; color: #b91c1c; line-height: 1.2; }}
+    .inv4-totals {{ border-top: 0; padding: 10px 12px; background: rgba(255,255,255,0.98); }}
+    .inv4-totals .line {{ display: flex; justify-content: flex-end; align-items: center; font-weight: 900; position: relative; }}
+    .inv4-total-label {{ position: absolute; left: 0; right: 0; text-align: center; }}
+    .inv4-bottom-stack {{ margin-top: auto; z-index: 2; padding: 16px 0 0 158px; }}
+    .inv-stamp-area{{padding:12px 0 0 158px;display:flex;justify-content:center;align-items:center;}}
+    .inv-stamp-img{{ display:block;opacity:0.92;width:170px;max-width:100%;height:auto;filter:saturate(1.2) contrast(1.2);-webkit-print-color-adjust:exact;print-color-adjust:exact; }}
+    .inv-sigs-bottom{{ position:static;display:flex;justify-content:space-between;align-items:flex-end;gap:36px;font-size:10px;color:#64748b;border-top:0;background:transparent;z-index:2; }}
+    .inv-sig-block{{text-align:center;flex:1;}}
+    .inv-sig-label{{font-weight:700;color:#475569;font-size:10.5px;display:block;}}
+    .inv-sig-line{{margin-top:18px;height:1px;width:100%;max-width:180px;background:rgba(100,116,139,0.45);margin-left:auto;margin-right:auto;}}
+    .inv-sig-name{{font-size:9px;color:#94a3b8;margin-top:4px;}}
+    @media print {{
+      @page {{ size: A4; margin: 10mm; }}
+      body {{ background: #fff; }}
+      .inv4 {{ width: 100%; max-width: none; box-shadow: none; border: 0; }}
+      .inv4-left-strip {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; background: var(--v4-blue) !important; }}
+      .inv4-bottom-shape {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; background: var(--v4-blue) !important; }}
+      .inv-stamp-img {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+      * {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+    }}
+  </style>
+</head>
+<body>
+  <div class='inv4'>
+    <div class='inv4-left-strip'></div>
+    <div class='inv4-bottom-shape'></div>
+    <div class='inv4-wrap'>
+      <div class='inv4-header'>
+        <div class='inv4-brand'>
+          <div class='inv4-logo'>
+            {(string.IsNullOrWhiteSpace(logoDataUri) ? string.Empty : $"<img src='{logoDataUri}' alt='Inform' />")}
+          </div>
+          <div class='name'>
+            انفورم للطباعة والتصوير
+            <small>Inform Typing Photocopy</small>
+          </div>
+        </div>
+      </div>
+
+      <div class='inv4-subbar'>
+        <div class='inv4-info'>
+          <div class='line'>Mobile: +971528047909 / +971556428050</div>
+          <div class='line'>Email: alzaeemtyping@hotmail.com</div>
+          <div class='line'>Address: Mussafah Industrial Area, M-7, Abu Dhabi</div>
+          {(useEnglishLayout ? string.Empty : "<div class='line'>العنوان: مصفح الصناعية م 7 أبوظبي</div>")}
+        </div>
+
+        <div class='inv4-meta'>
+          <div class='row'><div class='k'>{invoiceNoLabel}<span class='inline-no'>{Escape(InvoiceNumber)}</span></div></div>
+          <div class='row'><div class='k'>{dateLabel}<span class='inline-val'>{invoiceDateText}</span></div></div>
+          <div class='row'><div class='k'>{invoiceToLabel}<span class='inline-val'>{Escape(CustomerName)}</span></div></div>
+          <div class='row'><div class='k'>{customerIdLabel}<span class='inline-val'>#{Escape(GetCurrentCustomerIdText())}</span></div></div>
+        </div>
+      </div>
+
+      <div class='inv4-title'><div class='t'>{titleText}</div></div>
+
+      <div class='inv4-flex-block'>
+        {(showEmployeeLineAboveTable ? $"<div class='inv4-emp-top'>اسم الموظف / Employee: {Escape(EmployeeName)}</div>" : string.Empty)}
+        <table class='inv4-table'>
+          <thead>
+            <tr>
+              {tableHead}
+            </tr>
+          </thead>
+          <tbody>
+            {rows}
+          </tbody>
+        </table>
+
+        <div class='inv4-totals'>
+          <div class='line'><div class='inv4-total-label'>{totalLabel}</div><div>{GrandTotal:N2}</div></div>
+        </div>
+      </div>
+
+      <div class='inv-stamp-area'>
+        {(string.IsNullOrWhiteSpace(stampDataUri) ? string.Empty : $"<img class='inv-stamp-img' src='{stampDataUri}' alt='Stamp' />")}
+      </div>
+
+      <div class='inv4-bottom-stack'>
+        <div class='inv-sigs-bottom'>
+          <div class='inv-sig-block'>
+            <span class='inv-sig-label'>{signatureRecipient}</span>
+            <div class='inv-sig-line'></div>
+            <div class='inv-sig-name'>{signatureName}</div>
+          </div>
+          <div class='inv-sig-block'>
+            <span class='inv-sig-label'>Inform Typing Photocopy</span>
+            {officeArabicLine}
+            <div class='inv-sig-line'></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>";
         }
 
         private string BuildHazemServerPrintHtml()
@@ -1585,6 +1849,18 @@ namespace ProWalid.ViewModels
 
             var digits = new string((CustomerIdText ?? string.Empty).Where(char.IsDigit).ToArray());
             return string.IsNullOrWhiteSpace(digits) ? CustomerIdText : digits;
+        }
+
+        private long GetCurrentCustomerIdValue()
+        {
+            if (_currentInvoiceRow?.Transaction != null)
+            {
+                return _currentInvoiceRow.Transaction.CustomerId;
+            }
+
+            return long.TryParse(GetCurrentCustomerIdText(), out var parsedCustomerId)
+                ? parsedCustomerId
+                : 0;
         }
 
         private static string Escape(string? value)
