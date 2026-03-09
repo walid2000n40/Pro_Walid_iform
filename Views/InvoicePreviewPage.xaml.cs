@@ -161,14 +161,17 @@ namespace ProWalid.Views
             }
 
             var templateKey = ViewModel.SelectedPreviewTemplateKey;
-            SelectPivotItemByTag(templateKey);
+            if (!SelectPivotItemByTag(templateKey))
+            {
+                SelectPivotItemByTag("A4");
+            }
         }
 
-        private void SelectPivotItemByTag(string? templateKey)
+        private bool SelectPivotItemByTag(string? templateKey)
         {
             if (PreviewTemplatesPivot == null || string.IsNullOrWhiteSpace(templateKey))
             {
-                return;
+                return false;
             }
 
             foreach (var item in PreviewTemplatesPivot.Items)
@@ -181,9 +184,11 @@ namespace ProWalid.Views
                         PreviewTemplatesPivot.SelectedItem = pivotItem;
                     }
 
-                    return;
+                    return true;
                 }
             }
+
+            return false;
         }
 
         private async void SaveInvoiceButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)

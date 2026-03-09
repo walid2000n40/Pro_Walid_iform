@@ -22,6 +22,7 @@ namespace ProWalid.ViewModels
         public const string ErpTemplateKey = "erp";
         public const string PremiumTemplateKey = "premium";
         public const string HazemTemplateKey = "hazem";
+        public const string HazemServerTemplateKey = "hazem-server";
         public const string FinalAggregationTemplateKey = "final-aggregation";
 
         private Frame? _frame;
@@ -144,12 +145,29 @@ namespace ProWalid.ViewModels
                 }
             }
 
+            if (parameter is InvoicePreviewRequest previewRequest)
+            {
+                if (previewRequest.Row?.Transaction == null)
+                {
+                    LoadSamplePreview();
+                    return;
+                }
+
+                await LoadInvoiceRowAsync(previewRequest.Row, previewRequest.TemplateKeyOverride);
+                return;
+            }
+
             if (parameter is not InvoiceSummaryRow row || row.Transaction == null)
             {
                 LoadSamplePreview();
                 return;
             }
 
+            await LoadInvoiceRowAsync(row, null);
+        }
+
+        private async Task LoadInvoiceRowAsync(InvoiceSummaryRow row, string? templateKeyOverride)
+        {
             _currentInvoiceRow = row;
 
             var customer = (await _databaseHelper.GetAllCustomersAsync())
@@ -172,8 +190,16 @@ namespace ProWalid.ViewModels
             DueDate = row.Transaction.TransactionDate.ToString("yyyy/MM/dd");
             InvoiceStatus = string.IsNullOrWhiteSpace(row.Transaction.TransactionStatus) ? "معلق" : row.Transaction.TransactionStatus;
             EmployeeName = string.IsNullOrWhiteSpace(row.EmployeeName) ? "غير محدد" : row.EmployeeName;
-            IsHazemInvoice = IsHazemTransaction(row.Transaction.InvoiceTemplateKey, CustomerName);
-            SelectedPreviewTemplateKey = IsHazemInvoice ? HazemTemplateKey : FluentTemplateKey;
+            var resolvedTemplateKey = !string.IsNullOrWhiteSpace(templateKeyOverride)
+                ? templateKeyOverride
+                : IsHazemTransaction(row.Transaction.InvoiceTemplateKey, CustomerName)
+                    ? HazemTemplateKey
+                    : FluentTemplateKey;
+
+            IsHazemInvoice = string.Equals(resolvedTemplateKey, HazemTemplateKey, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(resolvedTemplateKey, HazemServerTemplateKey, StringComparison.OrdinalIgnoreCase)
+                || IsHazemTransaction(row.Transaction.InvoiceTemplateKey, CustomerName);
+            SelectedPreviewTemplateKey = NormalizeTemplateKey(resolvedTemplateKey);
             Notes = IsHazemInvoice
                 ? "نموذج حازم: كل فاتورة مرتبطة بمعاملة واحدة فقط. قيمة GOV-FEES المعروضة لكل بند هي قيمة معلوماتية فقط ولا تدخل ضمن الإجمالي أو أي منطق محاسبي."
                 : "هذه معاينة حقيقية مبنية على بيانات الفاتورة المحفوظة."
@@ -447,6 +473,11 @@ namespace ProWalid.ViewModels
                 return HazemTemplateKey;
             }
 
+            if (string.Equals(templateKey, HazemServerTemplateKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return HazemServerTemplateKey;
+            }
+
             if (string.Equals(templateKey, FinalAggregationTemplateKey, StringComparison.OrdinalIgnoreCase))
             {
                 return FinalAggregationTemplateKey;
@@ -616,9 +647,237 @@ namespace ProWalid.ViewModels
                 ErpTemplateKey => BuildErpPrintHtml(),
                 PremiumTemplateKey => BuildPremiumPrintHtml(),
                 HazemTemplateKey => BuildHazemPrintHtml(),
+                HazemServerTemplateKey => BuildHazemServerPrintHtml(),
                 FinalAggregationTemplateKey => BuildFinalAggregationPrintHtml(),
                 _ => BuildFluentPrintHtml()
             };
+        }
+
+        private string BuildHazemServerPrintHtml()
+        {
+            var logoDataUri = GetPreferredImageDataUri(("Assets", "invoice", "inform-logo.png"), ("Assets", "invoice", "LOGO1.png"));
+            var stampDataUri = GetPreferredImageDataUri(("Assets", "invoice", "1145.png"), ("Assets", "invoice", "STAMP (1).png"));
+
+            var rows = new StringBuilder();
+            foreach (var item in Items)
+            {
+                rows.Append($@"
+              <tr>
+                <td class='fw-bold'>{item.LineNumber}</td>
+                <td class='desc'>{Escape(item.Description)}</td>
+                <td>{item.Quantity:0.##}</td>
+                <td>{item.UnitPrice:N2}</td>
+                <td>{item.Total:N2}</td>
+              </tr>");
+            }
+
+            var invoiceDateText = DateTimeOffset.TryParse(InvoiceDate, out var parsedInvoiceDate)
+                ? parsedInvoiceDate.ToString("dd-MM-yyyy")
+                : Escape(InvoiceDate).Replace('/', '-');
+
+            return $@"<!DOCTYPE html>
+<html lang='ar' dir='rtl'>
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>فاتورة - {Escape(InvoiceNumber)}</title>
+  <style>
+    :root {{
+      --v4-blue: #dbeafe;
+      --v4-text: #0f172a;
+      --v4-text-muted: #64748b;
+      --v4-navy: #1e3a8a;
+      --v4-border: rgba(15, 23, 42, 0.12);
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{ margin: 0; background: #ffffff; font-family: 'Cairo', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; color: var(--v4-text); }}
+    .inv4 {{
+      width: 794px;
+      max-width: 794px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 0;
+      overflow: hidden;
+      box-shadow: none;
+      border: 0;
+      position: relative;
+      min-height: 1123px;
+    }}
+    .inv4::before {{
+      content: none;
+    }}
+    .inv4-left-strip {{
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 145px;
+      background: var(--v4-blue);
+      z-index: 0;
+    }}
+    .inv4-bottom-shape {{
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 170px;
+      height: 122px;
+      background: var(--v4-blue);
+      clip-path: polygon(0 100%, 0 0, 100% 72%, 80% 100%);
+      z-index: 0;
+      opacity: 0.95;
+    }}
+    .inv4-wrap {{ position: relative; z-index: 1; min-height: 1123px; padding: 14px 18px 28px 18px; display: flex; flex-direction: column; }}
+    .inv4-header {{ position: relative; min-height: 54px; margin-bottom: 4px; }}
+    .inv4-brand {{ position: absolute; top: 0; right: 0; display: flex; flex-direction: row; gap: 10px; align-items: center; text-align: right; }}
+    .inv4-logo {{ width: 54px; height: 54px; border-radius: 0; background: transparent; border: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }}
+    .inv4-logo img {{ width: 100%; height: 100%; object-fit: contain; display: block; }}
+    .inv4-brand .name {{ font-weight: 900; color: var(--v4-navy); line-height: 1.06; font-size: 14px; }}
+    .inv4-brand .name small {{ display: block; font-weight: 800; color: var(--v4-text-muted); font-size: 12px; margin-top: 2px; }}
+    .inv4-subbar {{ display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.95fr); gap: 12px; margin-top: 4px; align-items: stretch; direction: rtl; }}
+    .inv4-info {{ min-height: 152px; padding: 10px 14px; border-radius: 14px; background: rgba(219,234,254,0.58); border: 1px solid rgba(30,58,138,0.12); display: flex; flex-direction: column; justify-content: center; text-align: center; }}
+    .inv4-info .line {{ font-size: 12px; color: var(--v4-text); margin: 5px 0; line-height: 1.35; }}
+    .inv4-meta {{ min-height: 152px; border: 1px solid var(--v4-border); border-radius: 14px; overflow: hidden; background: rgba(255,255,255,0.98); display: grid; grid-template-rows: repeat(4, 1fr); }}
+    .inv4-meta .row {{ display: flex; align-items: center; padding: 0 12px; border-bottom: 1px solid rgba(15,23,42,0.08); font-size: 12px; min-height: 38px; }}
+    .inv4-meta .row:last-child {{ border-bottom: 0; }}
+    .inv4-meta .k {{ font-weight: 900; color: var(--v4-text); width: 100%; text-align: right; line-height: 1.4; }}
+    .inv4-meta .inline-no, .inv4-meta .inline-val {{ font-weight: 900; color: var(--v4-navy); margin-right: 6px; }}
+    .inv4-title {{ text-align: center; margin-top: 8px; margin-bottom: 12px; }}
+    .inv4-title .t {{ font-weight: 900; font-size: 22px; color: var(--v4-navy); }}
+    .inv4-flex-block {{
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid #000;
+    }}
+    table.inv4-table {{ width: 100%; border-collapse: collapse; border: 0; }}
+    table.inv4-table th, table.inv4-table td {{ border: 1px solid #000; padding: 6px 8px; font-size: 12px; text-align: center; }}
+    table.inv4-table thead th {{ background: var(--v4-blue); color: #000; font-weight: 900; font-size: 11px; padding: 4px 6px; }}
+    table.inv4-table td.desc {{ text-align: right; font-weight: 800; }}
+    .inv4-emp-top {{ padding: 6px 8px 0 8px; text-align: left; font-size: 11px; font-weight: 800; color: #b91c1c; line-height: 1.1; }}
+    .inv4-totals {{
+      border-top: 0;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.98);
+    }}
+    .inv4-totals .line {{ display: flex; justify-content: flex-end; align-items: center; font-weight: 900; position: relative; }}
+    .inv4-total-label {{ position: absolute; left: 0; right: 0; text-align: center; }}
+    .inv4-bottom-stack {{
+      margin-top: auto;
+      z-index: 2;
+      padding: 16px 0 0 158px;
+    }}
+    .inv-stamp-area{{padding:12px 0 0 158px;display:flex;justify-content:center;align-items:center;}}
+    .inv-stamp-img{{
+      display:block;opacity:0.92;width:170px;max-width:100%;height:auto;
+      filter:saturate(1.2) contrast(1.2);
+      -webkit-print-color-adjust:exact;print-color-adjust:exact;
+    }}
+    .inv-sigs-bottom{{
+      position:static;
+      display:flex;justify-content:space-between;align-items:flex-end;gap:36px;
+      font-size:10px;color:#64748b;
+      border-top:0;
+      background:transparent;z-index:2;
+    }}
+    .inv-sig-block{{text-align:center;flex:1;}}
+    .inv-sig-label{{font-weight:700;color:#475569;font-size:10.5px;display:block;}}
+    .inv-sig-line{{margin-top:18px;height:1px;width:100%;max-width:180px;background:rgba(100,116,139,0.45);margin-left:auto;margin-right:auto;}}
+    .inv-sig-name{{font-size:9px;color:#94a3b8;margin-top:4px;}}
+    @media print {{
+      @page {{ size: A4; margin: 10mm; }}
+      .no-print {{ display: none !important; }}
+      body {{ background: #fff; }}
+      .inv4 {{ width: 100%; max-width: none; box-shadow: none; border: 0; }}
+      .inv4-left-strip {{
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        background: var(--v4-blue) !important;
+      }}
+      .inv4-bottom-shape {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; background: var(--v4-blue) !important; }}
+      .inv4-stamp-img {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+      * {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+    }}
+  </style>
+</head>
+<body>
+  <div class='inv4'>
+    <div class='inv4-left-strip'></div>
+    <div class='inv4-bottom-shape'></div>
+    <div class='inv4-wrap'>
+
+      <div class='inv4-header'>
+        <div class='inv4-brand'>
+          <div class='inv4-logo'>
+            {(string.IsNullOrWhiteSpace(logoDataUri) ? string.Empty : $"<img src='{logoDataUri}' alt='Inform' />")}
+          </div>
+          <div class='name'>
+            انفورم للطباعة والتصوير
+            <small>Inform Typing Photocopy</small>
+          </div>
+        </div>
+      </div>
+
+      <div class='inv4-subbar'>
+        <div class='inv4-info'>
+          <div class='line'>Mobile: +971528047909 / +971556428050</div>
+          <div class='line'>Email: alzaeemtyping@hotmail.com</div>
+          <div class='line'>Address: Mussafah Industrial Area, M-7, Abu Dhabi</div>
+          <div class='line'>العنوان: مصفح الصناعية م 7 أبوظبي</div>
+        </div>
+
+        <div class='inv4-meta'>
+          <div class='row'><div class='k'>Invoice No / رقم الفاتورة <span class='inline-no'>{Escape(InvoiceNumber)}</span></div></div>
+          <div class='row'><div class='k'>Date / التاريخ <span class='inline-val'>{invoiceDateText}</span></div></div>
+          <div class='row'><div class='k'>Invoice To / الفاتورة إلى <span class='inline-val'>{Escape(CustomerName)}</span></div></div>
+          <div class='row'><div class='k'>رقم العميل <span class='inline-val'>#{Escape(GetCurrentCustomerIdText())}</span></div></div>
+        </div>
+      </div>
+
+      <div class='inv4-title'><div class='t'>فاتورة / INVOICE</div></div>
+
+      <div class='inv4-flex-block'>
+        <table class='inv4-table'>
+          <thead>
+            <tr>
+              <th style='width:52px;'>SL / م</th>
+              <th>Item Description / وصف البند</th>
+              <th style='width:80px;'>Qty / العدد</th>
+              <th style='width:110px;'>Unit Price / سعر الوحدة</th>
+              <th style='width:110px;'>Total / الإجمالي</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows}
+          </tbody>
+        </table>
+
+        <div class='inv4-totals'>
+          <div class='line'><div class='inv4-total-label'>Total</div><div>{GrandTotal:N2}</div></div>
+        </div>
+      </div>
+
+      <div class='inv-stamp-area'>
+        {(string.IsNullOrWhiteSpace(stampDataUri) ? string.Empty : $"<img class='inv-stamp-img' src='{stampDataUri}' alt='Stamp' />")}
+      </div>
+
+      <div class='inv4-bottom-stack'>
+        <div class='inv-sigs-bottom'>
+          <div class='inv-sig-block'>
+            <span class='inv-sig-label'>توقيع المستلم / Recipient Signature</span>
+            <div class='inv-sig-line'></div>
+            <div class='inv-sig-name'>الاسم / Name</div>
+          </div>
+          <div class='inv-sig-block'>
+            <span class='inv-sig-label'>Inform Typing Photocopy</span>
+            <span class='inv-sig-label' style='font-size:9px;color:#94a3b8;font-weight:600;'>انفورم للطباعة والتصوير</span>
+            <div class='inv-sig-line'></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>";
         }
 
         private string BuildGroupedInvoicePrintHtml()
@@ -1301,6 +1560,31 @@ namespace ProWalid.ViewModels
             {
                 return string.Empty;
             }
+        }
+
+        private static string GetPreferredImageDataUri(params (string, string, string)[] candidatePaths)
+        {
+            foreach (var candidatePath in candidatePaths)
+            {
+                var dataUri = GetImageDataUri(candidatePath.Item1, candidatePath.Item2, candidatePath.Item3);
+                if (!string.IsNullOrWhiteSpace(dataUri))
+                {
+                    return dataUri;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private string GetCurrentCustomerIdText()
+        {
+            if (_currentInvoiceRow?.Transaction != null)
+            {
+                return _currentInvoiceRow.Transaction.CustomerId.ToString();
+            }
+
+            var digits = new string((CustomerIdText ?? string.Empty).Where(char.IsDigit).ToArray());
+            return string.IsNullOrWhiteSpace(digits) ? CustomerIdText : digits;
         }
 
         private static string Escape(string? value)

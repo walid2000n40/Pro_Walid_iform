@@ -16,6 +16,7 @@ namespace ProWalid.ViewModels
 {
     public partial class InvoicesViewModel : ObservableObject
     {
+        private const long HazemCustomerId = 1;
         private const long GroupedInvoiceCustomerId = 3;
         private static readonly HashSet<long> FinalAggregationCustomerIds = new() { 2, 4, 7, 8 };
 
@@ -260,14 +261,24 @@ namespace ProWalid.ViewModels
         [RelayCommand]
         private async Task ShowInvoiceNumberTwoAsync()
         {
-            var secondInvoice = InvoiceRows.Skip(1).FirstOrDefault();
-            if (secondInvoice == null)
+            var targetRow = InvoiceRows.FirstOrDefault(row => row.IsSelected) ?? InvoiceRows.FirstOrDefault();
+            if (targetRow?.Transaction == null)
             {
-                await ShowMessageAsync("فاتورة رقم 2", "لا توجد فاتورة ثانية ضمن القائمة الحالية.");
+                await ShowMessageAsync("فاتورة رقم 2", "لا توجد فاتورة متاحة للمعاينة.");
                 return;
             }
 
-            await ShowInvoiceAsync(secondInvoice);
+            if (targetRow.Transaction.CustomerId != HazemCustomerId)
+            {
+                await ShowMessageAsync("فاتورة رقم 2", "هذا النموذج التجريبي مخصص حاليًا للعميل 1 (حازم) فقط.");
+                return;
+            }
+
+            _frame?.Navigate(typeof(InvoicePreviewPage), new InvoicePreviewRequest
+            {
+                Row = targetRow,
+                TemplateKeyOverride = InvoicePreviewViewModel.HazemServerTemplateKey
+            });
         }
 
         [RelayCommand]
