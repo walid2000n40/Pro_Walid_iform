@@ -547,7 +547,6 @@
             <Grid Grid.Row="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
@@ -557,32 +556,38 @@
                         BorderThickness="1"
                         CornerRadius="8"
                         Margin="0,0,0,15">
-                    <Grid Padding="16,14">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="300"/>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="150"/>
-                            <ColumnDefinition Width="150"/>
-                            <ColumnDefinition Width="250"/>
-                            <ColumnDefinition Width="200"/>
-                            <ColumnDefinition Width="300"/>
-                        </Grid.ColumnDefinitions>
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                  HorizontalScrollMode="Enabled"
+                                  VerticalScrollBarVisibility="Disabled"
+                                  VerticalScrollMode="Disabled">
+                        <Grid Padding="16,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="280"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="220"/>
+                            </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0" Text="تحديد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="1" Text="بند الخدمة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0"/>
-                        <TextBlock Grid.Column="2" Text="العدد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="3" Text="سعر الوحدة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="37,0,0,0" TextAlignment="Right"/>
-                        <TextBlock Grid.Column="4" Text="الإجمالي" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="0,0,50,0" TextAlignment="Right"/>
-                        <TextBlock Grid.Column="5" Text="اسم الشركة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0"/>
-                        <TextBlock Grid.Column="6" Text="اسم الموظف" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0"/>
-                        <TextBlock Grid.Column="7" Text="المرفقات" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
-                    </Grid>
+                            <TextBlock Grid.Column="0" Text="تحديد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="بند الخدمة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0"/>
+                            <TextBlock Grid.Column="2" Text="العدد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="سعر الوحدة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="24,0,0,0" TextAlignment="Right"/>
+                            <TextBlock Grid.Column="4" Text="الإجمالي" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="0,0,24,0" TextAlignment="Right"/>
+                            <TextBlock Grid.Column="5" Text="اسم الشركة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0"/>
+                            <TextBlock Grid.Column="6" Text="اسم الموظف" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0"/>
+                            <TextBlock Grid.Column="7" Text="المرفقات" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
+                        </Grid>
+                    </ScrollViewer>
                 </Border>
 
-                <ScrollViewer Grid.Row="2"
+                <ScrollViewer Grid.Row="1"
                               VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
+                              HorizontalScrollBarVisibility="Auto"
+                              HorizontalScrollMode="Enabled">
                     <ListView
                             ItemsSource="{Binding AllItems, Mode=OneWay}"
                             SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
@@ -723,20 +728,20 @@
                                     <Grid Padding="6,3" Background="#F4FDFF" BorderBrush="#75CDEE" BorderThickness="1.5,0,1.5,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="300"/>
+                                            <ColumnDefinition Width="280"/>
                                             <ColumnDefinition Width="100"/>
-                                            <ColumnDefinition Width="150"/>
-                                            <ColumnDefinition Width="150"/>
-                                            <ColumnDefinition Width="250"/>
-                                            <ColumnDefinition Width="200"/>
-                                            <ColumnDefinition Width="300"/>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="220"/>
+                                            <ColumnDefinition Width="180"/>
+                                            <ColumnDefinition Width="220"/>
                                         </Grid.ColumnDefinitions>
 
                                         <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" Visibility="{Binding IsFirstItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,0"/>
                                         <TextBlock Grid.Column="1" Text="{Binding ServiceName, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" Foreground="#0F3B5F" FontWeight="SemiBold"/>
                                         <TextBlock Grid.Column="2" Text="{Binding Quantity, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" TextAlignment="Center" FontWeight="SemiBold"/>
-                                        <TextBlock Grid.Column="3" Text="{Binding UnitPrice, Mode=OneWay}" FontSize="14" Padding="10,5" Margin="24,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#24506F"/>
-                                        <TextBlock Grid.Column="4" Text="{Binding Total, Mode=OneWay}" FontSize="14" FontWeight="Bold" Foreground="#2E7D32" Padding="10,5" Margin="0,0,28,0" VerticalAlignment="Center" TextAlignment="Right"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding UnitPrice, Mode=OneWay}" FontSize="14" Padding="10,5" Margin="18,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#24506F"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding Total, Mode=OneWay}" FontSize="14" FontWeight="Bold" Foreground="#2E7D32" Padding="10,5" Margin="0,0,18,0" VerticalAlignment="Center" TextAlignment="Right"/>
                                         <TextBlock Grid.Column="5" Text="{Binding CompanyName, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" Foreground="#24506F"/>
                                         <TextBlock Grid.Column="6" Text="{Binding EmployeeName, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" Foreground="#24506F"/>
 

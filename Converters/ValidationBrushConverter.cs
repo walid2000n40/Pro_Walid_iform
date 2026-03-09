@@ -7,6 +7,9 @@ namespace ProWalid.Converters
 {
     public class ValidationBrushConverter : IValueConverter
     {
+        private static readonly SolidColorBrush InvalidBrush = new(ColorHelper.FromArgb(255, 211, 47, 47));
+        private static readonly SolidColorBrush ValidBrush = new(ColorHelper.FromArgb(255, 93, 163, 114));
+
         public object Convert(object value, Type targetType, object parameter, string language)
         {
             var parameterText = parameter?.ToString();
@@ -15,24 +18,24 @@ namespace ProWalid.Converters
             {
                 if (value is double doubleValue)
                 {
-                    return new SolidColorBrush(doubleValue > 0 ? Colors.ForestGreen : Colors.IndianRed);
+                    return doubleValue > 0 ? ValidBrush : InvalidBrush;
                 }
 
                 if (value is int intValue)
                 {
-                    return new SolidColorBrush(intValue > 0 ? Colors.ForestGreen : Colors.IndianRed);
+                    return intValue > 0 ? ValidBrush : InvalidBrush;
                 }
 
                 if (double.TryParse(value?.ToString(), out var parsed))
                 {
-                    return new SolidColorBrush(parsed > 0 ? Colors.ForestGreen : Colors.IndianRed);
+                    return parsed > 0 ? ValidBrush : InvalidBrush;
                 }
 
-                return new SolidColorBrush(Colors.IndianRed);
+                return InvalidBrush;
             }
 
             var text = value?.ToString();
-            return new SolidColorBrush(!string.IsNullOrWhiteSpace(text) ? Colors.ForestGreen : Colors.IndianRed);
+            return !string.IsNullOrWhiteSpace(text) ? ValidBrush : InvalidBrush;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)

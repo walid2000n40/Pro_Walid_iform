@@ -145,6 +145,21 @@ namespace ProWalid.ViewModels
             Items.Add(newItem);
         }
 
+        [RelayCommand]
+        private void RemoveItem(TransactionItemDetail item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            item.PropertyChanged -= TransactionItem_PropertyChanged;
+            Items.Remove(item);
+
+            OnPropertyChanged(nameof(GrandTotal));
+            OnPropertyChanged(nameof(TotalProfit));
+        }
+
         private void RegisterItem(TransactionItemDetail item)
         {
             item.PropertyChanged -= TransactionItem_PropertyChanged;
