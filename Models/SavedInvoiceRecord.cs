@@ -56,9 +56,25 @@ namespace ProWalid.Models
         [ObservableProperty]
         private DateTimeOffset savedAt = DateTimeOffset.Now;
 
+        [ObservableProperty]
+        private int groupedInvoicesCount = 1;
+
+        [ObservableProperty]
+        private string groupedInvoiceNumbersSummary = string.Empty;
+
         public bool IsGrouped => string.Equals(SavedKind, "grouped", StringComparison.OrdinalIgnoreCase);
 
         public string SavedKindDisplay => IsGrouped ? "فاتورة مجمعة" : "فاتورة مفردة";
+
+        public string DisplayInvoiceNumber => IsGrouped && !string.IsNullOrWhiteSpace(RootInvoiceNumber)
+            ? RootInvoiceNumber
+            : SavedInvoiceNumber;
+
+        public string GroupedInvoicesCountText => IsGrouped
+            ? $"{GroupedInvoicesCount} فواتير أصلية"
+            : "فاتورة واحدة";
+
+        public bool CanShowGroupedInvoiceNumbers => IsGrouped && !string.IsNullOrWhiteSpace(GroupedInvoiceNumbersSummary);
 
         public string TotalAmountText => $"{TotalAmount:N2} درهم";
 
