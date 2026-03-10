@@ -29,6 +29,9 @@ namespace ProWalid.Models
         [ObservableProperty]
         private ObservableCollection<Attachment> attachments = new();
 
+        [ObservableProperty]
+        private ObservableCollection<SuggestionEntry> itemSuggestions = new();
+
         public double Total => Quantity * UnitPrice;
 
         public int AttachmentsCount => Attachments.Count;

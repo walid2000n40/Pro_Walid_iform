@@ -100,6 +100,30 @@ namespace ProWalid.Data
                     SavedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )";
 
+            var createCompanySuggestionsTable = @"
+                CREATE TABLE IF NOT EXISTS Suggestions_Companies (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Value TEXT NOT NULL,
+                    NormalizedValue TEXT NOT NULL UNIQUE,
+                    CreatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )";
+
+            var createEmployeeSuggestionsTable = @"
+                CREATE TABLE IF NOT EXISTS Suggestions_Employees (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Value TEXT NOT NULL,
+                    NormalizedValue TEXT NOT NULL UNIQUE,
+                    CreatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )";
+
+            var createItemSuggestionsTable = @"
+                CREATE TABLE IF NOT EXISTS Suggestions_Items (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Value TEXT NOT NULL,
+                    NormalizedValue TEXT NOT NULL UNIQUE,
+                    CreatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )";
+
             await connection.ExecuteAsync(createTransactionsTable);
             await EnsureTransactionsCustomerIdColumnAsync(connection);
             await EnsureTransactionsStatusColumnAsync(connection);
@@ -110,7 +134,11 @@ namespace ProWalid.Data
             await connection.ExecuteAsync(createCustomersTable);
             await EnsureCustomersCustomerNumberColumnAsync(connection);
             await connection.ExecuteAsync(createSavedInvoicesTable);
+            await connection.ExecuteAsync(createCompanySuggestionsTable);
+            await connection.ExecuteAsync(createEmployeeSuggestionsTable);
+            await connection.ExecuteAsync(createItemSuggestionsTable);
             await BackfillHazemInvoiceTemplateKeysAsync(connection);
+            await BackfillSuggestionTablesAsync(connection);
         }
 
         private static async Task EnsureTransactionsCustomerIdColumnAsync(SqliteConnection connection)
@@ -180,6 +208,100 @@ namespace ProWalid.Data
             {
                 await connection.ExecuteAsync("ALTER TABLE Customers ADD COLUMN CustomerNumber INTEGER NOT NULL DEFAULT 0");
                 await connection.ExecuteAsync("UPDATE Customers SET CustomerNumber = Id WHERE CustomerNumber = 0 OR CustomerNumber IS NULL");
+            }
+        }
+
+        private static string NormalizeSuggestionValue(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" ", value
+                .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                .Trim()
+                .ToLowerInvariant();
+        }
+
+        private static string CleanSuggestionValue(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" ", value
+                .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                .Trim();
+        }
+
+        private static async Task BackfillSuggestionTablesAsync(SqliteConnection connection)
+        {
+            var companyNames = await connection.QueryAsync<string>(@"
+                SELECT DISTINCT CompanyName
+                FROM Transactions
+                WHERE CompanyName IS NOT NULL AND TRIM(CompanyName) <> ''");
+
+            foreach (var companyName in companyNames)
+            {
+                await InsertSuggestionIfNeededAsync(connection, null, "Suggestions_Companies", companyName);
+            }
+
+            var employeeNames = await connection.QueryAsync<string>(@"
+                SELECT DISTINCT EmployeeName
+                FROM Transactions
+                WHERE EmployeeName IS NOT NULL AND TRIM(EmployeeName) <> ''");
+
+            foreach (var employeeName in employeeNames)
+            {
+                await InsertSuggestionIfNeededAsync(connection, null, "Suggestions_Employees", employeeName);
+            }
+
+            var itemDescriptions = await connection.QueryAsync<string>(@"
+                SELECT DISTINCT ServiceName
+                FROM TransactionItems
+                WHERE ServiceName IS NOT NULL AND TRIM(ServiceName) <> ''");
+
+            foreach (var itemDescription in itemDescriptions)
+            {
+                await InsertSuggestionIfNeededAsync(connection, null, "Suggestions_Items", itemDescription);
+            }
+        }
+
+        private static async Task InsertSuggestionIfNeededAsync(
+            SqliteConnection connection,
+            SqliteTransaction? transaction,
+            string tableName,
+            string? rawValue)
+        {
+            var cleanedValue = CleanSuggestionValue(rawValue);
+            var normalizedValue = NormalizeSuggestionValue(cleanedValue);
+
+            if (string.IsNullOrWhiteSpace(cleanedValue) || string.IsNullOrWhiteSpace(normalizedValue))
+            {
+                return;
+            }
+
+            await connection.ExecuteAsync(
+                $@"INSERT OR IGNORE INTO {tableName} (Value, NormalizedValue)
+                   VALUES (@Value, @NormalizedValue)",
+                new
+                {
+                    Value = cleanedValue,
+                    NormalizedValue = normalizedValue
+                },
+                transaction);
+        }
+
+        private static async Task SaveSuggestionsForTransactionAsync(SqliteConnection connection, SqliteTransaction transaction, Transaction transactionModel)
+        {
+            await InsertSuggestionIfNeededAsync(connection, transaction, "Suggestions_Companies", transactionModel.CompanyName);
+            await InsertSuggestionIfNeededAsync(connection, transaction, "Suggestions_Employees", transactionModel.EmployeeName);
+
+            foreach (var item in transactionModel.Items)
+            {
+                await InsertSuggestionIfNeededAsync(connection, transaction, "Suggestions_Items", item.ServiceName);
             }
         }
 
@@ -337,6 +459,8 @@ namespace ProWalid.Data
                         }
                     }
                 }
+
+                await SaveSuggestionsForTransactionAsync(connection, dbTransaction, transaction);
 
                 dbTransaction.Commit();
                 return transactionId;
@@ -753,6 +877,91 @@ namespace ProWalid.Data
                 "SELECT MAX(CASE WHEN CustomerNumber > 0 THEN CustomerNumber ELSE Id END) FROM Customers");
 
             return (lastCustomerNumber ?? 0) + 1;
+        }
+
+        private async Task<List<SuggestionEntry>> GetSuggestionsAsync(string tableName, string suggestionType, string? searchText, int limit = 8)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var cleanedSearchText = CleanSuggestionValue(searchText);
+            if (string.IsNullOrWhiteSpace(cleanedSearchText))
+            {
+                return new List<SuggestionEntry>();
+            }
+
+            var suggestions = await connection.QueryAsync<string>(
+                $@"SELECT Value
+                   FROM {tableName}
+                   WHERE Value LIKE @StartsWith COLLATE NOCASE
+                      OR Value LIKE @Contains COLLATE NOCASE
+                   ORDER BY CASE WHEN Value LIKE @StartsWith COLLATE NOCASE THEN 0 ELSE 1 END,
+                            length(Value),
+                            Value
+                   LIMIT @Limit",
+                new
+                {
+                    StartsWith = cleanedSearchText + "%",
+                    Contains = "%" + cleanedSearchText + "%",
+                    Limit = limit
+                });
+
+            return suggestions
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Select(value => new SuggestionEntry
+                {
+                    Value = value,
+                    SuggestionType = suggestionType
+                })
+                .ToList();
+        }
+
+        private async Task DeleteSuggestionAsync(string tableName, string? value)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var normalizedValue = NormalizeSuggestionValue(value);
+            if (string.IsNullOrWhiteSpace(normalizedValue))
+            {
+                return;
+            }
+
+            await connection.ExecuteAsync(
+                $@"DELETE FROM {tableName}
+                   WHERE NormalizedValue = @NormalizedValue",
+                new { NormalizedValue = normalizedValue });
+        }
+
+        public Task<List<SuggestionEntry>> GetCompanySuggestionsAsync(string? searchText)
+        {
+            return GetSuggestionsAsync("Suggestions_Companies", "company", searchText);
+        }
+
+        public Task<List<SuggestionEntry>> GetEmployeeSuggestionsAsync(string? searchText)
+        {
+            return GetSuggestionsAsync("Suggestions_Employees", "employee", searchText);
+        }
+
+        public Task<List<SuggestionEntry>> GetItemSuggestionsAsync(string? searchText)
+        {
+            return GetSuggestionsAsync("Suggestions_Items", "item", searchText);
+        }
+
+        public Task DeleteCompanySuggestionAsync(string? value)
+        {
+            return DeleteSuggestionAsync("Suggestions_Companies", value);
+        }
+
+        public Task DeleteEmployeeSuggestionAsync(string? value)
+        {
+            return DeleteSuggestionAsync("Suggestions_Employees", value);
+        }
+
+        public Task DeleteItemSuggestionAsync(string? value)
+        {
+            return DeleteSuggestionAsync("Suggestions_Items", value);
         }
 
         public async Task<long> SaveCustomerAsync(Customer customer)

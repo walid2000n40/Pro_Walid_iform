@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using ProWalid.Models;
 using ProWalid.ViewModels;
+using System;
 
 namespace ProWalid.Views
 {
@@ -29,6 +30,76 @@ namespace ProWalid.Views
             {
                 ViewModel.LoadCustomer(customer);
             }
+        }
+
+        private async void CompanyNameAutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                return;
+            }
+
+            await ViewModel.UpdateCompanySuggestionsAsync(sender.Text);
+        }
+
+        private void CompanyNameAutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+        {
+            if (args.SelectedItem is SuggestionEntry selectedSuggestion)
+            {
+                ViewModel.CompanyName = selectedSuggestion.Value;
+                sender.Text = selectedSuggestion.Value;
+            }
+        }
+
+        private async void EmployeeNameAutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                return;
+            }
+
+            await ViewModel.UpdateEmployeeSuggestionsAsync(sender.Text);
+        }
+
+        private void EmployeeNameAutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+        {
+            if (args.SelectedItem is SuggestionEntry selectedSuggestion)
+            {
+                ViewModel.EmployeeName = selectedSuggestion.Value;
+                sender.Text = selectedSuggestion.Value;
+            }
+        }
+
+        private async void ItemDescriptionAutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                return;
+            }
+
+            if (sender.DataContext is TransactionItemDetail item)
+            {
+                await ViewModel.UpdateItemSuggestionsAsync(item, sender.Text);
+            }
+        }
+
+        private void ItemDescriptionAutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+        {
+            if (sender.DataContext is TransactionItemDetail item && args.SelectedItem is SuggestionEntry selectedSuggestion)
+            {
+                item.ServiceName = selectedSuggestion.Value;
+                sender.Text = selectedSuggestion.Value;
+            }
+        }
+
+        private async void DeleteSuggestionButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            if (sender is not Button button || button.Tag is not SuggestionEntry suggestion)
+            {
+                return;
+            }
+
+            await ViewModel.DeleteSuggestionAsync(suggestion);
         }
     }
 }

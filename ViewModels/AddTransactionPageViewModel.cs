@@ -6,6 +6,7 @@ using ProWalid.Data;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
@@ -48,6 +49,12 @@ namespace ProWalid.ViewModels
 
         [ObservableProperty]
         private long selectedCustomerNumber;
+
+        [ObservableProperty]
+        private ObservableCollection<SuggestionEntry> companySuggestions = new();
+
+        [ObservableProperty]
+        private ObservableCollection<SuggestionEntry> employeeSuggestions = new();
 
         public string SelectedCustomerContextText => string.IsNullOrWhiteSpace(SelectedCustomerName)
             ? "العميل: غير محدد"
@@ -166,6 +173,93 @@ namespace ProWalid.ViewModels
             item.PropertyChanged += TransactionItem_PropertyChanged;
         }
 
+        private static string CleanInput(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" ", value
+                .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                .Trim();
+        }
+
+        private static void ReplaceSuggestions(ObservableCollection<SuggestionEntry> target, IEnumerable<SuggestionEntry> values)
+        {
+            target.Clear();
+            foreach (var value in values.Where(item => item != null && !string.IsNullOrWhiteSpace(item.Value)).GroupBy(item => item.Value, StringComparer.OrdinalIgnoreCase).Select(group => group.First()))
+            {
+                target.Add(value);
+            }
+        }
+
+        public async Task UpdateCompanySuggestionsAsync(string? searchText)
+        {
+            var suggestions = await _databaseHelper.GetCompanySuggestionsAsync(searchText);
+            ReplaceSuggestions(CompanySuggestions, suggestions);
+        }
+
+        public async Task UpdateEmployeeSuggestionsAsync(string? searchText)
+        {
+            var suggestions = await _databaseHelper.GetEmployeeSuggestionsAsync(searchText);
+            ReplaceSuggestions(EmployeeSuggestions, suggestions);
+        }
+
+        public async Task UpdateItemSuggestionsAsync(TransactionItemDetail? item, string? searchText)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            var suggestions = await _databaseHelper.GetItemSuggestionsAsync(searchText);
+            ReplaceSuggestions(item.ItemSuggestions, suggestions);
+        }
+
+        public async Task DeleteSuggestionAsync(SuggestionEntry? suggestion)
+        {
+            if (suggestion == null || string.IsNullOrWhiteSpace(suggestion.Value))
+            {
+                return;
+            }
+
+            if (string.Equals(suggestion.SuggestionType, "company", StringComparison.OrdinalIgnoreCase))
+            {
+                await _databaseHelper.DeleteCompanySuggestionAsync(suggestion.Value);
+                var existingEntry = CompanySuggestions.FirstOrDefault(item => string.Equals(item.Value, suggestion.Value, StringComparison.OrdinalIgnoreCase));
+                if (existingEntry != null)
+                {
+                    CompanySuggestions.Remove(existingEntry);
+                }
+                return;
+            }
+
+            if (string.Equals(suggestion.SuggestionType, "employee", StringComparison.OrdinalIgnoreCase))
+            {
+                await _databaseHelper.DeleteEmployeeSuggestionAsync(suggestion.Value);
+                var existingEntry = EmployeeSuggestions.FirstOrDefault(item => string.Equals(item.Value, suggestion.Value, StringComparison.OrdinalIgnoreCase));
+                if (existingEntry != null)
+                {
+                    EmployeeSuggestions.Remove(existingEntry);
+                }
+                return;
+            }
+
+            if (string.Equals(suggestion.SuggestionType, "item", StringComparison.OrdinalIgnoreCase))
+            {
+                await _databaseHelper.DeleteItemSuggestionAsync(suggestion.Value);
+                foreach (var transactionItem in Items)
+                {
+                    var existingEntry = transactionItem.ItemSuggestions.FirstOrDefault(item => string.Equals(item.Value, suggestion.Value, StringComparison.OrdinalIgnoreCase));
+                    if (existingEntry != null)
+                    {
+                        transactionItem.ItemSuggestions.Remove(existingEntry);
+                    }
+                }
+            }
+        }
+
         private void TransactionItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(TransactionItemDetail.Total)
@@ -263,6 +357,9 @@ namespace ProWalid.ViewModels
                 await EnsureProvisionalInvoiceNumberAsync();
             }
 
+            CompanyName = CleanInput(CompanyName);
+            EmployeeName = CleanInput(EmployeeName);
+
             var transaction = new Transaction
             {
                 CustomerId = SelectedCustomerId,
@@ -276,6 +373,8 @@ namespace ProWalid.ViewModels
 
             foreach (var item in Items)
             {
+                item.ServiceName = CleanInput(item.ServiceName);
+
                 if (string.IsNullOrWhiteSpace(item.ServiceName))
                 {
                     await ShowMessageAsync("تعذر الحفظ", "اسم الخدمة مطلوب لكل بند.");

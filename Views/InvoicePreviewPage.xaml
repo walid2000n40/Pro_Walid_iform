@@ -48,12 +48,12 @@
                 </Button>
 
                 <StackPanel Grid.Column="2" HorizontalAlignment="Right" Spacing="4">
-                    <TextBlock Text="معاينة نماذج الفاتورة"
+                    <TextBlock Text="معاينة الفاتورة"
                                FontSize="30"
                                FontWeight="Bold"
                                Foreground="#123B66"
                                TextAlignment="Right"/>
-                    <TextBlock Text="نماذج متعددة للمعاينة والطباعة وفق نوع الفاتورة أو الكشف"
+                    <TextBlock Text="عرض مباشر لمعاينة الفاتورة مع أوامر الحفظ والطباعة فقط"
                                FontSize="14"
                                Foreground="#52708E"
                                TextAlignment="Right"/>
@@ -61,1042 +61,120 @@
             </Grid>
         </Border>
 
-        <Pivot Grid.Row="1"
-               x:Name="PreviewTemplatesPivot"
-               SelectionChanged="PreviewTemplatesPivot_SelectionChanged">
-            <PivotItem Header="Fluent Executive"
-                       Tag="fluent">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border Background="#FFFFFF"
-                            BorderBrush="#D8E7F8"
-                            BorderThickness="1"
-                            CornerRadius="24"
-                            Padding="28"
-                            Margin="0,0,0,18">
-                        <StackPanel Spacing="22">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="280"/>
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="6">
-                                    <TextBlock Text="{Binding CompanyName}" FontSize="30" FontWeight="Bold" Foreground="#163B63" TextAlignment="Right"/>
-                                    <TextBlock Text="{Binding CompanySubtitle}" FontSize="14" Foreground="#5E7A96" TextAlignment="Right"/>
-                                    <TextBlock Text="{Binding CompanyAddress}" FontSize="13" Foreground="#5E7A96" TextAlignment="Right"/>
-                                    <TextBlock Text="{Binding CompanyPhone}" FontSize="13" Foreground="#5E7A96" TextAlignment="Right"/>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="12" FlowDirection="LeftToRight">
-                                    <Border Background="#EEF4FF" BorderBrush="#C8DBFF" BorderThickness="1" CornerRadius="16" Padding="16,12" Width="150">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock Text="رقم الفاتورة" FontSize="12" Foreground="#5E7A96"/>
-                                            <TextBlock Text="{Binding InvoiceNumber}" FontSize="18" FontWeight="Bold" Foreground="#153E75"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Background="#FFF7D6" BorderBrush="#F8DC74" BorderThickness="1" CornerRadius="16" Padding="16,12" Width="150">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock Text="الحالة" FontSize="12" Foreground="#856404"/>
-                                            <TextBlock Text="{Binding InvoiceStatus}" FontSize="18" FontWeight="Bold" Foreground="#7A5A00"/>
-                                        </StackPanel>
-                                    </Border>
-                                </StackPanel>
-                            </Grid>
-
-                            <Grid ColumnSpacing="16">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <Border Grid.Column="0" Background="#F8FBFF" BorderBrush="#DAE7F6" BorderThickness="1" CornerRadius="18" Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="بيانات العميل" FontSize="14" FontWeight="Bold" Foreground="#153E75"/>
-                                        <TextBlock Text="{Binding CustomerName}" FontSize="20" FontWeight="SemiBold" Foreground="#15304D"/>
-                                        <TextBlock Text="{Binding CustomerIdText}" FontSize="13" Foreground="#5E7A96"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Grid.Column="1" Background="#F8FBFF" BorderBrush="#DAE7F6" BorderThickness="1" CornerRadius="18" Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="تاريخ الإصدار" FontSize="14" FontWeight="Bold" Foreground="#153E75"/>
-                                        <TextBlock Text="{Binding InvoiceDate}" FontSize="18" FontWeight="SemiBold" Foreground="#15304D"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Grid.Column="2" Background="#F8FBFF" BorderBrush="#DAE7F6" BorderThickness="1" CornerRadius="18" Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="تاريخ الاستحقاق" FontSize="14" FontWeight="Bold" Foreground="#153E75"/>
-                                        <TextBlock Text="{Binding DueDate}" FontSize="18" FontWeight="SemiBold" Foreground="#15304D"/>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-
-                            <Border Background="#FFFFFF" BorderBrush="#E3EDF7" BorderThickness="1" CornerRadius="18" Padding="0">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <Border Grid.Row="0" Background="#EAF2FB" CornerRadius="18,18,0,0" Padding="16,14">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="120"/>
-                                                <ColumnDefinition Width="140"/>
-                                                <ColumnDefinition Width="140"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="الوصف" FontSize="14" FontWeight="Bold" Foreground="#163B63"/>
-                                            <TextBlock Grid.Column="1" Text="الكمية" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="2" Text="سعر الوحدة" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="3" Text="الإجمالي" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                        </Grid>
-                                    </Border>
-
-                                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Items}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border BorderBrush="#EDF3F9" BorderThickness="0,0,0,1" Padding="16,14">
-                                                    <Grid>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="120"/>
-                                                            <ColumnDefinition Width="140"/>
-                                                            <ColumnDefinition Width="140"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="{Binding Description}" FontSize="14" Foreground="#29435C"/>
-                                                        <TextBlock Grid.Column="1" Text="{Binding Quantity}" FontSize="14" Foreground="#29435C" TextAlignment="Center"/>
-                                                        <TextBlock Grid.Column="2" Text="{Binding UnitPrice}" FontSize="14" Foreground="#29435C" TextAlignment="Center"/>
-                                                        <TextBlock Grid.Column="3" Text="{Binding Total}" FontSize="14" FontWeight="Bold" Foreground="#0F766E" TextAlignment="Center"/>
-                                                    </Grid>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Grid>
-                            </Border>
-
-                            <Grid ColumnSpacing="16">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="280"/>
-                                </Grid.ColumnDefinitions>
-
-                                <Border Grid.Column="1" Background="#0F3F71" CornerRadius="20" Padding="18">
-                                    <StackPanel Spacing="10">
-                                        <TextBlock Text="الملخص المالي" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="الإجمالي الفرعي" Foreground="#DCEBFF"/>
-                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SubtotalText}" Foreground="White" FontWeight="SemiBold"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="الضريبة 5%" Foreground="#DCEBFF" Margin="0,8,0,0"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding VatText}" Foreground="White" FontWeight="SemiBold" Margin="0,8,0,0"/>
-                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="الإجمالي النهائي" Foreground="White" FontWeight="Bold" Margin="0,12,0,0"/>
-                                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding GrandTotalText}" Foreground="#FDE68A" FontSize="18" FontWeight="Bold" Margin="0,12,0,0"/>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Grid.Column="0" Background="#F9FBFE" BorderBrush="#E2EBF4" BorderThickness="1" CornerRadius="18" Padding="16">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="ملاحظات" FontSize="15" FontWeight="Bold" Foreground="#163B63"/>
-                                        <TextBlock Text="{Binding Notes}" TextWrapping="WrapWholeWords" Foreground="#4E6580" LineHeight="26"/>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </PivotItem>
-
-            <PivotItem Header="فاتورة مجمعة"
-                       Tag="grouped">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border Background="#FFFFFF"
-                            BorderBrush="#D8E7F8"
-                            BorderThickness="1"
-                            CornerRadius="24"
-                            Padding="28"
-                            Margin="0,0,0,18">
-                        <StackPanel Spacing="22"
-                                    FlowDirection="LeftToRight">
-                            <Grid FlowDirection="LeftToRight">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="280"/>
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="6">
-                                    <TextBlock Text="{Binding CompanyName}" FontSize="30" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                    <TextBlock Text="{Binding CompanySubtitle}" FontSize="14" Foreground="#5E7A96" TextAlignment="Center"/>
-                                    <TextBlock Text="{Binding CompanyAddress}" FontSize="13" Foreground="#5E7A96" TextAlignment="Center"/>
-                                    <TextBlock Text="{Binding CompanyPhone}" FontSize="13" Foreground="#5E7A96" TextAlignment="Center"/>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" Spacing="12" FlowDirection="LeftToRight">
-                                    <Border Background="#EEF4FF" BorderBrush="#C8DBFF" BorderThickness="1" CornerRadius="16" Padding="16,12" Width="170">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock Text="Invoice No" FontSize="12" Foreground="#5E7A96"/>
-                                            <TextBlock Text="{Binding InvoiceNumber}" FontSize="18" FontWeight="Bold" Foreground="#153E75"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Background="#FFF7D6" BorderBrush="#F8DC74" BorderThickness="1" CornerRadius="16" Padding="16,12" Width="170">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock Text="Status" FontSize="12" Foreground="#856404"/>
-                                            <TextBlock Text="{Binding InvoiceStatus}" FontSize="18" FontWeight="Bold" Foreground="#7A5A00"/>
-                                        </StackPanel>
-                                    </Border>
-                                </StackPanel>
-                            </Grid>
-
-                            <Grid ColumnSpacing="16"
-                                  FlowDirection="LeftToRight">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <Border Grid.Column="0" Background="#F8FBFF" BorderBrush="#DAE7F6" BorderThickness="1" CornerRadius="18" Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="Client Details" FontSize="14" FontWeight="Bold" Foreground="#153E75"/>
-                                        <TextBlock Text="{Binding CustomerName}" FontSize="20" FontWeight="SemiBold" Foreground="#15304D"/>
-                                        <TextBlock Text="{Binding CustomerIdText}" FontSize="13" Foreground="#5E7A96"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Grid.Column="1" Background="#F8FBFF" BorderBrush="#DAE7F6" BorderThickness="1" CornerRadius="18" Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="Issue Date" FontSize="14" FontWeight="Bold" Foreground="#153E75"/>
-                                        <TextBlock Text="{Binding InvoiceDate}" FontSize="18" FontWeight="SemiBold" Foreground="#15304D"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Grid.Column="2" Background="#F8FBFF" BorderBrush="#DAE7F6" BorderThickness="1" CornerRadius="18" Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="Employee Scope" FontSize="14" FontWeight="Bold" Foreground="#153E75"/>
-                                        <TextBlock Text="{Binding EmployeeName}" FontSize="18" FontWeight="SemiBold" Foreground="#15304D"/>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-
-                            <Border Background="#FFFFFF" BorderBrush="#E3EDF7" BorderThickness="1" CornerRadius="18" Padding="0">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <Border Grid.Row="0" Background="#EAF2FB" CornerRadius="18,18,0,0" Padding="16,14">
-                                        <Grid FlowDirection="LeftToRight">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="100"/>
-                                                <ColumnDefinition Width="130"/>
-                                                <ColumnDefinition Width="220"/>
-                                                <ColumnDefinition Width="140"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="Service" FontSize="14" FontWeight="Bold" Foreground="#163B63"/>
-                                            <TextBlock Grid.Column="1" Text="Qty" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="2" Text="Unit Price" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="3" Text="Employee Names" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="4" Text="Total" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                        </Grid>
-                                    </Border>
-
-                                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Items}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border BorderBrush="#EDF3F9" BorderThickness="0,0,0,1" Padding="16,14">
-                                                    <Grid FlowDirection="LeftToRight">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="100"/>
-                                                            <ColumnDefinition Width="130"/>
-                                                            <ColumnDefinition Width="220"/>
-                                                            <ColumnDefinition Width="140"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="{Binding Description}" FontSize="14" Foreground="#29435C" TextWrapping="WrapWholeWords" TextAlignment="Left"/>
-                                                        <TextBlock Grid.Column="1" Text="{Binding Quantity}" FontSize="14" Foreground="#29435C" TextAlignment="Center"/>
-                                                        <TextBlock Grid.Column="2" Text="{Binding UnitPrice}" FontSize="14" Foreground="#29435C" TextAlignment="Center"/>
-                                                        <TextBlock Grid.Column="3" Text="{Binding EmployeeNamesDisplay}" FontSize="14" Foreground="#29435C" TextAlignment="Left" TextWrapping="WrapWholeWords"/>
-                                                        <TextBlock Grid.Column="4" Text="{Binding Total}" FontSize="14" FontWeight="Bold" Foreground="#0F766E" TextAlignment="Center"/>
-                                                    </Grid>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Grid>
-                            </Border>
-
-                            <Grid ColumnSpacing="16"
-                                  FlowDirection="LeftToRight">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="280"/>
-                                </Grid.ColumnDefinitions>
-
-                                <Border Grid.Column="1" Background="#0F3F71" CornerRadius="20" Padding="18">
-                                    <StackPanel Spacing="10">
-                                        <TextBlock Text="Financial Summary" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Subtotal" Foreground="#DCEBFF"/>
-                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SubtotalText}" Foreground="White" FontWeight="SemiBold"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Grand Total" Foreground="White" FontWeight="Bold" Margin="0,12,0,0"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding GrandTotalText}" Foreground="#FDE68A" FontSize="18" FontWeight="Bold" Margin="0,12,0,0"/>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Grid.Column="0" Background="#F9FBFE" BorderBrush="#E2EBF4" BorderThickness="1" CornerRadius="18" Padding="16">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="Notes" FontSize="15" FontWeight="Bold" Foreground="#163B63"/>
-                                        <TextBlock Text="{Binding Notes}" TextWrapping="WrapWholeWords" Foreground="#4E6580" LineHeight="26"/>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </PivotItem>
-
-            <PivotItem Header="ERP Accounting"
-                       Tag="erp">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border Background="#FFFFFF"
-                            BorderBrush="#DDE5EE"
-                            BorderThickness="1"
-                            CornerRadius="10"
-                            Padding="24"
-                            Margin="0,0,0,18">
-                        <StackPanel Spacing="18">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="4">
-                                    <TextBlock Text="فاتورة ضريبية" FontSize="28" FontWeight="Bold" Foreground="#172B4D"/>
-                                    <TextBlock Text="{Binding CompanyName}" FontSize="18" FontWeight="SemiBold" Foreground="#2D4C72"/>
-                                    <TextBlock Text="{Binding CompanySubtitle}" FontSize="13" Foreground="#5B708B"/>
-                                    <TextBlock Text="{Binding TaxNumber}" FontSize="13" Foreground="#5B708B"/>
-                                    <TextBlock Text="{Binding CompanyPhone}" FontSize="13" Foreground="#5B708B"/>
-                                    <TextBlock Text="{Binding CompanyEmail}" FontSize="13" Foreground="#5B708B"/>
-                                    <TextBlock Text="{Binding CompanyAddress}" FontSize="13" Foreground="#5B708B" TextWrapping="WrapWholeWords"/>
-                                </StackPanel>
-                            </Grid>
-
-                            <Grid ColumnSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <Border Grid.Column="0" BorderBrush="#DDE5EE" BorderThickness="1" Padding="14" Background="#FAFCFF">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="بيانات العميل" FontWeight="Bold" Foreground="#27496D"/>
-                                        <TextBlock Text="{Binding CustomerName}" FontSize="18" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{Binding CustomerIdText}" Foreground="#617588"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Grid.Column="1" BorderBrush="#DDE5EE" BorderThickness="1" Padding="14" Background="#FAFCFF">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="رقم الفاتورة:" FontWeight="Bold" Foreground="#27496D" Margin="0,0,8,0"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding InvoiceNumber}"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="التاريخ:" FontWeight="Bold" Foreground="#27496D" Margin="0,8,8,0"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding InvoiceDate}" Margin="0,8,0,0"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="الاستحقاق:" FontWeight="Bold" Foreground="#27496D" Margin="0,8,8,0"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DueDate}" Margin="0,8,0,0"/>
-                                    </Grid>
-                                </Border>
-                            </Grid>
-
-                            <Border BorderBrush="#DDE5EE" BorderThickness="1">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <Border Grid.Row="0" Background="#F1F5F9" Padding="12,10">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="70"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="110"/>
-                                                <ColumnDefinition Width="130"/>
-                                                <ColumnDefinition Width="130"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="#" FontWeight="Bold" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="1" Text="الوصف" FontWeight="Bold"/>
-                                            <TextBlock Grid.Column="2" Text="الكمية" FontWeight="Bold" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="3" Text="سعر الوحدة" FontWeight="Bold" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="4" Text="الإجمالي" FontWeight="Bold" TextAlignment="Center"/>
-                                        </Grid>
-                                    </Border>
-
-                                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Items}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border BorderBrush="#EDF2F7" BorderThickness="0,0,0,1" Padding="12,10">
-                                                    <Grid>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="70"/>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="110"/>
-                                                            <ColumnDefinition Width="130"/>
-                                                            <ColumnDefinition Width="130"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="1" TextAlignment="Center"/>
-                                                        <TextBlock Grid.Column="1" Text="{Binding Description}"/>
-                                                        <TextBlock Grid.Column="2" Text="{Binding Quantity}" TextAlignment="Center"/>
-                                                        <TextBlock Grid.Column="3" Text="{Binding UnitPrice}" TextAlignment="Center"/>
-                                                        <TextBlock Grid.Column="4" Text="{Binding Total}" FontWeight="Bold" Foreground="#14532D" TextAlignment="Center"/>
-                                                    </Grid>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Grid>
-                            </Border>
-
-                            <Border Background="#F8FAFC" BorderBrush="#DDE5EE" BorderThickness="1" Padding="14">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="260"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Border Grid.Column="1" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="1" Padding="14" Margin="0,0,12,0">
-                                        <StackPanel Spacing="6">
-                                            <TextBlock Text="بيانات الشركة" FontWeight="Bold" Foreground="#27496D"/>
-                                            <TextBlock Text="{Binding CompanyName}" FontSize="16" FontWeight="SemiBold" Foreground="#172B4D"/>
-                                            <TextBlock Text="{Binding CompanyPhone}" Foreground="#617588" TextWrapping="WrapWholeWords"/>
-                                            <TextBlock Text="{Binding CompanyEmail}" Foreground="#617588" TextWrapping="WrapWholeWords"/>
-                                            <TextBlock Text="{Binding CompanyAddress}" Foreground="#617588" TextWrapping="WrapWholeWords"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <StackPanel Grid.Column="2" Spacing="8">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="الإجمالي الفرعي"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding SubtotalText}" FontWeight="SemiBold"/>
-                                        </Grid>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="الإجمالي النهائي" FontSize="16" FontWeight="Bold"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding GrandTotalText}" FontSize="18" FontWeight="Bold" Foreground="#0F766E"/>
-                                        </Grid>
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-                        </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </PivotItem>
-
-            <PivotItem Header="Premium Brand"
-                       Tag="premium">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border Background="#FFFFFF"
-                            BorderBrush="#E5D9FF"
-                            BorderThickness="1"
-                            CornerRadius="28"
-                            Padding="0"
-                            Margin="0,0,0,18">
-                        <StackPanel>
-                            <Border CornerRadius="28,28,0,0" Padding="28,24">
-                                <Border.Background>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                        <GradientStop Color="#3730A3" Offset="0"/>
-                                        <GradientStop Color="#5B21B6" Offset="0.6"/>
-                                        <GradientStop Color="#7C3AED" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </Border.Background>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="2" HorizontalAlignment="Right" Spacing="6">
-                                        <TextBlock Text="{Binding CompanyName}" FontSize="30" FontWeight="Bold" Foreground="White"/>
-                                        <TextBlock Text="{Binding CompanySubtitle}" FontSize="14" Foreground="#E9D5FF"/>
-                                        <TextBlock Text="{Binding CompanyPhone}" FontSize="12" Foreground="#E9D5FF"/>
-                                        <TextBlock Text="{Binding CompanyEmail}" FontSize="12" Foreground="#E9D5FF"/>
-                                        <TextBlock Text="{Binding CompanyAddress}" FontSize="12" Foreground="#E9D5FF" TextWrapping="WrapWholeWords" MaxWidth="300"/>
-                                    </StackPanel>
-                                    <Border Grid.Column="0" Background="#FFFFFF22" BorderBrush="#FFFFFF33" BorderThickness="1" CornerRadius="18" Padding="18,14">
-                                        <StackPanel Spacing="6">
-                                            <TextBlock Text="فاتورة احترافية" FontSize="14" Foreground="#E9D5FF"/>
-                                            <TextBlock Text="{Binding InvoiceNumber}" FontSize="22" FontWeight="Bold" Foreground="White"/>
-                                        </StackPanel>
-                                    </Border>
-                                </Grid>
-                            </Border>
-
-                            <StackPanel Padding="28" Spacing="20">
-                                <Grid ColumnSpacing="16">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="220"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Border Grid.Column="0" Background="#FCFAFF" BorderBrush="#E9D5FF" BorderThickness="1" CornerRadius="20" Padding="18">
-                                        <StackPanel Spacing="8">
-                                            <TextBlock Text="إلى" FontSize="13" Foreground="#7C3AED" FontWeight="SemiBold"/>
-                                            <TextBlock Text="{Binding CustomerName}" FontSize="22" FontWeight="Bold" Foreground="#312E81"/>
-                                            <TextBlock Text="{Binding CustomerIdText}" FontSize="13" Foreground="#6D6792"/>
-                                            <TextBlock Text="{Binding CompanyAddress}" FontSize="13" Foreground="#6D6792"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Grid.Column="1" Background="#F8F5FF" BorderBrush="#E9D5FF" BorderThickness="1" CornerRadius="20" Padding="18">
-                                        <StackPanel Spacing="8">
-                                            <TextBlock Text="الحالة" FontSize="13" Foreground="#6D28D9" FontWeight="SemiBold"/>
-                                            <TextBlock Text="{Binding InvoiceStatus}" FontSize="18" FontWeight="Bold" Foreground="#7C5A00"/>
-                                            <TextBlock Text="{Binding EmployeeName}" FontSize="14" FontWeight="SemiBold" Foreground="#4C1D95"/>
-                                            <TextBlock Text="{Binding InvoiceDate}" FontSize="13" Foreground="#6D6792"/>
-                                            <TextBlock Text="{Binding DueDate}" FontSize="13" Foreground="#6D6792"/>
-                                        </StackPanel>
-                                    </Border>
-                                </Grid>
-
-                                <Border Background="#FFFFFF" BorderBrush="#EEE7FF" BorderThickness="1" CornerRadius="22" Padding="0">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <Border Grid.Row="0" Background="#F7F3FF" CornerRadius="22,22,0,0" Padding="16,14">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="120"/>
-                                                    <ColumnDefinition Width="140"/>
-                                                    <ColumnDefinition Width="140"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="الخدمة" FontWeight="Bold" Foreground="#4338CA"/>
-                                                <TextBlock Grid.Column="1" Text="الكمية" FontWeight="Bold" Foreground="#4338CA" TextAlignment="Center"/>
-                                                <TextBlock Grid.Column="2" Text="السعر" FontWeight="Bold" Foreground="#4338CA" TextAlignment="Center"/>
-                                                <TextBlock Grid.Column="3" Text="الإجمالي" FontWeight="Bold" Foreground="#4338CA" TextAlignment="Center"/>
-                                            </Grid>
-                                        </Border>
-                                        <ItemsControl Grid.Row="1" ItemsSource="{Binding Items}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Border BorderBrush="#F1EBFF" BorderThickness="0,0,0,1" Padding="16,14">
-                                                        <Grid>
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="120"/>
-                                                                <ColumnDefinition Width="140"/>
-                                                                <ColumnDefinition Width="140"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            <TextBlock Grid.Column="0" Text="{Binding Description}" Foreground="#312E81"/>
-                                                            <TextBlock Grid.Column="1" Text="{Binding Quantity}" TextAlignment="Center" Foreground="#4C1D95"/>
-                                                            <TextBlock Grid.Column="2" Text="{Binding UnitPrice}" TextAlignment="Center" Foreground="#4C1D95"/>
-                                                            <TextBlock Grid.Column="3" Text="{Binding Total}" TextAlignment="Center" FontWeight="Bold" Foreground="#0F766E"/>
-                                                        </Grid>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </Grid>
-                                </Border>
-
-                                <Grid ColumnSpacing="16">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="300"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Border Grid.Column="0" Background="#FCFAFF" BorderBrush="#EEE7FF" BorderThickness="1" CornerRadius="20" Padding="18">
-                                        <StackPanel Spacing="8">
-                                            <TextBlock Text="رسالة الفاتورة" FontSize="15" FontWeight="Bold" Foreground="#4338CA"/>
-                                            <TextBlock Text="{Binding Notes}" TextWrapping="WrapWholeWords" LineHeight="26" Foreground="#615A8D"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Grid.Column="1" Background="#312E81" CornerRadius="22" Padding="18">
-                                        <StackPanel Spacing="10">
-                                            <TextBlock Text="Total" FontSize="14" Foreground="#DDD6FE"/>
-                                            <TextBlock Text="{Binding GrandTotalText}" FontSize="28" FontWeight="Bold" Foreground="White"/>
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <TextBlock Text="Subtotal:" Foreground="#DDD6FE"/>
-                                                <TextBlock Text="{Binding SubtotalText}" Foreground="#DDD6FE"/>
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </Border>
-                                </Grid>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </PivotItem>
-
-            <PivotItem Header="Hazem Custom"
-                       Tag="hazem">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border Background="#FFFFFF"
-                            BorderBrush="#D8E7F8"
-                            BorderThickness="1"
-                            CornerRadius="22"
-                            Padding="26"
-                            Margin="0,0,0,18">
-                        <StackPanel Spacing="22">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="230"/>
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="6">
-                                    <TextBlock Text="نموذج فاتورة حازم"
-                                               FontSize="30"
-                                               FontWeight="Bold"
-                                               Foreground="#163B63"
-                                               TextAlignment="Right"/>
-                                    <TextBlock Text="معاملة واحدة لكل فاتورة - GOV-FEES عرض فقط لكل بند"
-                                               FontSize="13"
-                                               Foreground="#52708E"
-                                               TextAlignment="Right"/>
-                                    <TextBlock Text="{Binding CompanyName}"
-                                               FontSize="16"
-                                               FontWeight="SemiBold"
-                                               Foreground="#24506F"
-                                               TextAlignment="Right"/>
-                                </StackPanel>
-
-                                <Border Grid.Column="0"
-                                        Background="#F6FAFF"
-                                        BorderBrush="#D9E6F4"
-                                        BorderThickness="1"
-                                        CornerRadius="18"
-                                        Padding="18,14"
-                                        HorizontalAlignment="Left">
-                                    <Grid ColumnSpacing="20">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0" Spacing="4">
-                                            <TextBlock Text="رقم الفاتورة" FontSize="12" Foreground="#5E7A96"/>
-                                            <TextBlock Text="{Binding InvoiceNumber}" FontSize="18" FontWeight="Bold" Foreground="#153E75"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Spacing="4">
-                                            <TextBlock Text="التاريخ" FontSize="12" Foreground="#5E7A96"/>
-                                            <TextBlock Text="{Binding InvoiceDate}" FontSize="18" FontWeight="Bold" Foreground="#153E75"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                            </Grid>
-
-                            <Grid ColumnSpacing="16">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <Border Grid.Column="0" Background="#F8FBFF" BorderBrush="#DAE7F6" BorderThickness="1" CornerRadius="18" Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="بيانات العميل" FontSize="14" FontWeight="Bold" Foreground="#153E75"/>
-                                        <TextBlock Text="{Binding CustomerName}" FontSize="20" FontWeight="SemiBold" Foreground="#15304D"/>
-                                        <TextBlock Text="{Binding CustomerIdText}" FontSize="13" Foreground="#5E7A96"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Grid.Column="1" Background="#F8FBFF" BorderBrush="#DAE7F6" BorderThickness="1" CornerRadius="18" Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="اسم الموظف" FontSize="14" FontWeight="Bold" Foreground="#153E75"/>
-                                        <TextBlock Text="{Binding EmployeeName}" FontSize="18" FontWeight="SemiBold" Foreground="#15304D"/>
-                                        <TextBlock Text="الحالة الحالية" FontSize="13" Foreground="#5E7A96"/>
-                                        <TextBlock Text="{Binding InvoiceStatus}" FontSize="15" FontWeight="Bold" Foreground="#7A5A00"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Grid.Column="2" Background="#F8FBFF" BorderBrush="#DAE7F6" BorderThickness="1" CornerRadius="18" Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="ملاحظة محاسبية" FontSize="14" FontWeight="Bold" Foreground="#153E75"/>
-                                        <TextBlock Text="كل فاتورة تمثل معاملة واحدة فقط لهذا العميل." TextWrapping="WrapWholeWords" Foreground="#4E6580"/>
-                                        <TextBlock Text="قيمة GOV-FEES لا تدخل في الإجمالي." TextWrapping="WrapWholeWords" Foreground="#4E6580"/>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-
-                            <Border Background="#FFFFFF" BorderBrush="#E3EDF7" BorderThickness="1" CornerRadius="18" Padding="0">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <Border Grid.Row="0" Background="#EAF2FB" CornerRadius="18,18,0,0" Padding="16,14">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="70"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="100"/>
-                                                <ColumnDefinition Width="120"/>
-                                                <ColumnDefinition Width="120"/>
-                                                <ColumnDefinition Width="120"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="#" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="1" Text="الخدمة" FontSize="14" FontWeight="Bold" Foreground="#163B63"/>
-                                            <TextBlock Grid.Column="2" Text="الكمية" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="3" Text="سعر الوحدة" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="4" Text="GOV-FEES" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="5" Text="الإجمالي" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                        </Grid>
-                                    </Border>
-
-                                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Items}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border BorderBrush="#EDF3F9" BorderThickness="0,0,0,1" Padding="16,14">
-                                                    <Grid>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="70"/>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="100"/>
-                                                            <ColumnDefinition Width="120"/>
-                                                            <ColumnDefinition Width="120"/>
-                                                            <ColumnDefinition Width="120"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="{Binding LineNumber}" FontSize="14" Foreground="#29435C" TextAlignment="Center"/>
-                                                        <TextBlock Grid.Column="1" Text="{Binding Description}" FontSize="14" Foreground="#29435C" TextWrapping="WrapWholeWords"/>
-                                                        <TextBlock Grid.Column="2" Text="{Binding Quantity}" FontSize="14" Foreground="#29435C" TextAlignment="Center"/>
-                                                        <TextBlock Grid.Column="3" Text="{Binding UnitPrice}" FontSize="14" Foreground="#29435C" TextAlignment="Center"/>
-                                                        <TextBlock Grid.Column="4" Text="{Binding GovFeesDisplay}" FontSize="14" Foreground="#7A5A00" TextAlignment="Center"/>
-                                                        <TextBlock Grid.Column="5" Text="{Binding Total}" FontSize="14" FontWeight="Bold" Foreground="#0F766E" TextAlignment="Center"/>
-                                                    </Grid>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Grid>
-                            </Border>
-
-                            <Grid ColumnSpacing="16">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="320"/>
-                                </Grid.ColumnDefinitions>
-
-                                <Border Grid.Column="0" Background="#F9FBFE" BorderBrush="#E2EBF4" BorderThickness="1" CornerRadius="18" Padding="16">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="ملاحظات" FontSize="15" FontWeight="Bold" Foreground="#163B63"/>
-                                        <TextBlock Text="{Binding Notes}" TextWrapping="WrapWholeWords" Foreground="#4E6580" LineHeight="26"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Grid.Column="1" Background="#0F3F71" CornerRadius="20" Padding="18">
-                                    <StackPanel Spacing="10">
-                                        <TextBlock Text="الملخص المالي" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="الإجمالي الفرعي" Foreground="#DCEBFF"/>
-                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SubtotalText}" Foreground="White" FontWeight="SemiBold"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="الإجمالي النهائي" Foreground="White" FontWeight="Bold" Margin="0,12,0,0"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding GrandTotalText}" Foreground="#FDE68A" FontSize="18" FontWeight="Bold" Margin="0,12,0,0"/>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </PivotItem>
-
-            <PivotItem Header="التجميع النهائي"
-                       Tag="final-aggregation">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border Background="#FFFFFF"
-                            BorderBrush="#D7E8F7"
-                            BorderThickness="1"
-                            CornerRadius="22"
-                            Padding="26"
-                            Margin="0,0,0,18">
-                        <StackPanel Spacing="22">
-                            <StackPanel HorizontalAlignment="Center" Spacing="6">
-                                <TextBlock Text="{Binding CompanyName}"
-                                           FontSize="30"
-                                           FontWeight="Bold"
-                                           Foreground="#123B66"
-                                           TextAlignment="Center"/>
-                                <TextBlock Text="{Binding CustomerName}"
-                                           FontSize="20"
-                                           FontWeight="SemiBold"
-                                           Foreground="#1E4F82"
-                                           TextAlignment="Center"/>
-                                <TextBlock Text="رسوم الطباعة"
-                                           FontSize="22"
-                                           FontWeight="Bold"
-                                           Foreground="#166534"
-                                           TextAlignment="Center"/>
-                            </StackPanel>
-
-                            <Border Background="#F8FBFF"
-                                    BorderBrush="#D9E6F4"
-                                    BorderThickness="1"
-                                    CornerRadius="18"
-                                    Padding="18,14">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="2" Text="عدد الفواتير:" FontWeight="Bold" Foreground="#27496D" Margin="0,0,8,0"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding FinalAggregationRows.Count}" Foreground="#123B66" FontWeight="SemiBold" Margin="0,0,20,0"/>
-                                    <TextBlock Grid.Column="0" Text="{Binding InvoiceDate}" Foreground="#52708E" HorizontalAlignment="Left"/>
-                                </Grid>
-                            </Border>
-
-                            <Border Background="#FFFFFF" BorderBrush="#E3EDF7" BorderThickness="1" CornerRadius="18" Padding="0">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <Border Grid.Row="0" Background="#EAF2FB" CornerRadius="18,18,0,0" Padding="16,14">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="120"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="180"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="رقم مسلسل" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="1" Text="رقم الفاتورة" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                            <TextBlock Grid.Column="2" Text="رسوم الطباعة" FontSize="14" FontWeight="Bold" Foreground="#163B63" TextAlignment="Center"/>
-                                        </Grid>
-                                    </Border>
-
-                                    <ItemsControl Grid.Row="1" ItemsSource="{Binding FinalAggregationRows}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border BorderBrush="#EDF3F9" BorderThickness="0,0,0,1" Padding="16,14">
-                                                    <Grid>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="120"/>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="180"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Text="{Binding SerialNumber}" FontSize="14" Foreground="#244C71" TextAlignment="Center"/>
-                                                        <TextBlock Grid.Column="1" Text="{Binding InvoiceNumber}" FontSize="14" FontWeight="SemiBold" Foreground="#1B4E80" TextAlignment="Center"/>
-                                                        <TextBlock Grid.Column="2" Text="{Binding PrintingFeesAmountText}" FontSize="14" FontWeight="Bold" Foreground="#166534" TextAlignment="Center"/>
-                                                    </Grid>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Grid>
-                            </Border>
-
-                            <Grid ColumnSpacing="16">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="320"/>
-                                </Grid.ColumnDefinitions>
-
-                                <Border Grid.Column="0" Background="#F9FBFE" BorderBrush="#E2EBF4" BorderThickness="1" CornerRadius="18" Padding="16">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="ملاحظات" FontSize="15" FontWeight="Bold" Foreground="#163B63"/>
-                                        <TextBlock Text="{Binding Notes}" TextWrapping="WrapWholeWords" Foreground="#4E6580" LineHeight="26"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Grid.Column="1" Background="#0F3F71" CornerRadius="20" Padding="18">
-                                    <StackPanel Spacing="10">
-                                        <TextBlock Text="الملخص المالي" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="إجمالي رسوم الطباعة" Foreground="#DCEBFF"/>
-                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SubtotalText}" Foreground="White" FontWeight="SemiBold"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="إجمالي الكشف" Foreground="White" FontWeight="Bold" Margin="0,12,0,0"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding GrandTotalText}" Foreground="#FDE68A" FontSize="18" FontWeight="Bold" Margin="0,12,0,0"/>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </PivotItem>
-
-            <PivotItem Header="A4 Print / PDF"
-                       Tag="A4">
-                <Grid RowSpacing="16"
-                      FlowDirection="LeftToRight">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
-                    <Border Grid.Row="0"
-                            Background="#FFFFFF"
-                            BorderBrush="#D9E6F4"
-                            BorderThickness="1"
-                            CornerRadius="18"
-                            Padding="18">
-                        <Grid ColumnSpacing="14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                                <Button Click="RefreshPrintPreviewButton_Click"
-                                        Background="#EEF6FF"
-                                        Foreground="#0B62A2"
-                                        BorderBrush="#BFDBFE"
-                                        BorderThickness="1"
-                                        CornerRadius="10"
-                                        Padding="14,8">
-                                    <TextBlock Text="تحديث المعاينة"/>
-                                </Button>
-
-                                <Button Click="PrintInvoiceButton_Click"
-                                        Background="#E8F5E9"
-                                        Foreground="#1B5E20"
-                                        BorderBrush="#A5D6A7"
-                                        BorderThickness="1"
-                                        CornerRadius="10"
-                                        Padding="14,8">
-                                    <TextBlock Text="طباعة A4"/>
-                                </Button>
-
-                                <Button Click="SaveInvoiceButton_Click"
-                                        IsEnabled="{Binding CanSaveInvoice}"
-                                        Background="#EAFBF3"
-                                        Foreground="#166534"
-                                        BorderBrush="#A7E0BC"
-                                        BorderThickness="1"
-                                        CornerRadius="10"
-                                        Padding="14,8">
-                                    <TextBlock Text="حفظ الفاتورة"/>
-                                </Button>
-
-                                <Button Click="SavePdfButton_Click"
-                                        Background="#FFF4E8"
-                                        Foreground="#9A4A00"
-                                        BorderBrush="#F5C58A"
-                                        BorderThickness="1"
-                                        CornerRadius="10"
-                                        Padding="14,8">
-                                    <TextBlock Text="حفظ PDF"/>
-                                </Button>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="0" HorizontalAlignment="Right" Spacing="4">
-                                <TextBlock Text="معاينة الطباعة بقياس A4"
-                                           FontSize="26"
-                                           FontWeight="Bold"
-                                           Foreground="#123B66"
-                                           TextAlignment="Right"/>
-                                <TextBlock Text="نموذج طباعي مرن للألوان والطباعة وحفظ PDF، ويستوعب عدداً كبيراً من البنود مع ترقيم تلقائي للصفحات من متصفح الطباعة."
-                                           FontSize="13"
-                                           Foreground="#52708E"
-                                           TextAlignment="Right"
-                                           TextWrapping="WrapWholeWords"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-
-                    <Grid x:Name="PdfRenderHost"
-                          Grid.Row="1"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Top"
-                          Opacity="0"
-                          IsHitTestVisible="False"
-                          FlowDirection="LeftToRight"/>
-
-                    <Border Grid.Row="1"
-                            Background="#FFFFFF"
-                            BorderBrush="#D9E6F4"
-                            BorderThickness="1"
-                            CornerRadius="18"
-                            Padding="12"
-                            FlowDirection="LeftToRight">
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                                      VerticalScrollBarVisibility="Auto"
-                                      HorizontalScrollMode="Auto"
-                                      VerticalScrollMode="Auto"
-                                      ZoomMode="Disabled"
-                                      Padding="16">
-                            <Grid HorizontalAlignment="Center"
-                                  VerticalAlignment="Top"
-                                  FlowDirection="LeftToRight">
-                                <Border Width="794"
-                                        Height="1123"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Top"
-                                        FlowDirection="LeftToRight"
-                                        Background="White"
-                                        BorderBrush="#C8DCEF"
-                                        BorderThickness="1"
-                                        CornerRadius="10">
-                                    <Grid HorizontalAlignment="Stretch"
-                                          VerticalAlignment="Stretch"
-                                          FlowDirection="LeftToRight">
-                                        <WebView2 x:Name="A4PrintWebView"
-                                                  DefaultBackgroundColor="White"
-                                                  FlowDirection="LeftToRight"
-                                                  HorizontalAlignment="Stretch"
-                                                  VerticalAlignment="Stretch"/>
-                                    </Grid>
-                                </Border>
-                            </Grid>
-                        </ScrollViewer>
-                    </Border>
+        <Grid Grid.Row="1"
+              RowSpacing="16"
+              FlowDirection="LeftToRight">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Background="#FFFFFF"
+                    BorderBrush="#D9E6F4"
+                    BorderThickness="1"
+                    CornerRadius="18"
+                    Padding="18">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                        <Button Click="PrintInvoiceButton_Click"
+                                Background="#E8F5E9"
+                                Foreground="#1B5E20"
+                                BorderBrush="#A5D6A7"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="14,8">
+                            <TextBlock Text="طباعة A4"/>
+                        </Button>
+
+                        <Button Click="SaveInvoiceButton_Click"
+                                IsEnabled="{Binding CanSaveInvoice}"
+                                Background="#EAFBF3"
+                                Foreground="#166534"
+                                BorderBrush="#A7E0BC"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="14,8">
+                            <TextBlock Text="حفظ الفاتورة"/>
+                        </Button>
+
+                        <Button Click="SavePdfButton_Click"
+                                Background="#FFF4E8"
+                                Foreground="#9A4A00"
+                                BorderBrush="#F5C58A"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="14,8">
+                            <TextBlock Text="حفظ PDF"/>
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="0" HorizontalAlignment="Right" Spacing="4">
+                        <TextBlock Text="معاينة الطباعة بقياس A4"
+                                   FontSize="26"
+                                   FontWeight="Bold"
+                                   Foreground="#123B66"
+                                   TextAlignment="Right"/>
+                        <TextBlock Text="هذه هي المعاينة المباشرة المعتمدة للفواتير مع أوامر الحفظ والطباعة فقط."
+                                   FontSize="13"
+                                   Foreground="#52708E"
+                                   TextAlignment="Right"
+                                   TextWrapping="WrapWholeWords"/>
+                    </StackPanel>
                 </Grid>
-            </PivotItem>
-        </Pivot>
+            </Border>
+
+            <Grid x:Name="PdfRenderHost"
+                  Grid.Row="1"
+                  HorizontalAlignment="Left"
+                  VerticalAlignment="Top"
+                  Opacity="0"
+                  IsHitTestVisible="False"
+                  FlowDirection="LeftToRight"/>
+
+            <Border Grid.Row="1"
+                    Background="#FFFFFF"
+                    BorderBrush="#D9E6F4"
+                    BorderThickness="1"
+                    CornerRadius="18"
+                    Padding="12"
+                    FlowDirection="LeftToRight">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollMode="Auto"
+                              VerticalScrollMode="Auto"
+                              ZoomMode="Disabled"
+                              Padding="16">
+                    <Grid HorizontalAlignment="Center"
+                          VerticalAlignment="Top"
+                          FlowDirection="LeftToRight">
+                        <Border Width="794"
+                                Height="1123"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Top"
+                                FlowDirection="LeftToRight"
+                                Background="White"
+                                BorderBrush="#C8DCEF"
+                                BorderThickness="1"
+                                CornerRadius="10">
+                            <Grid HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch"
+                                  FlowDirection="LeftToRight">
+                                <WebView2 x:Name="A4PrintWebView"
+                                          DefaultBackgroundColor="White"
+                                          FlowDirection="LeftToRight"
+                                          HorizontalAlignment="Stretch"
+                                          VerticalAlignment="Stretch"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </ScrollViewer>
+            </Border>
+        </Grid>
     </Grid>
 </Page>

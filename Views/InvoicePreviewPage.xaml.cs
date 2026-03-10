@@ -28,7 +28,6 @@ namespace ProWalid.Views
         private const uint PdfRenderPixelHeight = 3508;
         private const double PdfCaptureZoomFactor = 2480d / A4PreviewWidth;
         private bool _pendingAutoPrint;
-        private bool _forceA4Preview;
 
         public InvoicePreviewViewModel ViewModel { get; }
 
@@ -44,17 +43,8 @@ namespace ProWalid.Views
         {
             base.OnNavigatedTo(e);
             _pendingAutoPrint = e.Parameter is SavedInvoicePreviewRequest savedRequest && savedRequest.AutoPrint;
-            _forceA4Preview = _pendingAutoPrint;
             ViewModel.SetFrame(Frame);
             await ViewModel.LoadAsync(e.Parameter);
-            if (_forceA4Preview)
-            {
-                SelectPivotItemByTag("A4");
-            }
-            else
-            {
-                ApplyViewModelTemplateToPivot();
-            }
 
             await RenderPrintPreviewAsync();
 
@@ -112,83 +102,6 @@ namespace ProWalid.Views
             {
                 A4PrintWebView.NavigateToString(ViewModel.PrintHtml);
             }
-        }
-
-        private async void RefreshPrintPreviewButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
-        {
-            await RenderPrintPreviewAsync();
-        }
-
-        private async void PreviewTemplatesPivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (PreviewTemplatesPivot == null)
-            {
-                return;
-            }
-
-            if (PreviewTemplatesPivot.SelectedItem is PivotItem selectedItem
-                && string.Equals(selectedItem.Tag?.ToString(), "A4", StringComparison.OrdinalIgnoreCase))
-            {
-                await RenderPrintPreviewAsync();
-                return;
-            }
-
-            SyncSelectedTemplateFromPivot();
-        }
-
-        private void SyncSelectedTemplateFromPivot()
-        {
-            if (PreviewTemplatesPivot?.SelectedItem is not PivotItem selectedItem)
-            {
-                return;
-            }
-
-            var templateKey = selectedItem.Tag?.ToString();
-            if (string.IsNullOrWhiteSpace(templateKey)
-                || string.Equals(templateKey, "A4", StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            ViewModel.SelectPreviewTemplate(templateKey);
-        }
-
-        private void ApplyViewModelTemplateToPivot()
-        {
-            if (PreviewTemplatesPivot == null)
-            {
-                return;
-            }
-
-            var templateKey = ViewModel.SelectedPreviewTemplateKey;
-            if (!SelectPivotItemByTag(templateKey))
-            {
-                SelectPivotItemByTag("A4");
-            }
-        }
-
-        private bool SelectPivotItemByTag(string? templateKey)
-        {
-            if (PreviewTemplatesPivot == null || string.IsNullOrWhiteSpace(templateKey))
-            {
-                return false;
-            }
-
-            foreach (var item in PreviewTemplatesPivot.Items)
-            {
-                if (item is PivotItem pivotItem
-                    && string.Equals(pivotItem.Tag?.ToString(), templateKey, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (!ReferenceEquals(PreviewTemplatesPivot.SelectedItem, pivotItem))
-                    {
-                        PreviewTemplatesPivot.SelectedItem = pivotItem;
-                    }
-
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private async void SaveInvoiceButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)

@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:converters="using:ProWalid.Converters"
+    xmlns:models="using:ProWalid.Models"
     mc:Ignorable="d"
     Background="#F7FAFC"
     FlowDirection="RightToLeft">
@@ -26,6 +27,16 @@
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="IsSpellCheckEnabled" Value="False"/>
         </Style>
+        <Style TargetType="AutoSuggestBox">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#000000"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="UpdateTextOnSelect" Value="True"/>
+        </Style>
         <Style TargetType="DatePicker">
             <Setter Property="Background" Value="White"/>
             <Setter Property="Foreground" Value="#000000"/>
@@ -33,6 +44,39 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Height" Value="34"/>
         </Style>
+        <DataTemplate x:Key="SuggestionItemTemplate" x:DataType="models:SuggestionEntry">
+            <Grid FlowDirection="LeftToRight">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Text="{Binding Value}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           Margin="0,0,8,0"
+                           Foreground="#1F2937"/>
+
+                <Button Grid.Column="1"
+                        Content="✕"
+                        Tag="{Binding}"
+                        Click="DeleteSuggestionButton_Click"
+                        ClickMode="Press"
+                        Width="24"
+                        Height="24"
+                        CornerRadius="12"
+                        Background="#FFF1F2"
+                        BorderBrush="#F5C2C7"
+                        Foreground="#C62828"
+                        BorderThickness="1"
+                        Padding="0"
+                        FontSize="11"
+                        FontWeight="Bold"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"/>
+            </Grid>
+        </DataTemplate>
     </Page.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Background="#F7FAFC">
@@ -89,8 +133,12 @@
                             <Border BorderBrush="{Binding CompanyName, Converter={StaticResource ValidationBrushConverter}}"
                                     BorderThickness="1"
                                     CornerRadius="6">
-                                <TextBox Text="{Binding CompanyName, Mode=TwoWay}"
-                                         PlaceholderText="أدخل اسم الشركة"/>
+                                <AutoSuggestBox Text="{Binding CompanyName, Mode=TwoWay}"
+                                                ItemsSource="{Binding CompanySuggestions}"
+                                                ItemTemplate="{StaticResource SuggestionItemTemplate}"
+                                                PlaceholderText="أدخل اسم الشركة"
+                                                TextChanged="CompanyNameAutoSuggestBox_TextChanged"
+                                                SuggestionChosen="CompanyNameAutoSuggestBox_SuggestionChosen"/>
                             </Border>
                         </StackPanel>
 
@@ -99,8 +147,12 @@
                             <Border BorderBrush="{Binding EmployeeName, Converter={StaticResource ValidationBrushConverter}}"
                                     BorderThickness="1"
                                     CornerRadius="6">
-                                <TextBox Text="{Binding EmployeeName, Mode=TwoWay}"
-                                         PlaceholderText="أدخل اسم الموظف"/>
+                                <AutoSuggestBox Text="{Binding EmployeeName, Mode=TwoWay}"
+                                                ItemsSource="{Binding EmployeeSuggestions}"
+                                                ItemTemplate="{StaticResource SuggestionItemTemplate}"
+                                                PlaceholderText="أدخل اسم الموظف"
+                                                TextChanged="EmployeeNameAutoSuggestBox_TextChanged"
+                                                SuggestionChosen="EmployeeNameAutoSuggestBox_SuggestionChosen"/>
                             </Border>
                         </StackPanel>
 
@@ -174,7 +226,12 @@
                                             </Grid.ColumnDefinitions>
 
                                             <Border Grid.Column="0" BorderBrush="{Binding ServiceName, Converter={StaticResource ValidationBrushConverter}}" BorderThickness="1" CornerRadius="6" Margin="0,0,6,0">
-                                                <TextBox Text="{Binding ServiceName, Mode=TwoWay}" PlaceholderText="اسم الخدمة"/>
+                                                <AutoSuggestBox Text="{Binding ServiceName, Mode=TwoWay}"
+                                                                ItemsSource="{Binding ItemSuggestions}"
+                                                                ItemTemplate="{StaticResource SuggestionItemTemplate}"
+                                                                PlaceholderText="اسم الخدمة"
+                                                                TextChanged="ItemDescriptionAutoSuggestBox_TextChanged"
+                                                                SuggestionChosen="ItemDescriptionAutoSuggestBox_SuggestionChosen"/>
                                             </Border>
 
                                             <Border Grid.Column="1" BorderBrush="{Binding Quantity, Converter={StaticResource ValidationBrushConverter}, ConverterParameter=numeric}" BorderThickness="1" CornerRadius="6" Margin="0,0,6,0">

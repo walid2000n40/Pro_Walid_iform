@@ -673,7 +673,7 @@ namespace ProWalid.ViewModels
             return NormalizeTemplateKey(SelectedPreviewTemplateKey) switch
             {
                 UniversalServerTemplateKey => BuildUniversalServerPrintHtml(),
-                GroupedInvoiceTemplateKey => BuildGroupedInvoicePrintHtml(),
+                GroupedInvoiceTemplateKey => BuildUniversalServerPrintHtml(),
                 ErpTemplateKey => BuildErpPrintHtml(),
                 PremiumTemplateKey => BuildPremiumPrintHtml(),
                 HazemTemplateKey => BuildHazemPrintHtml(),
