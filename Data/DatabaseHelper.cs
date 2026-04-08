@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ProWalid.Data
@@ -17,10 +18,55 @@ namespace ProWalid.Data
         public DatabaseHelper()
         {
             var appFolder = AppDomain.CurrentDomain.BaseDirectory;
-            _dbPath = Path.Combine(appFolder, "ProWalid.db");
+            _dbPath = ResolveDatabasePath(appFolder);
+            var dbDirectory = Path.GetDirectoryName(_dbPath);
+            if (!string.IsNullOrWhiteSpace(dbDirectory))
+            {
+                Directory.CreateDirectory(dbDirectory);
+            }
+
             _connectionString = $"Data Source={_dbPath}";
             
             InitializeDatabaseAsync().Wait();
+        }
+
+        private static string ResolveDatabasePath(string appFolder)
+        {
+            var fallbackPath = Path.Combine(appFolder, "ProWalid.db");
+            var settingsPath = Path.Combine(appFolder, "appsettings.json");
+
+            if (!File.Exists(settingsPath))
+            {
+                return fallbackPath;
+            }
+
+            try
+            {
+                using var stream = File.OpenRead(settingsPath);
+                using var document = JsonDocument.Parse(stream);
+
+                if (!document.RootElement.TryGetProperty("Database", out var databaseElement))
+                {
+                    return fallbackPath;
+                }
+
+                if (!databaseElement.TryGetProperty("Path", out var pathElement))
+                {
+                    return fallbackPath;
+                }
+
+                var configuredPath = pathElement.GetString();
+                if (string.IsNullOrWhiteSpace(configuredPath))
+                {
+                    return fallbackPath;
+                }
+
+                return Path.GetFullPath(Environment.ExpandEnvironmentVariables(configuredPath));
+            }
+            catch
+            {
+                return fallbackPath;
+            }
         }
 
         private async Task InitializeDatabaseAsync()
