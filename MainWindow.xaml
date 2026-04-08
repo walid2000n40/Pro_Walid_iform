@@ -5,7 +5,10 @@
     xmlns:local="using:ProWalid"
     xmlns:pages="using:ProWalid.Views">
 
-    <Grid>
-        <Frame x:Name="RootFrame"/>
+    <Grid HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch">
+        <Frame x:Name="RootFrame"
+               HorizontalAlignment="Stretch"
+               VerticalAlignment="Stretch"/>
     </Grid>
 </Window>

@@ -556,29 +556,30 @@
                         BorderThickness="1"
                         CornerRadius="8"
                         Margin="0,0,0,15">
-                    <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                                  HorizontalScrollMode="Enabled"
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                  HorizontalScrollMode="Disabled"
                                   VerticalScrollBarVisibility="Disabled"
                                   VerticalScrollMode="Disabled">
-                        <Grid Padding="16,14">
+                        <Grid Padding="16,14"
+                              HorizontalAlignment="Stretch">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="280"/>
+                                <ColumnDefinition Width="56"/>
+                                <ColumnDefinition Width="*" MaxWidth="300"/>
+                                <ColumnDefinition Width="56"/>
+                                <ColumnDefinition Width="92"/>
                                 <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="220"/>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="80"/>
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Grid.Column="0" Text="تحديد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="بند الخدمة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0"/>
-                            <TextBlock Grid.Column="2" Text="العدد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
-                            <TextBlock Grid.Column="3" Text="سعر الوحدة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="24,0,0,0" TextAlignment="Right"/>
-                            <TextBlock Grid.Column="4" Text="الإجمالي" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="0,0,24,0" TextAlignment="Right"/>
-                            <TextBlock Grid.Column="5" Text="اسم الشركة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0"/>
-                            <TextBlock Grid.Column="6" Text="اسم الموظف" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0"/>
+                            <TextBlock Grid.Column="1" Text="بند الخدمة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="0,0,10,0" HorizontalAlignment="Right" TextAlignment="Right"/>
+                            <TextBlock Grid.Column="2" Text="العدد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" HorizontalAlignment="Right" TextAlignment="Right"/>
+                            <TextBlock Grid.Column="3" Text="سعر الوحدة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="12,0,0,0" HorizontalAlignment="Right" TextAlignment="Right"/>
+                            <TextBlock Grid.Column="4" Text="الإجمالي" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="0,0,12,0" HorizontalAlignment="Right" TextAlignment="Right"/>
+                            <TextBlock Grid.Column="5" Text="اسم الشركة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" HorizontalAlignment="Right" TextAlignment="Right"/>
+                            <TextBlock Grid.Column="6" Text="اسم الموظف" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" HorizontalAlignment="Right" TextAlignment="Right"/>
                             <TextBlock Grid.Column="7" Text="المرفقات" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
                         </Grid>
                     </ScrollViewer>
@@ -586,14 +587,16 @@
 
                 <ScrollViewer Grid.Row="1"
                               VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Auto"
-                              HorizontalScrollMode="Enabled">
+                              HorizontalScrollBarVisibility="Disabled"
+                              HorizontalScrollMode="Disabled">
                     <ListView
                             ItemsSource="{Binding AllItems, Mode=OneWay}"
                             SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
                             SelectionMode="Single"
                             Padding="0"
                             Background="White"
+                            HorizontalAlignment="Stretch"
+                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                             FontFamily="{StaticResource AppFontFamily}">
                         <ListView.Resources>
                             <SolidColorBrush x:Key="ListViewItemBackground" Color="White"/>
@@ -727,28 +730,28 @@
 
                                     <Grid Padding="6,3" Background="#F4FDFF" BorderBrush="#75CDEE" BorderThickness="1.5,0,1.5,0">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="280"/>
+                                            <ColumnDefinition Width="56"/>
+                                            <ColumnDefinition Width="*" MaxWidth="300"/>
+                                            <ColumnDefinition Width="56"/>
+                                            <ColumnDefinition Width="92"/>
                                             <ColumnDefinition Width="100"/>
-                                            <ColumnDefinition Width="140"/>
-                                            <ColumnDefinition Width="140"/>
-                                            <ColumnDefinition Width="220"/>
-                                            <ColumnDefinition Width="180"/>
-                                            <ColumnDefinition Width="220"/>
+                                            <ColumnDefinition Width="200"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="80"/>
                                         </Grid.ColumnDefinitions>
 
                                         <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" Visibility="{Binding IsFirstItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,0"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding ServiceName, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" Foreground="#0F3B5F" FontWeight="SemiBold"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding Quantity, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" TextAlignment="Center" FontWeight="SemiBold"/>
-                                        <TextBlock Grid.Column="3" Text="{Binding UnitPrice, Mode=OneWay}" FontSize="14" Padding="10,5" Margin="18,0,0,0" VerticalAlignment="Center" TextAlignment="Right" Foreground="#24506F"/>
-                                        <TextBlock Grid.Column="4" Text="{Binding Total, Mode=OneWay}" FontSize="14" FontWeight="Bold" Foreground="#2E7D32" Padding="10,5" Margin="0,0,18,0" VerticalAlignment="Center" TextAlignment="Right"/>
-                                        <TextBlock Grid.Column="5" Text="{Binding CompanyName, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" Foreground="#24506F"/>
-                                        <TextBlock Grid.Column="6" Text="{Binding EmployeeName, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" Foreground="#24506F"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ServiceName, Mode=OneWay}" FontSize="14" Padding="10,5" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="#0F3B5F" FontWeight="SemiBold" TextAlignment="Right" TextWrapping="WrapWholeWords" MaxLines="3"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Quantity, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right" FontWeight="SemiBold"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding UnitPrice, Mode=OneWay}" FontSize="14" Padding="6,5" VerticalAlignment="Center" TextAlignment="Right" Foreground="#24506F"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding Total, Mode=OneWay}" FontSize="14" FontWeight="Bold" Foreground="#2E7D32" Padding="6,5" VerticalAlignment="Center" TextAlignment="Right"/>
+                                        <TextBlock Grid.Column="5" Text="{Binding CompanyName, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="#24506F" TextAlignment="Right" TextWrapping="WrapWholeWords"/>
+                                        <TextBlock Grid.Column="6" Text="{Binding EmployeeName, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="#24506F" TextAlignment="Right"/>
 
-                                        <ItemsControl Grid.Column="7" ItemsSource="{Binding Attachments}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4,0">
+                                        <ItemsControl Grid.Column="7" ItemsSource="{Binding Attachments}" Width="80" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
-                                                    <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="4" />
+                                                    <StackPanel Orientation="Horizontal" />
                                                 </ItemsPanelTemplate>
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>

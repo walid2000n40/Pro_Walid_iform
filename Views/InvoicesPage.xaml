@@ -185,7 +185,7 @@
                 BorderBrush="#D4E6F8"
                 BorderThickness="1"
                 Padding="0">
-            <Grid>
+            <Grid HorizontalAlignment="Stretch">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
@@ -196,7 +196,7 @@
                         Background="#E7F0FA"
                         CornerRadius="20,20,0,0"
                         Padding="14,12">
-                    <Grid>
+                    <Grid HorizontalAlignment="Stretch">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="72"/>
                             <ColumnDefinition Width="100"/>
@@ -228,6 +228,7 @@
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                           Background="Transparent"
+                          HorizontalAlignment="Stretch"
                           BorderThickness="0"
                           Padding="0">
                     <ListView.ItemContainerStyle>

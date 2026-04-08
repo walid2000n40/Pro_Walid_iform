@@ -79,8 +79,11 @@
         </DataTemplate>
     </Page.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Background="#F7FAFC">
-        <Grid Padding="18,10" MaxWidth="1180" HorizontalAlignment="Center">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  HorizontalScrollMode="Disabled"
+                  Background="#F7FAFC">
+        <Grid Padding="18,10" HorizontalAlignment="Stretch">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -107,7 +110,7 @@
                                    Foreground="#0F3B5F"/>
                     </Border>
 
-                    <Grid HorizontalAlignment="Center">
+                    <Grid HorizontalAlignment="Stretch">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="180"/>
                             <ColumnDefinition Width="270"/>
@@ -177,16 +180,16 @@
                     Padding="12"
                     Margin="0,0,0,10">
                 <StackPanel Spacing="8">
-                    <Grid HorizontalAlignment="Center">
+                    <Grid HorizontalAlignment="Stretch">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="250"/>
-                            <ColumnDefinition Width="86"/>
-                            <ColumnDefinition Width="96"/>
-                            <ColumnDefinition Width="96"/>
-                            <ColumnDefinition Width="96"/>
-                            <ColumnDefinition Width="96"/>
-                            <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="76"/>
+                            <ColumnDefinition Width="76"/>
+                            <ColumnDefinition Width="72"/>
+                            <ColumnDefinition Width="72"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="36"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0" Text="بند الخدمة" FontSize="12" FontWeight="SemiBold" Foreground="#61758A" HorizontalAlignment="Center"/>
@@ -213,16 +216,16 @@
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
-                                        <Grid Grid.Row="0" HorizontalAlignment="Center">
+                                        <Grid Grid.Row="0" HorizontalAlignment="Stretch">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="250"/>
-                                                <ColumnDefinition Width="86"/>
-                                                <ColumnDefinition Width="96"/>
-                                                <ColumnDefinition Width="96"/>
-                                                <ColumnDefinition Width="96"/>
-                                                <ColumnDefinition Width="96"/>
-                                                <ColumnDefinition Width="90"/>
-                                                <ColumnDefinition Width="40"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="60"/>
+                                                <ColumnDefinition Width="76"/>
+                                                <ColumnDefinition Width="76"/>
+                                                <ColumnDefinition Width="72"/>
+                                                <ColumnDefinition Width="72"/>
+                                                <ColumnDefinition Width="80"/>
+                                                <ColumnDefinition Width="36"/>
                                             </Grid.ColumnDefinitions>
 
                                             <Border Grid.Column="0" BorderBrush="{Binding ServiceName, Converter={StaticResource ValidationBrushConverter}}" BorderThickness="1" CornerRadius="6" Margin="0,0,6,0">
@@ -298,6 +301,7 @@
                                                       BorderBrush="#E4EBF2"
                                                       BorderThickness="1"
                                                       CornerRadius="6"
+                                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                                       Padding="4">
                                                 <ListView.ItemTemplate>
                                                     <DataTemplate>
