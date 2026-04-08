@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Navigation;
 using ProWalid.Models;
 using ProWalid.ViewModels;
@@ -89,6 +90,22 @@ namespace ProWalid.Views
             {
                 item.ServiceName = selectedSuggestion.Value;
                 sender.Text = selectedSuggestion.Value;
+            }
+        }
+
+        private async void UnitPriceTextBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is TextBox textBox && textBox.DataContext is TransactionItemDetail item)
+            {
+                await ViewModel.ApplyLatestUnitPriceHintAsync(item);
+            }
+        }
+
+        private async void GovFeesTextBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is TextBox textBox && textBox.DataContext is TransactionItemDetail item)
+            {
+                await ViewModel.ApplyLatestGovFeesHintAsync(item);
             }
         }
 

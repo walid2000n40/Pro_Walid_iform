@@ -734,11 +734,40 @@ namespace ProWalid.ViewModels
         [RelayCommand]
         private async Task ShowReportsAsync()
         {
+            if (SelectedCustomer == null)
+            {
+                await ShowMessageAsync("التقارير", "يرجى تحديد عميل أولاً.");
+                return;
+            }
+
+            var selectedInvoiceNumbers = AllItems
+                .Where(item => item.IsSelected && !string.IsNullOrWhiteSpace(item.InvoiceNumber))
+                .Select(item => item.InvoiceNumber)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (selectedInvoiceNumbers.Count == 0)
+            {
+                await ShowMessageAsync("التقارير", "يرجى تحديد معاملة واحدة على الأقل من معاملات العميل المحدد.");
+                return;
+            }
+
+            var selectedTransactions = Transactions
+                .Where(transaction => selectedInvoiceNumbers.Contains(transaction.InvoiceNumber, StringComparer.OrdinalIgnoreCase))
+                .ToList();
+
+            var selectedTransactionsCount = selectedTransactions.Count;
+            var selectedTransactionsTotalAmount = selectedTransactions.Sum(transaction => transaction.GrandTotal);
+            var selectedTransactionsTotalProfit = selectedTransactions
+                .SelectMany(transaction => transaction.Items)
+                .Sum(item => item.Profit);
+
             var report = new StringBuilder();
-            report.AppendLine($"عدد المعاملات: {Transactions.Count}");
-            report.AppendLine($"إجمالي المبلغ: {TotalAmount} درهم إماراتي");
-            report.AppendLine($"عدد العملاء: {Customers.Count}");
-            report.AppendLine($"عدد البنود: {AllItems.Count}");
+            report.AppendLine($"العميل: {SelectedCustomer.Name}");
+            report.AppendLine($"رقم العميل: {(SelectedCustomer.CustomerNumber > 0 ? SelectedCustomer.CustomerNumber : SelectedCustomer.Id)}");
+            report.AppendLine($"عدد المعاملات المحددة: {selectedTransactionsCount}");
+            report.AppendLine($"إجمالي المبلغ للمعاملات المحددة: {selectedTransactionsTotalAmount} درهم إماراتي");
+            report.AppendLine($"إجمالي الفائدة المجمعة: {selectedTransactionsTotalProfit} درهم إماراتي");
 
             await ShowMessageAsync("التقارير", report.ToString());
         }

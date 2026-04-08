@@ -17,6 +17,7 @@ namespace ProWalid.ViewModels
     public partial class AddTransactionPageViewModel : ObservableObject
     {
         private const string UniversalInvoiceTemplateKey = InvoicePreviewViewModel.UniversalServerTemplateKey;
+        private const long SmartPricingPilotCustomerId = 10;
         private Frame _frame;
         private Transaction _originalTransaction;
         private bool _isEditMode;
@@ -217,6 +218,48 @@ namespace ProWalid.ViewModels
             ReplaceSuggestions(item.ItemSuggestions, suggestions);
         }
 
+        private bool IsSmartPricingPilotEnabled => SelectedCustomerId == SmartPricingPilotCustomerId;
+
+        public async Task ApplyLatestGovFeesHintAsync(TransactionItemDetail? item)
+        {
+            if (item == null || !IsSmartPricingPilotEnabled)
+            {
+                return;
+            }
+
+            item.ServiceName = CleanInput(item.ServiceName);
+            if (string.IsNullOrWhiteSpace(item.ServiceName) || !string.IsNullOrWhiteSpace(CleanInput(item.GovFees)))
+            {
+                return;
+            }
+
+            var hint = await _databaseHelper.GetLatestServicePriceHintAsync(SelectedCustomerId, item.ServiceName);
+            if (!string.IsNullOrWhiteSpace(hint.GovFees))
+            {
+                item.GovFees = hint.GovFees;
+            }
+        }
+
+        public async Task ApplyLatestUnitPriceHintAsync(TransactionItemDetail? item)
+        {
+            if (item == null || !IsSmartPricingPilotEnabled)
+            {
+                return;
+            }
+
+            item.ServiceName = CleanInput(item.ServiceName);
+            if (string.IsNullOrWhiteSpace(item.ServiceName) || Math.Abs(item.UnitPrice) >= 0.0001)
+            {
+                return;
+            }
+
+            var hint = await _databaseHelper.GetLatestServicePriceHintAsync(SelectedCustomerId, item.ServiceName);
+            if (hint.UnitPrice.HasValue)
+            {
+                item.UnitPrice = hint.UnitPrice.Value;
+            }
+        }
+
         public async Task DeleteSuggestionAsync(SuggestionEntry? suggestion)
         {
             if (suggestion == null || string.IsNullOrWhiteSpace(suggestion.Value))
@@ -374,6 +417,7 @@ namespace ProWalid.ViewModels
             foreach (var item in Items)
             {
                 item.ServiceName = CleanInput(item.ServiceName);
+                item.GovFees = CleanInput(item.GovFees);
 
                 if (string.IsNullOrWhiteSpace(item.ServiceName))
                 {

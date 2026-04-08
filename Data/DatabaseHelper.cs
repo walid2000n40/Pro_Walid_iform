@@ -949,6 +949,54 @@ namespace ProWalid.Data
             return GetSuggestionsAsync("Suggestions_Items", "item", searchText);
         }
 
+        public async Task<ServicePriceHint> GetLatestServicePriceHintAsync(long customerId, string? serviceName)
+        {
+            var cleanedServiceName = CleanSuggestionValue(serviceName);
+            if (customerId <= 0 || string.IsNullOrWhiteSpace(cleanedServiceName))
+            {
+                return new ServicePriceHint();
+            }
+
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var latestGovFees = await connection.QueryFirstOrDefaultAsync<string?>(@"
+                SELECT ti.GovFees
+                FROM TransactionItems ti
+                INNER JOIN Transactions t ON t.Id = ti.TransactionId
+                WHERE t.CustomerId = @CustomerId
+                  AND ti.ServiceName = @ServiceName
+                  AND ti.GovFees IS NOT NULL
+                  AND TRIM(ti.GovFees) <> ''
+                ORDER BY date(t.TransactionDate) DESC, t.Id DESC, ti.Id DESC
+                LIMIT 1",
+                new
+                {
+                    CustomerId = customerId,
+                    ServiceName = cleanedServiceName
+                });
+
+            var latestUnitPrice = await connection.QueryFirstOrDefaultAsync<double?>(@"
+                SELECT ti.UnitPrice
+                FROM TransactionItems ti
+                INNER JOIN Transactions t ON t.Id = ti.TransactionId
+                WHERE t.CustomerId = @CustomerId
+                  AND ti.ServiceName = @ServiceName
+                ORDER BY date(t.TransactionDate) DESC, t.Id DESC, ti.Id DESC
+                LIMIT 1",
+                new
+                {
+                    CustomerId = customerId,
+                    ServiceName = cleanedServiceName
+                });
+
+            return new ServicePriceHint
+            {
+                GovFees = latestGovFees ?? string.Empty,
+                UnitPrice = latestUnitPrice
+            };
+        }
+
         public Task DeleteCompanySuggestionAsync(string? value)
         {
             return DeleteSuggestionAsync("Suggestions_Companies", value);
