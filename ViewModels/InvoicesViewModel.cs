@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -314,22 +315,70 @@ namespace ProWalid.ViewModels
         [RelayCommand]
         private async Task ShowTransactionStatementAsync()
         {
-            if (InvoiceRows.Count == 0)
+            if (_frame == null)
             {
-                await ShowMessageAsync("كشف المعاملات", "لا توجد معاملات لعرض الكشف.");
                 return;
             }
 
-            var text = new StringBuilder();
-            text.AppendLine("كشف المعاملات");
-            text.AppendLine(string.Empty);
+            var selectedRows = InvoiceRows
+                .Where(row => row.IsSelected && row.Transaction != null)
+                .ToList();
 
-            foreach (var row in InvoiceRows)
+            if (selectedRows.Count == 0)
             {
-                text.AppendLine($"- {row.InvoiceNumber} | {row.TransactionDateText} | {row.CustomerName} | {row.TotalAmount:N2} درهم");
+                await ShowMessageAsync("كشف المعاملات", "يرجى تحديد معاملة واحدة على الأقل لإظهار كشف المعاملات.");
+                return;
             }
 
-            await ShowMessageAsync("كشف المعاملات", text.ToString());
+            var statementRows = selectedRows
+                .SelectMany(row => row.Transaction.Items.Select(item => new TransactionStatementPreviewRow
+                {
+                    ServiceName = string.IsNullOrWhiteSpace(item.ServiceName) ? "غير محدد" : item.ServiceName.Trim(),
+                    TransactionDateText = row.Transaction.TransactionDate.ToString("yyyy-MM-dd"),
+                    Amount = ResolveStatementAmount(item)
+                }))
+                .OrderBy(entry => entry.TransactionDateText)
+                .ThenBy(entry => entry.ServiceName)
+                .Select((entry, index) => new TransactionStatementPreviewRow
+                {
+                    SerialNumber = index + 1,
+                    ServiceName = entry.ServiceName,
+                    TransactionDateText = entry.TransactionDateText,
+                    Amount = entry.Amount
+                })
+                .ToList();
+
+            if (statementRows.Count == 0)
+            {
+                await ShowMessageAsync("كشف المعاملات", "المعاملات المحددة لا تحتوي على بنود صالحة لإظهار الكشف.");
+                return;
+            }
+
+            var firstSelectedRow = selectedRows[0];
+            var customerId = firstSelectedRow.Transaction.CustomerId;
+            var customer = (await _databaseHelper.GetAllCustomersAsync())
+                .FirstOrDefault(item => item.Id == customerId);
+
+            var displayCompanyName = selectedRows
+                .Select(row => !string.IsNullOrWhiteSpace(row.Transaction.CompanyName) ? row.Transaction.CompanyName : row.CompanyName)
+                .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))
+                ?? firstSelectedRow.CustomerName;
+
+            var request = new TransactionStatementPreviewRequest
+            {
+                CustomerId = customerId,
+                CustomerName = customer?.Name ?? firstSelectedRow.CustomerName,
+                CompanyName = displayCompanyName,
+                CustomerIdText = customer == null
+                    ? $"ID {customerId}"
+                    : $"ID {(customer.CustomerNumber > 0 ? customer.CustomerNumber : customer.Id)}",
+                StatementNumber = $"STAT-{customerId}-{DateTime.Now:yyyyMMddHHmm}",
+                StatementDate = DateTimeOffset.Now,
+                Notes = "كشف معاملات تفصيلي مبني على المعاملات المحددة فقط، ويعرض كل بند منفصلًا حسب التاريخ من الأقدم إلى الأحدث مع إجمالي نهائي.",
+                Rows = statementRows
+            };
+
+            _frame.Navigate(typeof(InvoicePreviewPage), request);
         }
 
         [RelayCommand]
@@ -397,6 +446,30 @@ namespace ProWalid.ViewModels
             };
 
             await dialog.ShowAsync();
+        }
+
+        private static double ResolveStatementAmount(TransactionItemDetail item)
+        {
+            if (item == null)
+            {
+                return 0;
+            }
+
+            var normalizedGovFees = item.GovFees?
+                .Trim()
+                .Replace("AED", string.Empty, StringComparison.OrdinalIgnoreCase)
+                .Replace("درهم", string.Empty, StringComparison.OrdinalIgnoreCase)
+                .Replace(",", string.Empty)
+                .Trim();
+
+            if (!string.IsNullOrWhiteSpace(normalizedGovFees)
+                && (double.TryParse(normalizedGovFees, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedInvariant)
+                    || double.TryParse(normalizedGovFees, NumberStyles.Any, CultureInfo.CurrentCulture, out parsedInvariant)))
+            {
+                return parsedInvariant;
+            }
+
+            return item.Profit;
         }
     }
 }

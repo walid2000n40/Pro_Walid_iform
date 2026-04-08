@@ -570,7 +570,7 @@
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="200"/>
                                 <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="110"/>
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Grid.Column="0" Text="تحديد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
@@ -737,7 +737,7 @@
                                             <ColumnDefinition Width="100"/>
                                             <ColumnDefinition Width="200"/>
                                             <ColumnDefinition Width="120"/>
-                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="110"/>
                                         </Grid.ColumnDefinitions>
 
                                         <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" Visibility="{Binding IsFirstItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,0"/>
@@ -748,35 +748,35 @@
                                         <TextBlock Grid.Column="5" Text="{Binding CompanyName, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="#24506F" TextAlignment="Right" TextWrapping="WrapWholeWords"/>
                                         <TextBlock Grid.Column="6" Text="{Binding EmployeeName, Mode=OneWay}" FontSize="14" Padding="10,5" VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="#24506F" TextAlignment="Right"/>
 
-                                        <ItemsControl Grid.Column="7" ItemsSource="{Binding Attachments}" Width="80" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0">
+                                        <ItemsControl Grid.Column="7" ItemsSource="{Binding Attachments}" Width="110" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
-                                                    <StackPanel Orientation="Horizontal" />
+                                                    <ItemsWrapGrid Orientation="Horizontal"
+                                                                   MaximumRowsOrColumns="5"
+                                                                   ItemWidth="20"
+                                                                   ItemHeight="20" />
                                                 </ItemsPanelTemplate>
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <Button Command="{Binding DataContext.OpenAttachmentCommand, ElementName=TransactionPageRoot}"
                                                             CommandParameter="{Binding}"
-                                                            Width="28"
-                                                            Height="28"
+                                                            Width="20"
+                                                            Height="20"
                                                             Padding="0"
                                                             Background="#EEF7FF"
                                                             BorderBrush="#CFE8FF"
                                                             BorderThickness="1"
-                                                            CornerRadius="8"
+                                                            CornerRadius="6"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center"
                                                             ToolTipService.ToolTip="{Binding OriginalFileName}">
                                                         <Grid>
                                                             <FontIcon Glyph="&#xE8A5;"
-                                                                      FontSize="14"
+                                                                      FontSize="16"
                                                                       Foreground="#C62828"
-                                                                      Visibility="{Binding IsPdfAttachment, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                                            <SymbolIcon Symbol="Pictures"
-                                                                        Foreground="#0B6FA4"
-                                                                        Visibility="{Binding IsImageAttachment, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                                            <SymbolIcon Symbol="Document"
-                                                                        Foreground="#0B6FA4"
-                                                                        Visibility="{Binding IsOtherAttachment, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                                      HorizontalAlignment="Center"
+                                                                      VerticalAlignment="Center"/>
                                                         </Grid>
                                                     </Button>
                                                 </DataTemplate>

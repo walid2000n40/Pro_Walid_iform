@@ -16,7 +16,7 @@
         </LinearGradientBrush>
     </Page.Background>
 
-    <Grid Padding="26,22">
+    <Grid Padding="10,8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -26,9 +26,9 @@
                 Background="#FFFFFF"
                 BorderBrush="#D9E6F4"
                 BorderThickness="1"
-                CornerRadius="20"
-                Padding="18"
-                Margin="0,0,0,18">
+                CornerRadius="16"
+                Padding="10,6"
+                Margin="0,0,0,6">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -42,27 +42,29 @@
                         Foreground="#1D4ED8"
                         BorderBrush="#BFDBFE"
                         BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="14,8">
-                    <TextBlock Text="رجوع"/>
+                        CornerRadius="8"
+                        MinHeight="28"
+                        Padding="10,3">
+                    <TextBlock Text="رجوع" FontSize="12"/>
                 </Button>
 
-                <StackPanel Grid.Column="2" HorizontalAlignment="Right" Spacing="4">
+                <StackPanel Grid.Column="2" HorizontalAlignment="Right" Spacing="1">
                     <TextBlock Text="معاينة الفاتورة"
-                               FontSize="30"
+                               FontSize="18"
                                FontWeight="Bold"
                                Foreground="#123B66"
                                TextAlignment="Right"/>
                     <TextBlock Text="عرض مباشر لمعاينة الفاتورة مع أوامر الحفظ والطباعة فقط"
-                               FontSize="14"
+                               FontSize="10"
                                Foreground="#52708E"
+                               Visibility="Collapsed"
                                TextAlignment="Right"/>
                 </StackPanel>
             </Grid>
         </Border>
 
         <Grid Grid.Row="1"
-              RowSpacing="16"
+              RowSpacing="6"
               FlowDirection="LeftToRight">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -73,23 +75,24 @@
                     Background="#FFFFFF"
                     BorderBrush="#D9E6F4"
                     BorderThickness="1"
-                    CornerRadius="18"
-                    Padding="18">
-                <Grid ColumnSpacing="14">
+                    CornerRadius="16"
+                    Padding="10,6">
+                <Grid ColumnSpacing="10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <Button Click="PrintInvoiceButton_Click"
                                 Background="#E8F5E9"
                                 Foreground="#1B5E20"
                                 BorderBrush="#A5D6A7"
                                 BorderThickness="1"
-                                CornerRadius="10"
-                                Padding="14,8">
-                            <TextBlock Text="طباعة A4"/>
+                                CornerRadius="8"
+                                MinHeight="28"
+                                Padding="8,3">
+                            <TextBlock Text="طباعة A4" FontSize="11"/>
                         </Button>
 
                         <Button Click="SaveInvoiceButton_Click"
@@ -98,9 +101,10 @@
                                 Foreground="#166534"
                                 BorderBrush="#A7E0BC"
                                 BorderThickness="1"
-                                CornerRadius="10"
-                                Padding="14,8">
-                            <TextBlock Text="حفظ الفاتورة"/>
+                                CornerRadius="8"
+                                MinHeight="28"
+                                Padding="8,3">
+                            <TextBlock Text="حفظ الفاتورة" FontSize="11"/>
                         </Button>
 
                         <Button Click="SavePdfButton_Click"
@@ -108,21 +112,23 @@
                                 Foreground="#9A4A00"
                                 BorderBrush="#F5C58A"
                                 BorderThickness="1"
-                                CornerRadius="10"
-                                Padding="14,8">
-                            <TextBlock Text="حفظ PDF"/>
+                                CornerRadius="8"
+                                MinHeight="28"
+                                Padding="8,3">
+                            <TextBlock Text="حفظ PDF" FontSize="11"/>
                         </Button>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="0" HorizontalAlignment="Right" Spacing="4">
+                    <StackPanel Grid.Column="0" HorizontalAlignment="Right" Spacing="1">
                         <TextBlock Text="معاينة الطباعة بقياس A4"
-                                   FontSize="26"
+                                   FontSize="16"
                                    FontWeight="Bold"
                                    Foreground="#123B66"
                                    TextAlignment="Right"/>
                         <TextBlock Text="هذه هي المعاينة المباشرة المعتمدة للفواتير مع أوامر الحفظ والطباعة فقط."
-                                   FontSize="13"
+                                   FontSize="10"
                                    Foreground="#52708E"
+                                   Visibility="Collapsed"
                                    TextAlignment="Right"
                                    TextWrapping="WrapWholeWords"/>
                     </StackPanel>
@@ -141,22 +147,27 @@
                     Background="#FFFFFF"
                     BorderBrush="#D9E6F4"
                     BorderThickness="1"
-                    CornerRadius="18"
-                    Padding="12"
+                    CornerRadius="16"
+                    Padding="4"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
                     FlowDirection="LeftToRight">
                 <ScrollViewer HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollMode="Auto"
                               VerticalScrollMode="Auto"
                               ZoomMode="Disabled"
-                              Padding="16">
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch"
+                              Padding="12,4,12,4">
                     <Grid HorizontalAlignment="Center"
-                          VerticalAlignment="Top"
+                          VerticalAlignment="Stretch"
                           FlowDirection="LeftToRight">
                         <Border Width="794"
                                 Height="1123"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Top"
+                                Margin="0"
                                 FlowDirection="LeftToRight"
                                 Background="White"
                                 BorderBrush="#C8DCEF"

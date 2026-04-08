@@ -51,9 +51,8 @@ namespace ProWalid.Views
             if (_pendingAutoPrint)
             {
                 _pendingAutoPrint = false;
-                await EnsurePrintWebViewAsync();
                 await Task.Delay(180);
-                await A4PrintWebView.ExecuteScriptAsync("window.print();");
+                await ShowPrintDialogAsync();
             }
         }
 
@@ -104,6 +103,20 @@ namespace ProWalid.Views
             }
         }
 
+        private async Task ShowPrintDialogAsync()
+        {
+            await EnsurePrintWebViewAsync();
+
+            try
+            {
+                A4PrintWebView.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.System);
+            }
+            catch
+            {
+                await A4PrintWebView.ExecuteScriptAsync("window.print();");
+            }
+        }
+
         private async void SaveInvoiceButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         {
             var message = await ViewModel.SaveCurrentInvoiceAsync();
@@ -121,8 +134,7 @@ namespace ProWalid.Views
 
         private async void PrintInvoiceButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         {
-            await EnsurePrintWebViewAsync();
-            await A4PrintWebView.ExecuteScriptAsync("window.print();");
+            await ShowPrintDialogAsync();
         }
 
         private async void SavePdfButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)

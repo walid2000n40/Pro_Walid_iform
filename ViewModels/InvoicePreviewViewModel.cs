@@ -25,11 +25,13 @@ namespace ProWalid.ViewModels
         public const string HazemTemplateKey = "hazem";
         public const string HazemServerTemplateKey = "hazem-server";
         public const string FinalAggregationTemplateKey = "final-aggregation";
+        public const string TransactionStatementTemplateKey = "transaction-statement";
 
         private Frame? _frame;
         private readonly DatabaseHelper _databaseHelper = new();
         private InvoiceSummaryRow? _currentInvoiceRow;
         private GroupedInvoicePreviewRequest? _currentGroupedRequest;
+        private TransactionStatementPreviewRequest? _currentTransactionStatementRequest;
         private SavedInvoiceRecord? _currentSavedInvoiceRecord;
         private string _savedPrintHtml = string.Empty;
 
@@ -88,18 +90,25 @@ namespace ProWalid.ViewModels
 
         public ObservableCollection<InvoiceSummaryRow> FinalAggregationRows { get; } = new();
 
+        public ObservableCollection<TransactionStatementPreviewRow> TransactionStatementRows { get; } = new();
+
         public bool IsSavedInvoicePreview => _currentSavedInvoiceRecord != null;
 
         public bool IsGroupedInvoicePreview => string.Equals(SelectedPreviewTemplateKey, GroupedInvoiceTemplateKey, StringComparison.OrdinalIgnoreCase);
 
         public bool IsFinalAggregationPreview => string.Equals(SelectedPreviewTemplateKey, FinalAggregationTemplateKey, StringComparison.OrdinalIgnoreCase);
 
+        public bool IsTransactionStatementPreview => string.Equals(SelectedPreviewTemplateKey, TransactionStatementTemplateKey, StringComparison.OrdinalIgnoreCase);
+
         public bool CanSaveInvoice => !IsSavedInvoicePreview
             && !IsFinalAggregationPreview
+            && !IsTransactionStatementPreview
             && (_currentInvoiceRow != null || _currentGroupedRequest != null);
 
         public double Subtotal => IsFinalAggregationPreview
             ? FinalAggregationRows.Sum(row => row.PrintingFeesAmount)
+            : IsTransactionStatementPreview
+                ? TransactionStatementRows.Sum(row => row.Amount)
             : Items.Sum(item => item.Total);
 
         public double Vat => 0;
@@ -116,6 +125,7 @@ namespace ProWalid.ViewModels
         {
             Items.CollectionChanged += (_, _) => RefreshTotals();
             FinalAggregationRows.CollectionChanged += (_, _) => RefreshTotals();
+            TransactionStatementRows.CollectionChanged += (_, _) => RefreshTotals();
 
             LoadSamplePreview();
         }
@@ -133,6 +143,12 @@ namespace ProWalid.ViewModels
             if (parameter is GroupedInvoicePreviewRequest groupedRequest)
             {
                 LoadGroupedInvoicePreview(groupedRequest);
+                return;
+            }
+
+            if (parameter is TransactionStatementPreviewRequest transactionStatementRequest)
+            {
+                LoadTransactionStatementPreview(transactionStatementRequest);
                 return;
             }
 
@@ -338,6 +354,46 @@ namespace ProWalid.ViewModels
             RefreshTotals();
         }
 
+        private void LoadTransactionStatementPreview(TransactionStatementPreviewRequest request)
+        {
+            _currentTransactionStatementRequest = request;
+            CompanyName = "انفورم للطباعة والتصوير";
+            CompanySubtitle = "Inform Typing Photo Copy";
+            CompanyPhone = "Mob: 971528047909 / 528047909";
+            CompanyEmail = "Email: alzaeemtyping@hotmail.com";
+            CompanyAddress = "العنوان / Address: أبوظبي مصفح م7";
+            TaxNumber = "TRN 100245889900003";
+            CustomerName = string.IsNullOrWhiteSpace(request.CompanyName) ? request.CustomerName : request.CompanyName;
+            CustomerIdText = request.CustomerIdText;
+            InvoiceNumber = request.StatementNumber;
+            InvoiceDate = request.StatementDate.ToString("yyyy/MM/dd");
+            DueDate = InvoiceDate;
+            InvoiceStatus = "كشف معاملات";
+            EmployeeName = string.Empty;
+            IsHazemInvoice = false;
+            SelectedPreviewTemplateKey = TransactionStatementTemplateKey;
+            Notes = string.IsNullOrWhiteSpace(request.Notes)
+                ? "كشف معاملات تفصيلي قابل للطباعة والحفظ بصيغة PDF، مع عرض كل بند منفصلًا حسب التاريخ من الأقدم إلى الأحدث."
+                : request.Notes;
+
+            Items.Clear();
+            FinalAggregationRows.Clear();
+            TransactionStatementRows.Clear();
+
+            foreach (var row in request.Rows)
+            {
+                TransactionStatementRows.Add(new TransactionStatementPreviewRow
+                {
+                    SerialNumber = row.SerialNumber,
+                    ServiceName = row.ServiceName,
+                    TransactionDateText = row.TransactionDateText,
+                    Amount = row.Amount
+                });
+            }
+
+            RefreshTotals();
+        }
+
         private async Task LoadFinalAggregationAsync(System.Collections.Generic.IReadOnlyList<InvoiceSummaryRow> rows)
         {
             var firstRow = rows[0];
@@ -512,6 +568,11 @@ namespace ProWalid.ViewModels
                 return FinalAggregationTemplateKey;
             }
 
+            if (string.Equals(templateKey, TransactionStatementTemplateKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return TransactionStatementTemplateKey;
+            }
+
             return UniversalServerTemplateKey;
         }
 
@@ -521,6 +582,7 @@ namespace ProWalid.ViewModels
             OnPropertyChanged(nameof(IsHazemInvoice));
             OnPropertyChanged(nameof(IsGroupedInvoicePreview));
             OnPropertyChanged(nameof(IsFinalAggregationPreview));
+            OnPropertyChanged(nameof(IsTransactionStatementPreview));
             OnPropertyChanged(nameof(CanSaveInvoice));
             OnPropertyChanged(nameof(Subtotal));
             OnPropertyChanged(nameof(Vat));
@@ -623,6 +685,7 @@ namespace ProWalid.ViewModels
         {
             _currentInvoiceRow = null;
             _currentGroupedRequest = null;
+            _currentTransactionStatementRequest = null;
             _currentSavedInvoiceRecord = null;
             _savedPrintHtml = string.Empty;
         }
@@ -679,6 +742,7 @@ namespace ProWalid.ViewModels
                 HazemTemplateKey => BuildHazemPrintHtml(),
                 HazemServerTemplateKey => BuildHazemServerPrintHtml(),
                 FinalAggregationTemplateKey => BuildFinalAggregationPrintHtml(),
+                TransactionStatementTemplateKey => BuildTransactionStatementPrintHtml(),
                 _ => BuildUniversalServerPrintHtml()
             };
         }
@@ -913,6 +977,84 @@ namespace ProWalid.ViewModels
       </div>
     </div>
   </div>
+</body>
+</html>";
+        }
+
+        private string BuildTransactionStatementPrintHtml()
+        {
+            var rows = new StringBuilder();
+            foreach (var row in TransactionStatementRows)
+            {
+                rows.Append($@"
+                    <tr>
+                        <td class='num'>{row.SerialNumber}</td>
+                        <td class='service'>{Escape(row.ServiceName)}</td>
+                        <td class='num'>{Escape(row.TransactionDateText)}</td>
+                        <td class='num total'>{row.Amount:N2}</td>
+                    </tr>");
+            }
+
+            return $@"<!DOCTYPE html>
+<html lang='ar' dir='rtl'>
+<head>
+    <meta charset='utf-8' />
+    <title>{Escape(InvoiceNumber)}</title>
+    <style>
+        @page {{ size: A4; margin: 8mm; }}
+        * {{ box-sizing: border-box; }}
+        html, body {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; forced-color-adjust: none; }}
+        body {{ margin: 0; background: #f7fbff; font-family: 'Cairo', 'Segoe UI', sans-serif; color: #1f2937; }}
+        .sheet {{ width: 100%; min-height: calc(297mm - 16mm); background: #ffffff; border: 1px solid #dbe7f3; padding: 10mm 9mm; }}
+        .office-name {{ text-align: center; font-size: 28px; font-weight: 800; color: #123b66; margin-bottom: 4mm; }}
+        .company-name {{ text-align: center; font-size: 21px; font-weight: 700; color: #1e4f82; margin-bottom: 2mm; }}
+        .statement-title {{ text-align: center; font-size: 22px; font-weight: 800; color: #166534; margin-bottom: 5mm; }}
+        .meta {{ display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5mm; font-size: 14px; font-weight: 700; color: #475569; }}
+        .meta div {{ flex: 1; }}
+        .meta div:last-child {{ text-align: left; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 2mm; }}
+        thead th {{ background: #e8f3ff; color: #123b66; border: 1px solid #c7dbef; padding: 12px 10px; font-size: 14px; }}
+        tbody td {{ border: 1px solid #dbe7f3; padding: 12px 10px; font-size: 14px; }}
+        tbody tr:nth-child(odd) td {{ background: #fbfdff; }}
+        tbody tr:nth-child(even) td {{ background: #f3f8fd; }}
+        .num {{ text-align: center; }}
+        .service {{ text-align: right; font-weight: 700; }}
+        .total {{ font-weight: 800; color: #166534; }}
+        .summary {{ margin-top: 6mm; display: flex; justify-content: flex-end; }}
+        .summary-card {{ min-width: 70mm; border: 1px solid #b8ddf1; background: #dff3ff; border-radius: 14px; padding: 12px 14px; }}
+        .summary-label {{ font-size: 14px; color: #123b66; font-weight: 700; margin-bottom: 6px; }}
+        .summary-value {{ font-size: 24px; color: #0f3f71; font-weight: 800; }}
+    </style>
+</head>
+<body>
+    <div class='sheet'>
+        <div class='office-name'>{Escape(CompanyName)}</div>
+        <div class='company-name'>{Escape(CustomerName)}</div>
+        <div class='statement-title'>كشف المعاملات</div>
+        <div class='meta'>
+            <div>رقم الكشف: {Escape(InvoiceNumber)}</div>
+            <div>التاريخ: {Escape(InvoiceDate)}</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style='width:14%;'>رقم مسلسل</th>
+                    <th style='width:42%;'>نوع الخدمة</th>
+                    <th style='width:22%;'>التاريخ</th>
+                    <th style='width:22%;'>مبلغ المعاملة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows}
+            </tbody>
+        </table>
+        <div class='summary'>
+            <div class='summary-card'>
+                <div class='summary-label'>إجمالي الكشف</div>
+                <div class='summary-value'>{Escape(GrandTotalText)}</div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>";
         }
