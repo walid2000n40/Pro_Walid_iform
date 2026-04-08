@@ -14,7 +14,7 @@ namespace ProWalid.Data
         public AttachmentManager()
         {
             var appFolder = AppDomain.CurrentDomain.BaseDirectory;
-            _attachmentsFolder = Path.Combine(appFolder, "Attachments");
+            _attachmentsFolder = AppStoragePaths.ResolveAttachmentsFolder(appFolder);
             
             if (!Directory.Exists(_attachmentsFolder))
             {

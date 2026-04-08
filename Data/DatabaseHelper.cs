@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ProWalid.Data
@@ -18,7 +17,7 @@ namespace ProWalid.Data
         public DatabaseHelper()
         {
             var appFolder = AppDomain.CurrentDomain.BaseDirectory;
-            _dbPath = ResolveDatabasePath(appFolder);
+            _dbPath = AppStoragePaths.ResolveDatabasePath(appFolder);
             var dbDirectory = Path.GetDirectoryName(_dbPath);
             if (!string.IsNullOrWhiteSpace(dbDirectory))
             {
@@ -28,45 +27,6 @@ namespace ProWalid.Data
             _connectionString = $"Data Source={_dbPath}";
             
             InitializeDatabaseAsync().Wait();
-        }
-
-        private static string ResolveDatabasePath(string appFolder)
-        {
-            var fallbackPath = Path.Combine(appFolder, "ProWalid.db");
-            var settingsPath = Path.Combine(appFolder, "appsettings.json");
-
-            if (!File.Exists(settingsPath))
-            {
-                return fallbackPath;
-            }
-
-            try
-            {
-                using var stream = File.OpenRead(settingsPath);
-                using var document = JsonDocument.Parse(stream);
-
-                if (!document.RootElement.TryGetProperty("Database", out var databaseElement))
-                {
-                    return fallbackPath;
-                }
-
-                if (!databaseElement.TryGetProperty("Path", out var pathElement))
-                {
-                    return fallbackPath;
-                }
-
-                var configuredPath = pathElement.GetString();
-                if (string.IsNullOrWhiteSpace(configuredPath))
-                {
-                    return fallbackPath;
-                }
-
-                return Path.GetFullPath(Environment.ExpandEnvironmentVariables(configuredPath));
-            }
-            catch
-            {
-                return fallbackPath;
-            }
         }
 
         private async Task InitializeDatabaseAsync()
@@ -185,6 +145,61 @@ namespace ProWalid.Data
             await connection.ExecuteAsync(createItemSuggestionsTable);
             await BackfillHazemInvoiceTemplateKeysAsync(connection);
             await BackfillSuggestionTablesAsync(connection);
+            await SyncAttachmentPathsAsync(connection);
+        }
+
+        private static async Task SyncAttachmentPathsAsync(SqliteConnection connection)
+        {
+            var attachmentsFolder = AppStoragePaths.ResolveAttachmentsFolder(AppDomain.CurrentDomain.BaseDirectory);
+            Directory.CreateDirectory(attachmentsFolder);
+
+            var attachmentRows = (await connection.QueryAsync<(long Id, string FilePath)>(@"
+                SELECT Id, FilePath
+                FROM Attachments
+                WHERE FilePath IS NOT NULL AND TRIM(FilePath) <> ''")).ToList();
+
+            foreach (var attachmentRow in attachmentRows)
+            {
+                var rebasedPath = RebaseAttachmentPath(attachmentRow.FilePath, attachmentsFolder);
+                if (!string.Equals(attachmentRow.FilePath, rebasedPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    await connection.ExecuteAsync(
+                        "UPDATE Attachments SET FilePath = @FilePath WHERE Id = @Id",
+                        new { Id = attachmentRow.Id, FilePath = rebasedPath });
+                }
+            }
+
+            var itemRows = (await connection.QueryAsync<(long Id, string AttachmentPath)>(@"
+                SELECT Id, AttachmentPath
+                FROM TransactionItems
+                WHERE AttachmentPath IS NOT NULL AND TRIM(AttachmentPath) <> ''")).ToList();
+
+            foreach (var itemRow in itemRows)
+            {
+                var rebasedPath = RebaseAttachmentPath(itemRow.AttachmentPath, attachmentsFolder);
+                if (!string.Equals(itemRow.AttachmentPath, rebasedPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    await connection.ExecuteAsync(
+                        "UPDATE TransactionItems SET AttachmentPath = @AttachmentPath WHERE Id = @Id",
+                        new { Id = itemRow.Id, AttachmentPath = rebasedPath });
+                }
+            }
+        }
+
+        private static string RebaseAttachmentPath(string? originalPath, string attachmentsFolder)
+        {
+            if (string.IsNullOrWhiteSpace(originalPath))
+            {
+                return string.Empty;
+            }
+
+            var fileName = Path.GetFileName(originalPath);
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                return originalPath;
+            }
+
+            return Path.Combine(attachmentsFolder, fileName);
         }
 
         private static async Task EnsureTransactionsCustomerIdColumnAsync(SqliteConnection connection)
