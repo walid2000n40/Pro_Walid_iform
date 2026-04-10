@@ -106,19 +106,19 @@
 
         <Style x:Key="RaisedHeaderActionButtonStyle" TargetType="Button">
 
-            <Setter Property="Height" Value="26"/>
+            <Setter Property="Height" Value="36"/>
 
-            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="Padding" Value="14,0"/>
 
             <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
 
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontSize" Value="14"/>
 
-            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontWeight" Value="Bold"/>
 
-            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="CornerRadius" Value="8"/>
 
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
 
             <Setter Property="VerticalAlignment" Value="Center"/>
 
@@ -1148,21 +1148,21 @@
 
 
 
-                            <TextBlock Grid.Column="0" Text="تحديد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="تحديد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center" FontFamily="{StaticResource AppFontFamily}"/>
 
-                            <TextBlock Grid.Column="1" Text="بند الخدمة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="0,0,10,0" HorizontalAlignment="Stretch" TextAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="بند الخدمة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="0,0,10,0" HorizontalAlignment="Stretch" TextAlignment="Center" FontFamily="{StaticResource AppFontFamily}"/>
 
-                            <TextBlock Grid.Column="2" Text="العدد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" HorizontalAlignment="Stretch" TextAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="العدد" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" HorizontalAlignment="Stretch" TextAlignment="Center" FontFamily="{StaticResource AppFontFamily}"/>
 
-                            <TextBlock Grid.Column="3" Text="سعر الوحدة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="12,0,0,0" HorizontalAlignment="Stretch" TextAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="سعر الوحدة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="12,0,0,0" HorizontalAlignment="Stretch" TextAlignment="Center" FontFamily="{StaticResource AppFontFamily}"/>
 
-                            <TextBlock Grid.Column="4" Text="الإجمالي" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="0,0,12,0" HorizontalAlignment="Stretch" TextAlignment="Center"/>
+                            <TextBlock Grid.Column="4" Text="الإجمالي" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" Margin="0,0,12,0" HorizontalAlignment="Stretch" TextAlignment="Center" FontFamily="{StaticResource AppFontFamily}"/>
 
-                            <TextBlock Grid.Column="5" Text="اسم الشركة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" HorizontalAlignment="Stretch" TextAlignment="Center"/>
+                            <TextBlock Grid.Column="5" Text="اسم الشركة" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" HorizontalAlignment="Stretch" TextAlignment="Center" FontFamily="{StaticResource AppFontFamily}"/>
 
-                            <TextBlock Grid.Column="6" Text="اسم الموظف" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" HorizontalAlignment="Stretch" TextAlignment="Center"/>
+                            <TextBlock Grid.Column="6" Text="اسم الموظف" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" HorizontalAlignment="Stretch" TextAlignment="Center" FontFamily="{StaticResource AppFontFamily}"/>
 
-                            <TextBlock Grid.Column="7" Text="المرفقات" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center"/>
+                            <TextBlock Grid.Column="7" Text="المرفقات" FontSize="16" FontWeight="Bold" Foreground="White" Padding="12,0" TextAlignment="Center" FontFamily="{StaticResource AppFontFamily}"/>
 
                         </Grid>
 
@@ -1394,7 +1394,7 @@
 
                                                     <ColumnDefinition Width="Auto"/>
 
-                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
 
                                                     <ColumnDefinition Width="Auto"/>
 
@@ -1408,45 +1408,45 @@
 
                                                 <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
 
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
 
-                                                    <TextBlock Text="فاتورة رقم:" Foreground="#0F3B5F" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="فاتورة رقم:" Foreground="#0F3B5F" FontSize="12" FontWeight="SemiBold" FontFamily="{StaticResource AppFontFamily}" VerticalAlignment="Center"/>
 
-                                                    <TextBlock Text="{Binding InvoiceNumber}" Foreground="#0F3B5F" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding InvoiceNumber}" Foreground="#0F3B5F" FontSize="12" FontWeight="Bold" FontFamily="{StaticResource AppFontFamily}" VerticalAlignment="Center"/>
+
+                                                    <Border Background="{Binding TransactionStatus, Converter={StaticResource TransactionStatusToBrushConverter}}"
+
+                                                            CornerRadius="8"
+
+                                                            Padding="8,3"
+
+                                                            Margin="8,0,0,0"
+
+                                                            VerticalAlignment="Center">
+
+                                                        <TextBlock Text="{Binding TransactionStatus}"
+
+                                                                   Foreground="{Binding TransactionStatus, Converter={StaticResource TransactionStatusToBrushConverter}, ConverterParameter=Foreground}"
+
+                                                                   FontSize="11"
+
+                                                                   FontWeight="SemiBold"
+
+                                                                   FontFamily="{StaticResource AppFontFamily}"
+
+                                                                   VerticalAlignment="Center"/>
+
+                                                    </Border>
 
                                                 </StackPanel>
 
-                                                <Border Grid.Column="2"
-
-                                                        Background="{Binding TransactionStatus, Converter={StaticResource TransactionStatusToBrushConverter}}"
-
-                                                        CornerRadius="8"
-
-                                                        Padding="8,3"
-
-                                                        Margin="12,0,0,0"
-
-                                                        VerticalAlignment="Center">
-
-                                                    <TextBlock Text="{Binding TransactionStatus}"
-
-                                                               Foreground="{Binding TransactionStatus, Converter={StaticResource TransactionStatusToBrushConverter}, ConverterParameter=Foreground}"
-
-                                                               FontSize="11"
-
-                                                               FontWeight="SemiBold"
-
-                                                               VerticalAlignment="Center"/>
-
-                                                </Border>
-
                                                 <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="3">
 
-                                                    <TextBlock Text="الإجمالي:" Foreground="#0F3B5F" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="الإجمالي:" Foreground="#0F3B5F" FontSize="11" FontWeight="SemiBold" FontFamily="{StaticResource AppFontFamily}" VerticalAlignment="Center"/>
 
-                                                    <TextBlock Text="{Binding TransactionTotal}" Foreground="#0F3B5F" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding TransactionTotal}" Foreground="#0F3B5F" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource AppFontFamily}" VerticalAlignment="Center"/>
 
-                                                    <TextBlock Text="درهم" Foreground="#0F3B5F" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="درهم" Foreground="#0F3B5F" FontSize="11" FontWeight="SemiBold" FontFamily="{StaticResource AppFontFamily}" VerticalAlignment="Center"/>
 
                                                 </StackPanel>
 
@@ -1484,17 +1484,17 @@
 
                                         <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" Visibility="{Binding IsFirstItemInTransaction, Converter={StaticResource BoolToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0"/>
 
-                                        <TextBlock Grid.Column="1" Text="{Binding ServiceName, Mode=OneWay}" FontSize="14" Padding="12,5" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Stretch" Foreground="#0F3B5F" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="WrapWholeWords" MaxLines="3"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ServiceName, Mode=OneWay}" FontSize="14" Padding="12,5" Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Stretch" Foreground="#0F3B5F" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="WrapWholeWords" MaxLines="3" FontFamily="{StaticResource AppFontFamily}"/>
 
-                                        <TextBlock Grid.Column="2" Text="{Binding Quantity, Mode=OneWay}" FontSize="14" Padding="12,5" VerticalAlignment="Center" HorizontalAlignment="Stretch" TextAlignment="Center" FontWeight="SemiBold"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Quantity, Mode=OneWay}" FontSize="14" Padding="12,5" VerticalAlignment="Center" HorizontalAlignment="Stretch" TextAlignment="Center" FontWeight="SemiBold" FontFamily="{StaticResource AppFontFamily}"/>
 
-                                        <TextBlock Grid.Column="3" Text="{Binding UnitPrice, Mode=OneWay}" FontSize="14" Padding="12,5" Margin="12,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Stretch" TextAlignment="Center" Foreground="#24506F"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding UnitPrice, Mode=OneWay}" FontSize="14" Padding="12,5" Margin="12,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Stretch" TextAlignment="Center" Foreground="#24506F" FontFamily="{StaticResource AppFontFamily}"/>
 
-                                        <TextBlock Grid.Column="4" Text="{Binding Total, Mode=OneWay}" FontSize="14" FontWeight="Bold" Foreground="#2E7D32" Padding="12,5" Margin="0,0,12,0" VerticalAlignment="Center" HorizontalAlignment="Stretch" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding Total, Mode=OneWay}" FontSize="14" FontWeight="Bold" Foreground="#2E7D32" Padding="12,5" Margin="0,0,12,0" VerticalAlignment="Center" HorizontalAlignment="Stretch" TextAlignment="Center" FontFamily="{StaticResource AppFontFamily}"/>
 
-                                        <TextBlock Grid.Column="5" Text="{Binding CompanyName, Mode=OneWay}" FontSize="14" Padding="12,5" VerticalAlignment="Center" HorizontalAlignment="Stretch" Foreground="#24506F" TextAlignment="Center" TextWrapping="WrapWholeWords"/>
+                                        <TextBlock Grid.Column="5" Text="{Binding CompanyName, Mode=OneWay}" FontSize="14" Padding="12,5" VerticalAlignment="Center" HorizontalAlignment="Stretch" Foreground="#24506F" TextAlignment="Center" TextWrapping="WrapWholeWords" FontFamily="{StaticResource AppFontFamily}"/>
 
-                                        <TextBlock Grid.Column="6" Text="{Binding EmployeeName, Mode=OneWay}" FontSize="14" Padding="12,5" VerticalAlignment="Center" HorizontalAlignment="Stretch" Foreground="#24506F" TextAlignment="Center"/>
+                                        <TextBlock Grid.Column="6" Text="{Binding EmployeeName, Mode=OneWay}" FontSize="14" Padding="12,5" VerticalAlignment="Center" HorizontalAlignment="Stretch" Foreground="#24506F" TextAlignment="Center" FontFamily="{StaticResource AppFontFamily}"/>
 
 
 

@@ -106,6 +106,18 @@ namespace ProWalid.Views
         private async Task ShowPrintDialogAsync()
         {
             await EnsurePrintWebViewAsync();
+            await WaitForDocumentReadyAsync(A4PrintWebView);
+            await WaitForInvoiceAssetsAsync(A4PrintWebView);
+            await Task.Delay(500);
+
+            try
+            {
+                await A4PrintWebView.ExecuteScriptAsync("window.print();");
+                return;
+            }
+            catch
+            {
+            }
 
             try
             {
@@ -113,7 +125,6 @@ namespace ProWalid.Views
             }
             catch
             {
-                await A4PrintWebView.ExecuteScriptAsync("window.print();");
             }
         }
 
