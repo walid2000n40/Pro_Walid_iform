@@ -146,6 +146,7 @@ namespace ProWalid.Data
             await BackfillHazemInvoiceTemplateKeysAsync(connection);
             await BackfillSuggestionTablesAsync(connection);
             await SyncAttachmentPathsAsync(connection);
+            await EnsureSyncTrackingColumnsAsync(connection);
         }
 
         private static async Task SyncAttachmentPathsAsync(SqliteConnection connection)
@@ -272,6 +273,28 @@ namespace ProWalid.Data
             }
         }
 
+
+        private static async Task EnsureSyncTrackingColumnsAsync(SqliteConnection connection)
+        {
+            var tables = new[] { "Customers", "Transactions", "TransactionItems" };
+            var syncColumns = new[] { ("SyncUuid", "TEXT"), ("UpdatedAt", "TEXT"), ("IsDirty", "INTEGER DEFAULT 1"), ("ServerId", "INTEGER DEFAULT 0") };
+
+            foreach (var table in tables)
+            {
+                var columns = await connection.QueryAsync($"PRAGMA table_info({table})");
+                var columnNames = columns.Select(c => (string)c.name).ToList();
+                foreach (var (colName, colType) in syncColumns)
+                {
+                    if (!columnNames.Any(n => string.Equals(n, colName, StringComparison.OrdinalIgnoreCase)))
+                        await connection.ExecuteAsync($"ALTER TABLE {table} ADD COLUMN {colName} {colType}");
+                }
+            }
+
+            await connection.ExecuteAsync("UPDATE Customers SET SyncUuid = lower(hex(randomblob(4))||'-'||hex(randomblob(2))||'-'||hex(randomblob(2))||'-'||hex(randomblob(2))||'-'||hex(randomblob(6))) WHERE SyncUuid IS NULL OR TRIM(SyncUuid) = ''");
+            await connection.ExecuteAsync("UPDATE Transactions SET SyncUuid = lower(hex(randomblob(4))||'-'||hex(randomblob(2))||'-'||hex(randomblob(2))||'-'||hex(randomblob(2))||'-'||hex(randomblob(6))) WHERE SyncUuid IS NULL OR TRIM(SyncUuid) = ''");
+            await connection.ExecuteAsync("UPDATE TransactionItems SET SyncUuid = lower(hex(randomblob(4))||'-'||hex(randomblob(2))||'-'||hex(randomblob(2))||'-'||hex(randomblob(2))||'-'||hex(randomblob(6))) WHERE SyncUuid IS NULL OR TRIM(SyncUuid) = ''");
+        }
+
         private static string NormalizeSuggestionValue(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -391,7 +414,8 @@ namespace ProWalid.Data
                               CompanyName = @CompanyName, 
                               EmployeeName = @EmployeeName, 
                               TransactionDate = @TransactionDate, 
-                              GrandTotal = @GrandTotal 
+                              GrandTotal = @GrandTotal,
+                              IsDirty = 1, UpdatedAt = @UpdatedAt 
                           WHERE Id = @Id",
                         new
                         {
@@ -402,7 +426,8 @@ namespace ProWalid.Data
                             transaction.CompanyName,
                             transaction.EmployeeName,
                             TransactionDate = transaction.TransactionDate.ToString("yyyy-MM-dd"),
-                            transaction.GrandTotal
+                            transaction.GrandTotal,
+                            UpdatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
                         },
                         dbTransaction);
 
@@ -432,8 +457,8 @@ namespace ProWalid.Data
                 else
                 {
                     transactionId = await connection.QuerySingleAsync<long>(
-                        @"INSERT INTO Transactions (CustomerId, TransactionStatus, InvoiceNumber, InvoiceTemplateKey, CompanyName, EmployeeName, TransactionDate, GrandTotal) 
-                          VALUES (@CustomerId, @TransactionStatus, @InvoiceNumber, @InvoiceTemplateKey, @CompanyName, @EmployeeName, @TransactionDate, @GrandTotal);
+                        @"INSERT INTO Transactions (CustomerId, TransactionStatus, InvoiceNumber, InvoiceTemplateKey, CompanyName, EmployeeName, TransactionDate, GrandTotal, IsDirty, UpdatedAt) 
+                          VALUES (@CustomerId, @TransactionStatus, @InvoiceNumber, @InvoiceTemplateKey, @CompanyName, @EmployeeName, @TransactionDate, @GrandTotal, 1, @UpdatedAt);
                           SELECT last_insert_rowid();",
                         new
                         {
@@ -444,7 +469,8 @@ namespace ProWalid.Data
                             transaction.CompanyName,
                             transaction.EmployeeName,
                             TransactionDate = transaction.TransactionDate.ToString("yyyy-MM-dd"),
-                            transaction.GrandTotal
+                            transaction.GrandTotal,
+                            UpdatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
                         },
                         dbTransaction);
                 }
@@ -462,7 +488,8 @@ namespace ProWalid.Data
                                   UnitPrice = @UnitPrice, 
                                   Profit = @Profit, 
                                   GovFees = @GovFees, 
-                                  AttachmentPath = @AttachmentPath 
+                                  AttachmentPath = @AttachmentPath,
+                                  IsDirty = 1, UpdatedAt = @UpdatedAt 
                               WHERE Id = @Id",
                             new
                             {
@@ -472,7 +499,8 @@ namespace ProWalid.Data
                                 item.UnitPrice,
                                 item.Profit,
                                 item.GovFees,
-                                item.AttachmentPath
+                                item.AttachmentPath,
+                                UpdatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
                             },
                             dbTransaction);
                         
@@ -481,8 +509,8 @@ namespace ProWalid.Data
                     else
                     {
                         itemId = await connection.QuerySingleAsync<long>(
-                            @"INSERT INTO TransactionItems (TransactionId, ServiceName, Quantity, UnitPrice, Profit, GovFees, AttachmentPath) 
-                              VALUES (@TransactionId, @ServiceName, @Quantity, @UnitPrice, @Profit, @GovFees, @AttachmentPath);
+                            @"INSERT INTO TransactionItems (TransactionId, ServiceName, Quantity, UnitPrice, Profit, GovFees, AttachmentPath, IsDirty, UpdatedAt) 
+                              VALUES (@TransactionId, @ServiceName, @Quantity, @UnitPrice, @Profit, @GovFees, @AttachmentPath, 1, @UpdatedAt);
                               SELECT last_insert_rowid();",
                             new
                             {
@@ -492,7 +520,8 @@ namespace ProWalid.Data
                                 item.UnitPrice,
                                 item.Profit,
                                 item.GovFees,
-                                item.AttachmentPath
+                                item.AttachmentPath,
+                                UpdatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
                             },
                             dbTransaction);
                         
@@ -619,7 +648,7 @@ namespace ProWalid.Data
             var invoiceNumbers = await connection.QueryAsync<string>(
                 "SELECT InvoiceNumber FROM Transactions WHERE InvoiceNumber IS NOT NULL AND TRIM(InvoiceNumber) <> ''");
 
-            const int seedInvoiceNumber = 870;
+            const int seedInvoiceNumber = 1000;
 
             var maxExistingInvoiceNumber = invoiceNumbers
                 .Select(number => int.TryParse(number, out var parsedNumber) ? parsedNumber : 0)
@@ -733,7 +762,7 @@ namespace ProWalid.Data
                   FROM SavedInvoices
                   WHERE GroupedSequenceNumber > 0");
 
-            const int groupedSeed = 309;
+            const int groupedSeed = 200;
             return maxSequence.HasValue && maxSequence.Value >= groupedSeed
                 ? maxSequence.Value + 1
                 : groupedSeed;
@@ -1084,18 +1113,19 @@ namespace ProWalid.Data
                     @"UPDATE Customers 
                       SET CustomerNumber = @CustomerNumber,
                           Name = @Name, Phone = @Phone, Email = @Email, 
-                          Address = @Address, Notes = @Notes 
+                          Address = @Address, Notes = @Notes,
+                          IsDirty = 1, UpdatedAt = @UpdatedAt 
                       WHERE Id = @Id",
-                    customer);
+                    new { customer.Id, customer.CustomerNumber, customer.Name, customer.Phone, customer.Email, customer.Address, customer.Notes, UpdatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") });
                 return customer.Id;
             }
             else
             {
                 return await connection.QuerySingleAsync<long>(
-                    @"INSERT INTO Customers (CustomerNumber, Name, Phone, Email, Address, Notes) 
-                      VALUES (@CustomerNumber, @Name, @Phone, @Email, @Address, @Notes);
+                    @"INSERT INTO Customers (CustomerNumber, Name, Phone, Email, Address, Notes, IsDirty, UpdatedAt) 
+                      VALUES (@CustomerNumber, @Name, @Phone, @Email, @Address, @Notes, 1, @UpdatedAt);
                       SELECT last_insert_rowid();",
-                    customer);
+                    new { customer.CustomerNumber, customer.Name, customer.Phone, customer.Email, customer.Address, customer.Notes, UpdatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") });
             }
         }
 

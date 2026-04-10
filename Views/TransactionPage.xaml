@@ -1020,6 +1020,13 @@
 
                     <Button Command="{Binding DeleteAttachmentsCommand}" Style="{StaticResource RaisedDangerHeaderActionButtonStyle}" Content="حذف المرفقات"/>
 
+                    <Button x:Name="SyncButton" Click="SyncButton_Click" Style="{StaticResource RaisedSuccessHeaderActionButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <SymbolIcon Symbol="Sync" />
+                            <TextBlock x:Name="SyncButtonText" Text="مزامنة" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
                 </StackPanel>
 
 

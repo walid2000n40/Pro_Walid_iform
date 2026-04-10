@@ -796,7 +796,7 @@ namespace ProWalid.ViewModels
 
 
 
-        private async void LoadTransactionsAsync()
+        public async Task LoadTransactionsAsync()
 
         {
 
