@@ -121,7 +121,7 @@ namespace ProWalid.Services
             await connection.OpenAsync();
             var request = new SyncRequest { DeviceId = _deviceId, LastSync = GetLastSyncTime() };
 
-            var dirtyCustomers = await connection.QueryAsync("SELECT Id, CustomerNumber, Name, Phone, Email, Address, Notes, CreatedAt, SyncUuid, UpdatedAt FROM Customers WHERE IsDirty = 1 OR IsDirty IS NULL");
+            var dirtyCustomers = await connection.QueryAsync("SELECT Id, CustomerNumber, Name, Phone, Email, Address, Notes, CreatedAt, SyncUuid, UpdatedAt, COALESCE(IsDeleted,0) AS IsDeleted FROM Customers WHERE IsDirty = 1 OR IsDirty IS NULL");
             foreach (var c in dirtyCustomers)
             {
                 request.Clients.Add(new SyncClientPush
@@ -132,11 +132,12 @@ namespace ProWalid.Services
                     Phone = c.Phone?.ToString() ?? "",
                     Notes = c.Notes?.ToString() ?? "",
                     CreatedAt = c.CreatedAt?.ToString() ?? "",
-                    UpdatedAt = c.UpdatedAt?.ToString() ?? DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
+                    UpdatedAt = c.UpdatedAt?.ToString() ?? DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
+                    IsDeleted = c.IsDeleted != null ? (int)(long)c.IsDeleted : 0
                 });
             }
 
-            var dirtyTx = await connection.QueryAsync("SELECT t.Id, t.CustomerId, t.InvoiceNumber, t.CompanyName, t.EmployeeName, t.TransactionDate, t.CreatedAt, t.SyncUuid, t.UpdatedAt, c.ServerId AS ClientServerId, c.SyncUuid AS ClientSyncUuid FROM Transactions t LEFT JOIN Customers c ON c.Id = t.CustomerId WHERE t.IsDirty = 1 OR t.IsDirty IS NULL");
+            var dirtyTx = await connection.QueryAsync("SELECT t.Id, t.CustomerId, t.InvoiceNumber, t.CompanyName, t.EmployeeName, t.TransactionDate, t.CreatedAt, t.SyncUuid, t.UpdatedAt, COALESCE(t.IsDeleted,0) AS IsDeleted, c.ServerId AS ClientServerId, c.SyncUuid AS ClientSyncUuid FROM Transactions t LEFT JOIN Customers c ON c.Id = t.CustomerId WHERE t.IsDirty = 1 OR t.IsDirty IS NULL");
             foreach (var t in dirtyTx)
             {
                 request.Transactions.Add(new SyncTransactionPush
@@ -150,7 +151,8 @@ namespace ProWalid.Services
                     CompanyName = t.CompanyName?.ToString() ?? "",
                     EmployeeName = t.EmployeeName?.ToString() ?? "",
                     CreatedAt = t.CreatedAt?.ToString() ?? t.TransactionDate?.ToString() ?? "",
-                    UpdatedAt = t.UpdatedAt?.ToString() ?? DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
+                    UpdatedAt = t.UpdatedAt?.ToString() ?? DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
+                    IsDeleted = t.IsDeleted != null ? (int)(long)t.IsDeleted : 0
                 });
             }
 
@@ -188,29 +190,29 @@ namespace ProWalid.Services
                 {
                     var localUp = existing.UpdatedAt?.ToString() ?? "2000-01-01";
                     if (string.Compare(sc.UpdatedAt ?? "2000-01-01", localUp, StringComparison.Ordinal) > 0)
-                        await connection.ExecuteAsync("UPDATE Customers SET Name=@Name, Phone=@Phone, Notes=@Notes, UpdatedAt=@UpdatedAt, ServerId=@ServerId, IsDirty=0 WHERE SyncUuid=@SyncUuid",
-                            new { sc.Name, Phone = sc.Phone ?? "", Notes = sc.Notes ?? "", sc.UpdatedAt, ServerId = sc.IdLong, sc.SyncUuid });
+                        await connection.ExecuteAsync("UPDATE Customers SET Name=@Name, Phone=@Phone, Notes=@Notes, UpdatedAt=@UpdatedAt, ServerId=@ServerId, IsDeleted=@IsDeleted, IsDirty=0 WHERE SyncUuid=@SyncUuid",
+                            new { sc.Name, Phone = sc.Phone ?? "", Notes = sc.Notes ?? "", sc.UpdatedAt, ServerId = sc.IdLong, sc.IsDeleted, sc.SyncUuid });
                 }
                 else
                 {
                     var byName = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id FROM Customers WHERE Name = @Name COLLATE NOCASE AND (SyncUuid IS NULL OR TRIM(SyncUuid) = '')", new { sc.Name });
                     if (byName != null)
-                        await connection.ExecuteAsync("UPDATE Customers SET SyncUuid=@SyncUuid, Phone=COALESCE(NULLIF(@Phone,''),Phone), ServerId=@ServerId, UpdatedAt=@UpdatedAt, IsDirty=0 WHERE Id=@Id",
-                            new { sc.SyncUuid, Phone = sc.Phone ?? "", ServerId = sc.IdLong, sc.UpdatedAt, Id = (long)byName.Id });
+                        await connection.ExecuteAsync("UPDATE Customers SET SyncUuid=@SyncUuid, Phone=COALESCE(NULLIF(@Phone,''),Phone), ServerId=@ServerId, UpdatedAt=@UpdatedAt, IsDeleted=@IsDeleted, IsDirty=0 WHERE Id=@Id",
+                            new { sc.SyncUuid, Phone = sc.Phone ?? "", ServerId = sc.IdLong, sc.UpdatedAt, sc.IsDeleted, Id = (long)byName.Id });
                     else
                     {
                         var serverId = sc.IdLong;
                         var existingId = await connection.QueryFirstOrDefaultAsync<long?>("SELECT Id FROM Customers WHERE Id = @Id", new { Id = serverId });
                         if (existingId == null && serverId > 0)
                         {
-                            await connection.ExecuteAsync("INSERT INTO Customers (Id, CustomerNumber, Name, Phone, Email, Address, Notes, CreatedAt, SyncUuid, UpdatedAt, ServerId, IsDirty) VALUES (@Id, @CN, @Name, @Phone, '', '', @Notes, @CA, @SyncUuid, @UA, @SI, 0)",
-                                new { Id = serverId, CN = serverId, sc.Name, Phone = sc.Phone ?? "", Notes = sc.Notes ?? "", CA = sc.CreatedAt, sc.SyncUuid, UA = sc.UpdatedAt, SI = serverId });
+                            await connection.ExecuteAsync("INSERT INTO Customers (Id, CustomerNumber, Name, Phone, Email, Address, Notes, CreatedAt, SyncUuid, UpdatedAt, ServerId, IsDirty, IsDeleted) VALUES (@Id, @CN, @Name, @Phone, '', '', @Notes, @CA, @SyncUuid, @UA, @SI, 0, @IsD)",
+                                new { Id = serverId, CN = serverId, sc.Name, Phone = sc.Phone ?? "", Notes = sc.Notes ?? "", CA = sc.CreatedAt, sc.SyncUuid, UA = sc.UpdatedAt, SI = serverId, IsD = sc.IsDeleted });
                         }
                         else
                         {
                             var nextNum = await connection.QueryFirstOrDefaultAsync<long?>("SELECT MAX(CASE WHEN CustomerNumber > 0 THEN CustomerNumber ELSE Id END) FROM Customers") ?? 0;
-                            await connection.ExecuteAsync("INSERT INTO Customers (CustomerNumber, Name, Phone, Email, Address, Notes, CreatedAt, SyncUuid, UpdatedAt, ServerId, IsDirty) VALUES (@CN, @Name, @Phone, '', '', @Notes, @CA, @SyncUuid, @UA, @SI, 0)",
-                                new { CN = nextNum + 1, sc.Name, Phone = sc.Phone ?? "", Notes = sc.Notes ?? "", CA = sc.CreatedAt, sc.SyncUuid, UA = sc.UpdatedAt, SI = sc.IdLong });
+                            await connection.ExecuteAsync("INSERT INTO Customers (CustomerNumber, Name, Phone, Email, Address, Notes, CreatedAt, SyncUuid, UpdatedAt, ServerId, IsDirty, IsDeleted) VALUES (@CN, @Name, @Phone, '', '', @Notes, @CA, @SyncUuid, @UA, @SI, 0, @IsD)",
+                                new { CN = nextNum + 1, sc.Name, Phone = sc.Phone ?? "", Notes = sc.Notes ?? "", CA = sc.CreatedAt, sc.SyncUuid, UA = sc.UpdatedAt, SI = sc.IdLong, IsD = sc.IsDeleted });
                         }
                     }
                 }
@@ -229,8 +231,8 @@ namespace ProWalid.Services
                 var existing = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id FROM Transactions WHERE SyncUuid = @SyncUuid", new { st.SyncUuid });
                 if (existing != null)
                 {
-                    await connection.ExecuteAsync("UPDATE Transactions SET TransactionStatus=@ST, CompanyName=@CN, EmployeeName=@EN, CustomerId=CASE WHEN @CId > 0 THEN @CId ELSE CustomerId END, InvoiceNumber=@Inv, UpdatedAt=@UA, ServerId=@SI, IsDirty=0 WHERE SyncUuid=@SyncUuid",
-                        new { ST = status, CId = localCid, Inv = st.InvoiceNumber, CN = st.CompanyName ?? "", EN = st.EmployeeName ?? "", UA = st.UpdatedAt, SI = st.IdLong, st.SyncUuid });
+                    await connection.ExecuteAsync("UPDATE Transactions SET TransactionStatus=@ST, CompanyName=@CN, EmployeeName=@EN, CustomerId=CASE WHEN @CId > 0 THEN @CId ELSE CustomerId END, InvoiceNumber=@Inv, UpdatedAt=@UA, ServerId=@SI, IsDeleted=@IsD, IsDirty=0 WHERE SyncUuid=@SyncUuid",
+                        new { ST = status, CId = localCid, Inv = st.InvoiceNumber, CN = st.CompanyName ?? "", EN = st.EmployeeName ?? "", UA = st.UpdatedAt, SI = st.IdLong, IsD = st.IsDeleted, st.SyncUuid });
                 }
                 else
                 {
@@ -241,7 +243,7 @@ namespace ProWalid.Services
                         await connection.ExecuteAsync("UPDATE Transactions SET InvoiceNumber = @NewInv WHERE Id = @Id", new { NewInv = (newInv + 1).ToString("D5"), Id = (long)conflicting.Id });
                     }
                     await connection.ExecuteAsync("INSERT INTO Transactions (CustomerId, TransactionStatus, InvoiceNumber, InvoiceTemplateKey, CompanyName, EmployeeName, TransactionDate, GrandTotal, CreatedAt, SyncUuid, UpdatedAt, ServerId, IsDirty) VALUES (@CId, @ST, @Inv, \'\', @CN, @EN, @CA, 0, @CA, @SyncUuid, @UA, @SI, 0)",
-                        new { CId = localCid, ST = status, Inv = st.InvoiceNumber, CN = st.CompanyName ?? "", EN = st.EmployeeName ?? "", CA = st.CreatedAt, st.SyncUuid, UA = st.UpdatedAt, SI = st.IdLong });
+                        new { CId = localCid, ST = status, Inv = st.InvoiceNumber, CN = st.CompanyName ?? "", EN = st.EmployeeName ?? "", CA = st.CreatedAt, st.SyncUuid, UA = st.UpdatedAt, SI = st.IdLong, IsD = st.IsDeleted });
                 }
             }
 

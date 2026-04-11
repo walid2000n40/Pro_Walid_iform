@@ -277,7 +277,7 @@ namespace ProWalid.Data
         private static async Task EnsureSyncTrackingColumnsAsync(SqliteConnection connection)
         {
             var tables = new[] { "Customers", "Transactions", "TransactionItems" };
-            var syncColumns = new[] { ("SyncUuid", "TEXT"), ("UpdatedAt", "TEXT"), ("IsDirty", "INTEGER DEFAULT 1"), ("ServerId", "INTEGER DEFAULT 0") };
+            var syncColumns = new[] { ("SyncUuid", "TEXT"), ("UpdatedAt", "TEXT"), ("IsDirty", "INTEGER DEFAULT 1"), ("ServerId", "INTEGER DEFAULT 0"), ("IsDeleted", "INTEGER DEFAULT 0") };
 
             foreach (var table in tables)
             {
@@ -574,6 +574,7 @@ namespace ProWalid.Data
                 @"SELECT t.*, ti.* 
                   FROM Transactions t 
                   LEFT JOIN TransactionItems ti ON t.Id = ti.TransactionId 
+                  WHERE COALESCE(t.IsDeleted, 0) = 0
                   ORDER BY t.TransactionDate DESC, t.Id DESC",
                 (trans, item) =>
                 {
@@ -634,8 +635,8 @@ namespace ProWalid.Data
             await connection.OpenAsync();
 
             var rowsAffected = await connection.ExecuteAsync(
-                "DELETE FROM Transactions WHERE InvoiceNumber = @InvoiceNumber",
-                new { InvoiceNumber = invoiceNumber });
+                "UPDATE Transactions SET IsDeleted = 1, IsDirty = 1, UpdatedAt = @Now WHERE InvoiceNumber = @InvoiceNumber",
+                new { InvoiceNumber = invoiceNumber, Now = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") });
 
             return rowsAffected > 0;
         }
@@ -733,7 +734,7 @@ namespace ProWalid.Data
             await connection.OpenAsync();
 
             var customers = await connection.QueryAsync<Customer>(
-                "SELECT * FROM Customers ORDER BY CASE WHEN CustomerNumber > 0 THEN CustomerNumber ELSE Id END, Name");
+                "SELECT * FROM Customers WHERE COALESCE(IsDeleted, 0) = 0 ORDER BY CASE WHEN CustomerNumber > 0 THEN CustomerNumber ELSE Id END, Name");
 
             return customers.ToList();
         }
@@ -964,7 +965,7 @@ namespace ProWalid.Data
             await connection.OpenAsync();
 
             var lastCustomerNumber = await connection.QueryFirstOrDefaultAsync<long?>(
-                "SELECT MAX(CASE WHEN CustomerNumber > 0 THEN CustomerNumber ELSE Id END) FROM Customers");
+                "SELECT MAX(CASE WHEN CustomerNumber > 0 THEN CustomerNumber ELSE Id END) FROM Customers WHERE COALESCE(IsDeleted, 0) = 0");
 
             return (lastCustomerNumber ?? 0) + 1;
         }
@@ -1135,8 +1136,8 @@ namespace ProWalid.Data
             await connection.OpenAsync();
 
             await connection.ExecuteAsync(
-                "DELETE FROM Customers WHERE Id = @Id",
-                new { Id = customerId });
+                "UPDATE Customers SET IsDeleted = 1, IsDirty = 1, UpdatedAt = @Now WHERE Id = @Id",
+                new { Id = customerId, Now = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") });
         }
     }
 }

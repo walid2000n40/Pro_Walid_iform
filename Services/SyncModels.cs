@@ -26,6 +26,7 @@ namespace ProWalid.Services
         [JsonPropertyName("notes")] public string Notes { get; set; } = "";
         [JsonPropertyName("created_at")] public string CreatedAt { get; set; } = "";
         [JsonPropertyName("updated_at")] public string UpdatedAt { get; set; } = "";
+        [JsonPropertyName("is_deleted")] public int IsDeleted { get; set; }
     }
 
     public class SyncTransactionPush
@@ -40,6 +41,7 @@ namespace ProWalid.Services
         [JsonPropertyName("employee_name")] public string EmployeeName { get; set; } = "";
         [JsonPropertyName("created_at")] public string CreatedAt { get; set; } = "";
         [JsonPropertyName("updated_at")] public string UpdatedAt { get; set; } = "";
+        [JsonPropertyName("is_deleted")] public int IsDeleted { get; set; }
     }
 
     public class SyncLineItemPush
@@ -91,6 +93,7 @@ namespace ProWalid.Services
         [JsonPropertyName("created_at")] public string CreatedAt { get; set; } = "";
         [JsonPropertyName("sync_uuid")] public string SyncUuid { get; set; } = "";
         [JsonPropertyName("updated_at")] public string? UpdatedAt { get; set; }
+        [JsonPropertyName("is_deleted")] public int IsDeleted { get; set; }
 
         public long IdLong => long.TryParse(Id, out var v) ? v : 0;
     }
@@ -108,6 +111,7 @@ namespace ProWalid.Services
         [JsonPropertyName("company_name")] public string? CompanyName { get; set; }
         [JsonPropertyName("employee_name")] public string? EmployeeName { get; set; }
         [JsonPropertyName("status")] public string? Status { get; set; }
+        [JsonPropertyName("is_deleted")] public int IsDeleted { get; set; }
 
         public long IdLong => long.TryParse(Id, out var v) ? v : 0;
         public long ClientIdLong => long.TryParse(ClientId, out var v) ? v : 0;
