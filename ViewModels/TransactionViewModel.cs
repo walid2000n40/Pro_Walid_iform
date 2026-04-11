@@ -1318,7 +1318,15 @@ namespace ProWalid.ViewModels
 
             {
 
-                if (System.IO.File.Exists(attachment.FilePath))
+                if (attachment.FilePath.StartsWith("http://") || attachment.FilePath.StartsWith("https://"))
+
+                {
+
+                    await Windows.System.Launcher.LaunchUriAsync(new Uri(attachment.FilePath)).AsTask();
+
+                }
+
+                else if (System.IO.File.Exists(attachment.FilePath))
 
                 {
 
@@ -1736,7 +1744,7 @@ namespace ProWalid.ViewModels
 
                 .SelectMany(item => item.Attachments)
 
-                .Where(attachment => attachment != null && !string.IsNullOrWhiteSpace(attachment.FilePath) && File.Exists(attachment.FilePath))
+                .Where(attachment => attachment != null && !string.IsNullOrWhiteSpace(attachment.FilePath) && (attachment.FilePath.StartsWith("http://") || attachment.FilePath.StartsWith("https://") || File.Exists(attachment.FilePath)))
 
                 .ToList();
 

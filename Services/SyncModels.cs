@@ -32,6 +32,8 @@ namespace ProWalid.Services
     {
         [JsonPropertyName("desktop_id")] public long DesktopId { get; set; }
         [JsonPropertyName("desktop_client_id")] public long DesktopClientId { get; set; }
+        [JsonPropertyName("server_client_id")] public long ServerClientId { get; set; }
+        [JsonPropertyName("client_sync_uuid")] public string ClientSyncUuid { get; set; } = "";
         [JsonPropertyName("sync_uuid")] public string SyncUuid { get; set; } = "";
         [JsonPropertyName("invoice_number")] public string InvoiceNumber { get; set; } = "";
         [JsonPropertyName("company_name")] public string CompanyName { get; set; } = "";
@@ -80,43 +82,55 @@ namespace ProWalid.Services
 
     public class SyncClientPull
     {
-        [JsonPropertyName("id")] public long Id { get; set; }
+        [JsonPropertyName("id")] public string? Id { get; set; }
         [JsonPropertyName("name")] public string Name { get; set; } = "";
         [JsonPropertyName("phone")] public string? Phone { get; set; }
         [JsonPropertyName("notes")] public string? Notes { get; set; }
-        [JsonPropertyName("balance")] public double Balance { get; set; }
-        [JsonPropertyName("interest_total")] public double InterestTotal { get; set; }
+        [JsonPropertyName("balance")] public string? Balance { get; set; }
+        [JsonPropertyName("interest_total")] public string? InterestTotal { get; set; }
         [JsonPropertyName("created_at")] public string CreatedAt { get; set; } = "";
         [JsonPropertyName("sync_uuid")] public string SyncUuid { get; set; } = "";
         [JsonPropertyName("updated_at")] public string? UpdatedAt { get; set; }
+
+        public long IdLong => long.TryParse(Id, out var v) ? v : 0;
     }
 
     public class SyncTransactionPull
     {
-        [JsonPropertyName("id")] public long Id { get; set; }
-        [JsonPropertyName("client_id")] public long ClientId { get; set; }
+        [JsonPropertyName("id")] public string? Id { get; set; }
+        [JsonPropertyName("client_id")] public string? ClientId { get; set; }
         [JsonPropertyName("transaction_type")] public string TransactionType { get; set; } = "";
         [JsonPropertyName("invoice_number")] public string InvoiceNumber { get; set; } = "";
         [JsonPropertyName("created_at")] public string CreatedAt { get; set; } = "";
         [JsonPropertyName("sync_uuid")] public string SyncUuid { get; set; } = "";
         [JsonPropertyName("updated_at")] public string? UpdatedAt { get; set; }
         [JsonPropertyName("client_sync_uuid")] public string? ClientSyncUuid { get; set; }
+        [JsonPropertyName("company_name")] public string? CompanyName { get; set; }
+        [JsonPropertyName("employee_name")] public string? EmployeeName { get; set; }
+        [JsonPropertyName("status")] public string? Status { get; set; }
+
+        public long IdLong => long.TryParse(Id, out var v) ? v : 0;
+        public long ClientIdLong => long.TryParse(ClientId, out var v) ? v : 0;
     }
 
     public class SyncLineItemPull
     {
-        [JsonPropertyName("id")] public long Id { get; set; }
-        [JsonPropertyName("transaction_id")] public long TransactionId { get; set; }
+        [JsonPropertyName("id")] public string? Id { get; set; }
+        [JsonPropertyName("transaction_id")] public string? TransactionId { get; set; }
         [JsonPropertyName("transaction_type")] public string? ServiceName { get; set; }
         [JsonPropertyName("number")] public string? Quantity { get; set; }
-        [JsonPropertyName("unit_price")] public double UnitPrice { get; set; }
-        [JsonPropertyName("total")] public double Total { get; set; }
+        [JsonPropertyName("unit_price")] public string? UnitPrice { get; set; }
+        [JsonPropertyName("total")] public string? Total { get; set; }
         [JsonPropertyName("company_name")] public string? CompanyName { get; set; }
         [JsonPropertyName("employee_name")] public string? EmployeeName { get; set; }
         [JsonPropertyName("discount")] public string? GovFees { get; set; }
         [JsonPropertyName("item_date")] public string? ItemDate { get; set; }
         [JsonPropertyName("sync_uuid")] public string SyncUuid { get; set; } = "";
         [JsonPropertyName("updated_at")] public string? UpdatedAt { get; set; }
+        [JsonPropertyName("attachments")] public string? Attachments { get; set; }
         [JsonPropertyName("transaction_sync_uuid")] public string? TransactionSyncUuid { get; set; }
+
+        public long IdLong => long.TryParse(Id, out var v) ? v : 0;
+        public double UnitPriceDouble => double.TryParse(UnitPrice, out var v) ? v : 0;
     }
 }

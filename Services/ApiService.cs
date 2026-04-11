@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -46,5 +47,29 @@ namespace ProWalid.Services
                 throw new Exception($"Sync failed (HTTP {(int)response.StatusCode}): {body}");
             return JsonSerializer.Deserialize<SyncResponse>(body, JsonOptions);
         }
+
+        public async Task<bool> UploadAttachmentAsync(string filePath, string lineItemSyncUuid, string invoiceNumber, int lineIndex)
+        {
+            try
+            {
+                using var form = new MultipartFormDataContent();
+                form.Add(new StringContent(lineItemSyncUuid), "line_item_sync_uuid");
+                form.Add(new StringContent(invoiceNumber), "invoice_number");
+                form.Add(new StringContent(lineIndex.ToString()), "line_index");
+
+                var fileBytes = await File.ReadAllBytesAsync(filePath);
+                var fileContent = new ByteArrayContent(fileBytes);
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                form.Add(fileContent, "file", Path.GetFileName(filePath));
+
+                var response = await _httpClient.PostAsync($"{_baseUrl}/api/upload.php", form);
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
     }
 }

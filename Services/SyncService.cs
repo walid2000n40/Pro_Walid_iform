@@ -89,6 +89,8 @@ namespace ProWalid.Services
 
                 OnProgress?.Invoke("جاري حفظ البيانات الواردة...");
                 await ApplyPullDataAsync(response);
+                await DeduplicateAndFixSequenceAsync();
+                await UploadPendingAttachmentsAsync();
                 await MarkPushedRecordsCleanAsync();
                 SaveSyncState(response.ServerTime ?? DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
 
@@ -134,13 +136,15 @@ namespace ProWalid.Services
                 });
             }
 
-            var dirtyTx = await connection.QueryAsync("SELECT Id, CustomerId, InvoiceNumber, CompanyName, EmployeeName, TransactionDate, CreatedAt, SyncUuid, UpdatedAt FROM Transactions WHERE IsDirty = 1 OR IsDirty IS NULL");
+            var dirtyTx = await connection.QueryAsync("SELECT t.Id, t.CustomerId, t.InvoiceNumber, t.CompanyName, t.EmployeeName, t.TransactionDate, t.CreatedAt, t.SyncUuid, t.UpdatedAt, c.ServerId AS ClientServerId, c.SyncUuid AS ClientSyncUuid FROM Transactions t LEFT JOIN Customers c ON c.Id = t.CustomerId WHERE t.IsDirty = 1 OR t.IsDirty IS NULL");
             foreach (var t in dirtyTx)
             {
                 request.Transactions.Add(new SyncTransactionPush
                 {
                     DesktopId = (long)t.Id,
                     DesktopClientId = t.CustomerId != null ? (long)t.CustomerId : 0,
+                    ServerClientId = t.ClientServerId != null ? (long)t.ClientServerId : 0,
+                    ClientSyncUuid = t.ClientSyncUuid?.ToString() ?? "",
                     SyncUuid = t.SyncUuid?.ToString() ?? "",
                     InvoiceNumber = t.InvoiceNumber?.ToString() ?? "",
                     CompanyName = t.CompanyName?.ToString() ?? "",
@@ -185,19 +189,29 @@ namespace ProWalid.Services
                     var localUp = existing.UpdatedAt?.ToString() ?? "2000-01-01";
                     if (string.Compare(sc.UpdatedAt ?? "2000-01-01", localUp, StringComparison.Ordinal) > 0)
                         await connection.ExecuteAsync("UPDATE Customers SET Name=@Name, Phone=@Phone, Notes=@Notes, UpdatedAt=@UpdatedAt, ServerId=@ServerId, IsDirty=0 WHERE SyncUuid=@SyncUuid",
-                            new { sc.Name, Phone = sc.Phone ?? "", Notes = sc.Notes ?? "", sc.UpdatedAt, ServerId = sc.Id, sc.SyncUuid });
+                            new { sc.Name, Phone = sc.Phone ?? "", Notes = sc.Notes ?? "", sc.UpdatedAt, ServerId = sc.IdLong, sc.SyncUuid });
                 }
                 else
                 {
                     var byName = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id FROM Customers WHERE Name = @Name COLLATE NOCASE AND (SyncUuid IS NULL OR TRIM(SyncUuid) = '')", new { sc.Name });
                     if (byName != null)
                         await connection.ExecuteAsync("UPDATE Customers SET SyncUuid=@SyncUuid, Phone=COALESCE(NULLIF(@Phone,''),Phone), ServerId=@ServerId, UpdatedAt=@UpdatedAt, IsDirty=0 WHERE Id=@Id",
-                            new { sc.SyncUuid, Phone = sc.Phone ?? "", ServerId = sc.Id, sc.UpdatedAt, Id = (long)byName.Id });
+                            new { sc.SyncUuid, Phone = sc.Phone ?? "", ServerId = sc.IdLong, sc.UpdatedAt, Id = (long)byName.Id });
                     else
                     {
-                        var nextNum = await connection.QueryFirstOrDefaultAsync<long?>("SELECT MAX(CASE WHEN CustomerNumber > 0 THEN CustomerNumber ELSE Id END) FROM Customers") ?? 0;
-                        await connection.ExecuteAsync("INSERT INTO Customers (CustomerNumber, Name, Phone, Email, Address, Notes, CreatedAt, SyncUuid, UpdatedAt, ServerId, IsDirty) VALUES (@CN, @Name, @Phone, '', '', @Notes, @CA, @SyncUuid, @UA, @SI, 0)",
-                            new { CN = nextNum + 1, sc.Name, Phone = sc.Phone ?? "", Notes = sc.Notes ?? "", CA = sc.CreatedAt, sc.SyncUuid, UA = sc.UpdatedAt, SI = sc.Id });
+                        var serverId = sc.IdLong;
+                        var existingId = await connection.QueryFirstOrDefaultAsync<long?>("SELECT Id FROM Customers WHERE Id = @Id", new { Id = serverId });
+                        if (existingId == null && serverId > 0)
+                        {
+                            await connection.ExecuteAsync("INSERT INTO Customers (Id, CustomerNumber, Name, Phone, Email, Address, Notes, CreatedAt, SyncUuid, UpdatedAt, ServerId, IsDirty) VALUES (@Id, @CN, @Name, @Phone, '', '', @Notes, @CA, @SyncUuid, @UA, @SI, 0)",
+                                new { Id = serverId, CN = serverId, sc.Name, Phone = sc.Phone ?? "", Notes = sc.Notes ?? "", CA = sc.CreatedAt, sc.SyncUuid, UA = sc.UpdatedAt, SI = serverId });
+                        }
+                        else
+                        {
+                            var nextNum = await connection.QueryFirstOrDefaultAsync<long?>("SELECT MAX(CASE WHEN CustomerNumber > 0 THEN CustomerNumber ELSE Id END) FROM Customers") ?? 0;
+                            await connection.ExecuteAsync("INSERT INTO Customers (CustomerNumber, Name, Phone, Email, Address, Notes, CreatedAt, SyncUuid, UpdatedAt, ServerId, IsDirty) VALUES (@CN, @Name, @Phone, '', '', @Notes, @CA, @SyncUuid, @UA, @SI, 0)",
+                                new { CN = nextNum + 1, sc.Name, Phone = sc.Phone ?? "", Notes = sc.Notes ?? "", CA = sc.CreatedAt, sc.SyncUuid, UA = sc.UpdatedAt, SI = sc.IdLong });
+                        }
                     }
                 }
             }
@@ -205,47 +219,38 @@ namespace ProWalid.Services
             foreach (var st in response.Transactions ?? new List<SyncTransactionPull>())
             {
                 if (string.IsNullOrWhiteSpace(st.SyncUuid)) continue;
-                var existing = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id, UpdatedAt FROM Transactions WHERE SyncUuid = @SyncUuid", new { st.SyncUuid });
+                long localCid = 0;
+                if (!string.IsNullOrWhiteSpace(st.ClientSyncUuid))
+                {
+                    var cust = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id FROM Customers WHERE SyncUuid = @Uuid", new { Uuid = st.ClientSyncUuid });
+                    if (cust != null) localCid = (long)cust.Id;
+                }
+                string status = (!string.IsNullOrWhiteSpace(st.Status)) ? st.Status : "\u0645\u0639\u0644\u0642";
+                var existing = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id FROM Transactions WHERE SyncUuid = @SyncUuid", new { st.SyncUuid });
                 if (existing != null)
                 {
-                    var localUp = existing.UpdatedAt?.ToString() ?? "2000-01-01";
-                    if (string.Compare(st.UpdatedAt ?? "2000-01-01", localUp, StringComparison.Ordinal) > 0)
-                    {
-                        long localCid = 0;
-                        if (!string.IsNullOrWhiteSpace(st.ClientSyncUuid))
-                        {
-                            var cust = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id FROM Customers WHERE SyncUuid = @Uuid", new { Uuid = st.ClientSyncUuid });
-                            if (cust != null) localCid = (long)cust.Id;
-                        }
-                        if (localCid > 0)
-                            await connection.ExecuteAsync("UPDATE Transactions SET CustomerId=@CId, InvoiceNumber=@Inv, UpdatedAt=@UA, ServerId=@SI, IsDirty=0 WHERE SyncUuid=@SyncUuid",
-                                new { CId = localCid, Inv = st.InvoiceNumber, UA = st.UpdatedAt, SI = st.Id, st.SyncUuid });
-                    }
+                    await connection.ExecuteAsync("UPDATE Transactions SET TransactionStatus=@ST, CompanyName=@CN, EmployeeName=@EN, CustomerId=CASE WHEN @CId > 0 THEN @CId ELSE CustomerId END, InvoiceNumber=@Inv, UpdatedAt=@UA, ServerId=@SI, IsDirty=0 WHERE SyncUuid=@SyncUuid",
+                        new { ST = status, CId = localCid, Inv = st.InvoiceNumber, CN = st.CompanyName ?? "", EN = st.EmployeeName ?? "", UA = st.UpdatedAt, SI = st.IdLong, st.SyncUuid });
                 }
                 else
                 {
-                    var byInv = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id FROM Transactions WHERE InvoiceNumber = @InvoiceNumber", new { st.InvoiceNumber });
-                    if (byInv != null)
+                    var conflicting = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id FROM Transactions WHERE InvoiceNumber = @Inv AND SyncUuid != @SyncUuid", new { Inv = st.InvoiceNumber, st.SyncUuid });
+                    if (conflicting != null)
                     {
-                        await connection.ExecuteAsync("UPDATE Transactions SET SyncUuid=@SyncUuid, ServerId=@SI, IsDirty=0 WHERE Id=@Id", new { st.SyncUuid, SI = st.Id, Id = (long)byInv.Id });
-                        continue;
+                        var newInv = await connection.QueryFirstOrDefaultAsync<long?>("SELECT MAX(CAST(InvoiceNumber AS INTEGER)) FROM Transactions WHERE InvoiceNumber IS NOT NULL AND TRIM(InvoiceNumber) != ''") ?? 999;
+                        await connection.ExecuteAsync("UPDATE Transactions SET InvoiceNumber = @NewInv WHERE Id = @Id", new { NewInv = (newInv + 1).ToString("D5"), Id = (long)conflicting.Id });
                     }
-                    long localCid2 = 0;
-                    if (!string.IsNullOrWhiteSpace(st.ClientSyncUuid))
-                    {
-                        var cust2 = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id FROM Customers WHERE SyncUuid = @Uuid", new { Uuid = st.ClientSyncUuid });
-                        if (cust2 != null) localCid2 = (long)cust2.Id;
-                    }
-                    await connection.ExecuteAsync("INSERT INTO Transactions (CustomerId, TransactionStatus, InvoiceNumber, InvoiceTemplateKey, CompanyName, EmployeeName, TransactionDate, GrandTotal, CreatedAt, SyncUuid, UpdatedAt, ServerId, IsDirty) VALUES (@CId, N'معلق', @Inv, '', '', '', @CA, 0, @CA, @SyncUuid, @UA, @SI, 0)",
-                        new { CId = localCid2, Inv = st.InvoiceNumber, CA = st.CreatedAt, st.SyncUuid, UA = st.UpdatedAt, SI = st.Id });
+                    await connection.ExecuteAsync("INSERT INTO Transactions (CustomerId, TransactionStatus, InvoiceNumber, InvoiceTemplateKey, CompanyName, EmployeeName, TransactionDate, GrandTotal, CreatedAt, SyncUuid, UpdatedAt, ServerId, IsDirty) VALUES (@CId, @ST, @Inv, \'\', @CN, @EN, @CA, 0, @CA, @SyncUuid, @UA, @SI, 0)",
+                        new { CId = localCid, ST = status, Inv = st.InvoiceNumber, CN = st.CompanyName ?? "", EN = st.EmployeeName ?? "", CA = st.CreatedAt, st.SyncUuid, UA = st.UpdatedAt, SI = st.IdLong });
                 }
             }
+
+            // One-time: remove old attachments with direct URLs so they get re-inserted with API URLs
+            await connection.ExecuteAsync("DELETE FROM Attachments WHERE FilePath LIKE 'https://informtyping.com%'");
 
             foreach (var si in response.LineItems ?? new List<SyncLineItemPull>())
             {
                 if (string.IsNullOrWhiteSpace(si.SyncUuid)) continue;
-                var existingI = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id FROM TransactionItems WHERE SyncUuid = @SyncUuid", new { si.SyncUuid });
-                if (existingI != null) continue;
                 long localTxId = 0;
                 if (!string.IsNullOrWhiteSpace(si.TransactionSyncUuid))
                 {
@@ -255,8 +260,122 @@ namespace ProWalid.Services
                 if (localTxId <= 0) continue;
                 double qty = 1;
                 if (double.TryParse(si.Quantity, out var pq)) qty = pq;
-                await connection.ExecuteAsync("INSERT INTO TransactionItems (TransactionId, ServiceName, Quantity, UnitPrice, Profit, GovFees, AttachmentPath, SyncUuid, UpdatedAt, ServerId, IsDirty) VALUES (@TId, @SN, @Qty, @UP, 0, @GF, '', @SyncUuid, @UA, @SI, 0)",
-                    new { TId = localTxId, SN = si.ServiceName ?? "", Qty = qty, UP = si.UnitPrice, GF = si.GovFees ?? "", si.SyncUuid, UA = si.UpdatedAt, SI = si.Id });
+                var existingI = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id FROM TransactionItems WHERE SyncUuid = @SyncUuid", new { si.SyncUuid });
+                long itemId;
+                if (existingI != null)
+                {
+                    itemId = (long)existingI.Id;
+                    await connection.ExecuteAsync("UPDATE TransactionItems SET ServiceName=@SN, Quantity=@Qty, UnitPrice=@UP, GovFees=@GF, UpdatedAt=@UA, ServerId=@SI, IsDirty=0 WHERE Id=@Id",
+                        new { SN = si.ServiceName ?? "", Qty = qty, UP = si.UnitPriceDouble, GF = si.GovFees ?? "", UA = si.UpdatedAt, SI = si.IdLong, Id = itemId });
+                }
+                else
+                {
+                    itemId = await connection.QuerySingleAsync<long>("INSERT INTO TransactionItems (TransactionId, ServiceName, Quantity, UnitPrice, Profit, GovFees, AttachmentPath, SyncUuid, UpdatedAt, ServerId, IsDirty) VALUES (@TId, @SN, @Qty, @UP, 0, @GF, \'\', @SyncUuid, @UA, @SI, 0); SELECT last_insert_rowid();",
+                        new { TId = localTxId, SN = si.ServiceName ?? "", Qty = qty, UP = si.UnitPriceDouble, GF = si.GovFees ?? "", si.SyncUuid, UA = si.UpdatedAt, SI = si.IdLong });
+                }
+                if (!string.IsNullOrWhiteSpace(si.Attachments) && si.Attachments != "[]")
+                {
+                    try
+                    {
+                        var attachments = System.Text.Json.JsonSerializer.Deserialize<List<Dictionary<string, string>>>(si.Attachments);
+                        if (attachments != null)
+                        {
+                            foreach (var att in attachments)
+                            {
+                                var fileName = att.GetValueOrDefault("name") ?? "file";
+                                var url = att.GetValueOrDefault("url") ?? "";
+                                if (string.IsNullOrWhiteSpace(url)) continue;
+                                var relPath = url.Replace("\\/", "/");
+                                if (relPath.StartsWith("/v2_test/uploads/")) relPath = relPath.Substring("/v2_test/uploads/".Length);
+                                var fullUrl = "https://informtyping.com/v2_test/api/serve_file.php?api_key=85d7bd6243258f6d4d057ffa3885263566f69422a457b2b11a04edd6fbeb456b&path=" + relPath;
+                                var existingAtt = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id FROM Attachments WHERE TransactionItemId=@ItemId AND OriginalFileName=@FN", new { ItemId = itemId, FN = fileName });
+                                if (existingAtt == null)
+                                    await connection.ExecuteAsync("INSERT INTO Attachments (TransactionItemId, FileName, FilePath, OriginalFileName, FileSize, FileExtension, CreatedAt) VALUES (@ItemId, @FN, @FP, @OFN, 0, @Ext, datetime(\'now\'))", new { ItemId = itemId, FN = fileName, FP = fullUrl, OFN = fileName, Ext = System.IO.Path.GetExtension(fileName) });
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        private async Task DeduplicateAndFixSequenceAsync()
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            // Deduplicate: if two transactions share the same InvoiceNumber, keep the one with ServerId > 0 or the newer one
+            var dupes = await connection.QueryAsync("SELECT InvoiceNumber, COUNT(*) as cnt FROM Transactions WHERE InvoiceNumber IS NOT NULL AND TRIM(InvoiceNumber) != '' GROUP BY InvoiceNumber HAVING cnt > 1");
+            foreach (var d in dupes)
+            {
+                string invNum = d.InvoiceNumber?.ToString() ?? "";
+                if (string.IsNullOrWhiteSpace(invNum)) continue;
+                var rows = (await connection.QueryAsync("SELECT Id, ServerId, CreatedAt FROM Transactions WHERE InvoiceNumber = @Inv ORDER BY CASE WHEN ServerId > 0 THEN 0 ELSE 1 END, CreatedAt DESC", new { Inv = invNum })).ToList();
+                for (int i = 1; i < rows.Count; i++)
+                {
+                    long delId = (long)rows[i].Id;
+                    await connection.ExecuteAsync("DELETE FROM TransactionItems WHERE TransactionId = @Id", new { Id = delId });
+                    await connection.ExecuteAsync("DELETE FROM Transactions WHERE Id = @Id", new { Id = delId });
+                }
+            }
+
+            // Auto-update invoice sequence: next invoice = MAX(all invoice numbers) + 1
+            var maxInv = await connection.QueryFirstOrDefaultAsync<long?>("SELECT MAX(CAST(InvoiceNumber AS INTEGER)) FROM Transactions WHERE InvoiceNumber IS NOT NULL AND InvoiceNumber != ''") ?? 0;
+            if (maxInv >= 1000)
+            {
+                var nextInv = maxInv + 1;
+                var stateJson = new Dictionary<string, string>();
+                if (File.Exists(_syncStatePath))
+                {
+                    try { stateJson = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(_syncStatePath)) ?? new(); } catch { }
+                }
+                stateJson["next_invoice_number"] = nextInv.ToString();
+                stateJson["last_sync"] = stateJson.GetValueOrDefault("last_sync", "2000-01-01 00:00:00");
+                stateJson["device_id"] = _deviceId;
+                File.WriteAllText(_syncStatePath, JsonSerializer.Serialize(stateJson));
+            }
+        }
+
+
+        private async Task UploadPendingAttachmentsAsync()
+        {
+            try
+            {
+                using var connection = new SqliteConnection(_connectionString);
+                await connection.OpenAsync();
+
+                var pendingAttachments = await connection.QueryAsync(
+                    @"SELECT a.Id, a.FilePath, a.OriginalFileName, ti.SyncUuid AS ItemSyncUuid, t.InvoiceNumber,
+                       (SELECT COUNT(*) FROM TransactionItems ti2 WHERE ti2.TransactionId = ti.TransactionId AND ti2.Id <= ti.Id) AS LineIndex
+                     FROM Attachments a
+                     JOIN TransactionItems ti ON ti.Id = a.TransactionItemId
+                     JOIN Transactions t ON t.Id = ti.TransactionId
+                     WHERE a.FilePath NOT LIKE 'http%' AND a.FilePath NOT LIKE 'uploaded://%' AND a.FilePath != ''
+                       AND ti.SyncUuid IS NOT NULL AND ti.SyncUuid != ''
+                       AND t.InvoiceNumber IS NOT NULL AND t.InvoiceNumber != ''");
+
+                foreach (var att in pendingAttachments)
+                {
+                    string filePath = att.FilePath?.ToString() ?? "";
+                    string itemSyncUuid = att.ItemSyncUuid?.ToString() ?? "";
+                    string invoiceNumber = att.InvoiceNumber?.ToString() ?? "";
+                    int lineIndex = att.LineIndex != null ? (int)att.LineIndex : 1;
+
+                    if (string.IsNullOrWhiteSpace(filePath) || !System.IO.File.Exists(filePath)) continue;
+                    if (string.IsNullOrWhiteSpace(itemSyncUuid)) continue;
+
+                    OnProgress?.Invoke($"جاري رفع مرفق: {att.OriginalFileName}...");
+                    bool ok = await _api.UploadAttachmentAsync(filePath, itemSyncUuid, invoiceNumber, lineIndex);
+                    if (ok)
+                    {
+                        await connection.ExecuteAsync("UPDATE Attachments SET FilePath = @NewPath WHERE Id = @Id",
+                            new { NewPath = "uploaded://" + filePath, Id = (long)att.Id });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                OnProgress?.Invoke($"تحذير: فشل رفع بعض المرفقات: {ex.Message}");
             }
         }
 

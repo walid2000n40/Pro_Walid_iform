@@ -132,7 +132,8 @@ namespace ProWalid.Data
         public async Task<string> CreateZipForAttachmentsAsync(IEnumerable<ProWalid.Models.Attachment> attachments, string folderName, string zipFileName)
         {
             var validAttachments = attachments
-                .Where(attachment => attachment != null && !string.IsNullOrWhiteSpace(attachment.FilePath) && File.Exists(attachment.FilePath))
+                .Where(attachment => attachment != null && !string.IsNullOrWhiteSpace(attachment.FilePath) 
+                    && (attachment.FilePath.StartsWith("http://") || attachment.FilePath.StartsWith("https://") || File.Exists(attachment.FilePath)))
                 .ToList();
 
             if (validAttachments.Count == 0)
@@ -152,23 +153,36 @@ namespace ProWalid.Data
                 File.Delete(zipPath);
             }
 
-            await Task.Run(() =>
+            using var httpClient = new System.Net.Http.HttpClient();
+            using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create);
+            var usedEntryNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var attachment in validAttachments)
             {
-                using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create);
-                var usedEntryNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var sourcePath = attachment.FilePath;
+                var originalName = !string.IsNullOrWhiteSpace(attachment.OriginalFileName)
+                    ? attachment.OriginalFileName
+                    : Path.GetFileName(sourcePath);
 
-                foreach (var attachment in validAttachments)
+                var safeEntryName = GetUniqueFileName(SanitizeFileName(originalName), usedEntryNames);
+                var entryPath = Path.Combine(safeFolderName, safeEntryName).Replace('\\', '/');
+
+                if (sourcePath.StartsWith("http://") || sourcePath.StartsWith("https://"))
                 {
-                    var sourcePath = attachment.FilePath;
-                    var originalName = !string.IsNullOrWhiteSpace(attachment.OriginalFileName)
-                        ? attachment.OriginalFileName
-                        : Path.GetFileName(sourcePath);
-
-                    var safeEntryName = GetUniqueFileName(SanitizeFileName(originalName), usedEntryNames);
-                    var entryPath = Path.Combine(safeFolderName, safeEntryName).Replace('\\', '/');
+                    try
+                    {
+                        var data = await httpClient.GetByteArrayAsync(sourcePath);
+                        var entry = archive.CreateEntry(entryPath);
+                        using var entryStream = entry.Open();
+                        await entryStream.WriteAsync(data, 0, data.Length);
+                    }
+                    catch { }
+                }
+                else
+                {
                     archive.CreateEntryFromFile(sourcePath, entryPath);
                 }
-            });
+            }
 
             return zipPath;
         }
