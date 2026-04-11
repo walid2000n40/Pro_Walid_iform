@@ -94,7 +94,7 @@ namespace ProWalid.Services
         [JsonPropertyName("sync_uuid")] public string SyncUuid { get; set; } = "";
         [JsonPropertyName("updated_at")] public string? UpdatedAt { get; set; }
         [JsonPropertyName("is_deleted")] public string? IsDeletedStr { get; set; }
-        public int IsDeleted => int.TryParse(IsDeletedStr, out var v) ? v : 0;
+        [JsonIgnore] public int IsDeleted => int.TryParse(IsDeletedStr, out var v) ? v : 0;
 
         public long IdLong => long.TryParse(Id, out var v) ? v : 0;
     }
@@ -113,7 +113,7 @@ namespace ProWalid.Services
         [JsonPropertyName("employee_name")] public string? EmployeeName { get; set; }
         [JsonPropertyName("status")] public string? Status { get; set; }
         [JsonPropertyName("is_deleted")] public string? IsDeletedStr { get; set; }
-        public int IsDeleted => int.TryParse(IsDeletedStr, out var v) ? v : 0;
+        [JsonIgnore] public int IsDeleted => int.TryParse(IsDeletedStr, out var v) ? v : 0;
 
         public long IdLong => long.TryParse(Id, out var v) ? v : 0;
         public long ClientIdLong => long.TryParse(ClientId, out var v) ? v : 0;
