@@ -110,20 +110,22 @@
                         Padding="14,12">
                     <Grid HorizontalAlignment="Stretch">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="200"/>
-                            <ColumnDefinition Width="150"/>
-                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="300"/>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="250"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0" Text="#" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="1" Text="رقم الفاتورة / التجميعة" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="التاريخ" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="3" Text="المبلغ" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="4" Text="العميل / الشركة" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
-                        <TextBlock Grid.Column="5" Text="الإجراءات" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="رقم الفاتورة" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="أرقام الفواتير المفردة" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="3" Text="اسم الشركة" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="4" Text="المبلغ" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="5" Text="تاريخ الحفظ" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="6" Text="الإجراءات" FontSize="15" FontWeight="Bold" Foreground="#1D3E63" TextAlignment="Center"/>
                     </Grid>
                 </Border>
 
@@ -153,52 +155,56 @@
                             <Border BorderBrush="#EDF3F9" BorderThickness="0,0,0,1" Padding="14,12">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="90"/>
-                                        <ColumnDefinition Width="200"/>
-                                        <ColumnDefinition Width="150"/>
-                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="50"/>
+                                        <ColumnDefinition Width="120"/>
                                         <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="300"/>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="250"/>
                                     </Grid.ColumnDefinitions>
 
                                     <TextBlock Grid.Column="0" Text="{Binding SerialNumber}" FontSize="14" Foreground="#244C71" TextAlignment="Center" VerticalAlignment="Center"/>
-                                    <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding DisplayInvoiceNumber}" FontSize="14" FontWeight="Bold" Foreground="#1B4E80" TextAlignment="Center"/>
-                                        <TextBlock Text="{Binding SavedKindDisplay}" FontSize="12" Foreground="#4F6B86" TextAlignment="Center"/>
-                                        <TextBlock Text="{Binding GroupedInvoicesCountText}" FontSize="12" Foreground="#4F6B86" TextAlignment="Center"/>
-                                    </StackPanel>
-                                    <TextBlock Grid.Column="2" Text="{Binding InvoiceDateText}" FontSize="14" Foreground="#3A4F63" TextAlignment="Center" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="3" Text="{Binding TotalAmountText}" FontSize="14" Foreground="#0F766E" FontWeight="Bold" TextAlignment="Center" VerticalAlignment="Center"/>
-                                    <StackPanel Grid.Column="4" Spacing="4" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding CustomerName}" FontSize="14" FontWeight="SemiBold" Foreground="#273F58" TextAlignment="Center"/>
-                                        <TextBlock Text="{Binding CompanyName}" FontSize="13" Foreground="#5B728A" TextAlignment="Center" TextWrapping="WrapWholeWords"/>
-                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding DisplayInvoiceNumber}" FontSize="16" FontWeight="Bold" Foreground="#1E3A8A" TextAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding GroupedInvoiceNumbersSummary}" FontSize="12" FontWeight="SemiBold" Foreground="#334155" TextAlignment="Right" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding CompanyName}" FontSize="14" Foreground="#334155" TextAlignment="Center" VerticalAlignment="Center" TextWrapping="WrapWholeWords"/>
+                                    <TextBlock Grid.Column="4" Text="{Binding TotalAmountText}" FontSize="14" Foreground="#0F172A" FontWeight="Bold" TextAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="5" Text="{Binding SavedAtText}" FontSize="13" Foreground="#64748B" TextAlignment="Center" VerticalAlignment="Center"/>
 
-                                    <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                        <Button Command="{Binding DataContext.ShowGroupedInvoicesCommand, ElementName=SavedInvoicesPageRoot}"
-                                                CommandParameter="{Binding}"
-                                                Visibility="{Binding CanShowGroupedInvoiceNumbers, Converter={StaticResource BoolToVisibilityConverter}}"
-                                                Style="{StaticResource RowActionButtonStyle}"
-                                                Background="#FFF6E8"
-                                                BorderBrush="#F3C98B"
-                                                Foreground="#9A4A00">
-                                            <TextBlock Text="الفواتير الأصلية"/>
-                                        </Button>
+                                    <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <Button Command="{Binding DataContext.ViewSavedInvoiceCommand, ElementName=SavedInvoicesPageRoot}"
                                                 CommandParameter="{Binding}"
                                                 Style="{StaticResource RowActionButtonStyle}"
-                                                Background="#EFF7FF"
-                                                BorderBrush="#9FC6EA"
-                                                Foreground="#0F5E9C">
-                                            <TextBlock Text="عرض"/>
+                                                Background="#0EA5E9"
+                                                BorderBrush="#0284C7"
+                                                Foreground="White">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <SymbolIcon Symbol="View" FontSize="12"/>
+                                                <TextBlock Text="عرض" FontSize="12"/>
+                                            </StackPanel>
                                         </Button>
                                         <Button Command="{Binding DataContext.PrintSavedInvoiceCommand, ElementName=SavedInvoicesPageRoot}"
                                                 CommandParameter="{Binding}"
                                                 Style="{StaticResource RowActionButtonStyle}"
-                                                Background="#EAFBF3"
-                                                BorderBrush="#A7E0BC"
-                                                Foreground="#166534">
-                                            <TextBlock Text="طباعة"/>
+                                                Background="#0EA5E9"
+                                                BorderBrush="#0284C7"
+                                                Foreground="White">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <SymbolIcon Symbol="Print" FontSize="12"/>
+                                                <TextBlock Text="طباعة" FontSize="12"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Command="{Binding DataContext.ShowGroupedInvoicesCommand, ElementName=SavedInvoicesPageRoot}"
+                                                CommandParameter="{Binding}"
+                                                Visibility="{Binding CanShowGroupedInvoiceNumbers, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                Style="{StaticResource RowActionButtonStyle}"
+                                                Background="#EF4444"
+                                                BorderBrush="#DC2626"
+                                                Foreground="White">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <SymbolIcon Symbol="List" FontSize="12"/>
+                                                <TextBlock Text="الفواتير الأصلية" FontSize="12"/>
+                                            </StackPanel>
                                         </Button>
                                     </StackPanel>
                                 </Grid>
