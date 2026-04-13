@@ -61,6 +61,8 @@ namespace ProWalid.Models
 
         [ObservableProperty]
         private string groupedInvoiceNumbersSummary = string.Empty;
+        [ObservableProperty]
+        private string relatedIndividualIds = string.Empty;
 
         public bool IsGrouped => string.Equals(SavedKind, "grouped", StringComparison.OrdinalIgnoreCase);
 
