@@ -753,7 +753,7 @@ namespace ProWalid.ViewModels
             var stampDataUri = GetPreferredImageDataUri(("Assets", "invoice", "1145.png"), ("Assets", "invoice", "STAMP (1).png"));
             var currentCustomerId = GetCurrentCustomerIdValue();
             var useEnglishLayout = currentCustomerId == 3;
-            var useDiscountColumn = currentCustomerId == 1;
+            var useDiscountColumn = currentCustomerId == 100;
             var useEmployeeNamesColumn = currentCustomerId == 3;
             var showEmployeeLineAboveTable = currentCustomerId == 1;
 
@@ -886,8 +886,8 @@ namespace ProWalid.ViewModels
     .inv4-totals .line {{ display: flex; justify-content: flex-end; align-items: center; font-weight: 900; position: relative; }}
     .inv4-total-label {{ position: absolute; left: 0; right: 0; text-align: center; }}
     .inv4-bottom-stack {{ margin-top: auto; z-index: 2; padding: 16px 0 0 158px; }}
-    .inv-stamp-area{{padding:12px 0 0 158px;display:flex;justify-content:center;align-items:center;}}
-    .inv-stamp-img{{ display:block;opacity:0.92;width:170px;max-width:100%;height:auto;filter:saturate(1.2) contrast(1.2);-webkit-print-color-adjust:exact;print-color-adjust:exact; }}
+    .inv-stamp-area{{padding:12px 0 0 0;display:flex;justify-content:center;align-items:center;}}
+    .inv-stamp-img{{ display:block;opacity:0.92;width:120px;max-width:100%;height:auto;filter:saturate(1.1) contrast(1.15);-webkit-print-color-adjust:exact;print-color-adjust:exact; }}
     .inv-sigs-bottom{{ position:static;display:flex;justify-content:space-between;align-items:flex-end;gap:36px;font-size:10px;color:#64748b;border-top:0;background:transparent;z-index:2; }}
     .inv-sig-block{{text-align:center;flex:1;}}
     .inv-sig-label{{font-weight:700;color:#475569;font-size:10.5px;display:block;}}
@@ -1171,9 +1171,9 @@ namespace ProWalid.ViewModels
       z-index: 2;
       padding: 16px 0 0 158px;
     }}
-    .inv-stamp-area{{padding:12px 0 0 158px;display:flex;justify-content:center;align-items:center;}}
+    .inv-stamp-area{{padding:12px 0 0 0;display:flex;justify-content:center;align-items:center;}}
     .inv-stamp-img{{
-      display:block;opacity:0.92;width:170px;max-width:100%;height:auto;
+      display:block;opacity:0.92;width:120px;max-width:100%;height:auto;
       filter:saturate(1.2) contrast(1.2);
       -webkit-print-color-adjust:exact;print-color-adjust:exact;
     }}
