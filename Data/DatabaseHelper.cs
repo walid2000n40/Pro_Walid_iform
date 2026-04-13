@@ -753,20 +753,26 @@ namespace ProWalid.Data
             return (int)count;
         }
 
-        public async Task<int> GetNextGroupedSavedInvoiceSequenceAsync()
+        public async Task<int> GetNextGroupedSavedInvoiceSequenceAsync(long customerId = 0)
         {
             using var connection = new SqliteConnection(_connectionString);
             await connection.OpenAsync();
 
-            var maxSequence = await connection.QueryFirstOrDefaultAsync<int?>(
-                @"SELECT MAX(GroupedSequenceNumber)
-                  FROM SavedInvoices
-                  WHERE GroupedSequenceNumber > 0");
+            const int defaultSeed = 200;
+            const int client102Seed = 300;
+            int seed = customerId == 102 ? client102Seed : defaultSeed;
 
-            const int groupedSeed = 200;
-            return maxSequence.HasValue && maxSequence.Value >= groupedSeed
+            string sql = customerId == 102
+                ? @"SELECT MAX(GroupedSequenceNumber) FROM SavedInvoices WHERE GroupedSequenceNumber > 0 AND CustomerId = @CId"
+                : @"SELECT MAX(GroupedSequenceNumber) FROM SavedInvoices WHERE GroupedSequenceNumber > 0";
+
+            var maxSequence = customerId == 102
+                ? await connection.QueryFirstOrDefaultAsync<int?>(sql, new { CId = customerId })
+                : await connection.QueryFirstOrDefaultAsync<int?>(sql);
+
+            return maxSequence.HasValue && maxSequence.Value >= seed
                 ? maxSequence.Value + 1
-                : groupedSeed;
+                : seed;
         }
 
         public async Task<List<SavedInvoiceRecord>> GetAllSavedInvoicesAsync(long? customerId = null)

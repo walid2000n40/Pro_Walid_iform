@@ -617,15 +617,15 @@ namespace ProWalid.ViewModels
                     return "تعذر حفظ الفاتورة المجمعة لأن أرقام الفواتير الأصلية غير متوفرة.";
                 }
 
-                var groupedSequence = await _databaseHelper.GetNextGroupedSavedInvoiceSequenceAsync();
-                var groupedNumber = groupedSequence.ToString("D5");
+                var groupedSequence = await _databaseHelper.GetNextGroupedSavedInvoiceSequenceAsync(_currentGroupedRequest.CustomerId);
+                var groupedNumber = _currentGroupedRequest.CustomerId == 102 ? groupedSequence.ToString() : groupedSequence.ToString("D5");
                 var payloadJson = BuildSavedInvoicePayloadJson();
                 var savedAt = DateTimeOffset.Now;
 
                 var records = sourceInvoiceNumbers
                     .Select(sourceInvoiceNumber => new SavedInvoiceRecord
                     {
-                        SavedInvoiceNumber = $"{sourceInvoiceNumber}-{groupedNumber}",
+                        SavedInvoiceNumber = _currentGroupedRequest.CustomerId == 102 ? $"{groupedNumber}-{sourceInvoiceNumber}" : $"{sourceInvoiceNumber}-{groupedNumber}",
                         RootInvoiceNumber = groupedNumber,
                         SourceInvoiceNumber = sourceInvoiceNumber,
                         GroupedSequenceNumber = groupedSequence,
@@ -754,7 +754,7 @@ namespace ProWalid.ViewModels
             var currentCustomerId = GetCurrentCustomerIdValue();
             var useEnglishLayout = currentCustomerId == 3;
             var useDiscountColumn = currentCustomerId == 100;
-            var useEmployeeNamesColumn = currentCustomerId == 3;
+            var useEmployeeNamesColumn = currentCustomerId == 3 || currentCustomerId == 102;
             var showEmployeeLineAboveTable = currentCustomerId == 1;
 
             var rows = new StringBuilder();
