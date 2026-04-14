@@ -624,7 +624,7 @@ namespace ProWalid.ViewModels
                 var savedAt = DateTimeOffset.Now;
                 var relatedIds = string.Join(",", sourceInvoiceNumbers);
 
-                var record = new SavedInvoiceRecord
+                var groupedRecord = new SavedInvoiceRecord
                 {
                     SavedInvoiceNumber = groupedNumber,
                     RootInvoiceNumber = groupedNumber,
@@ -644,8 +644,8 @@ namespace ProWalid.ViewModels
                     RelatedIndividualIds = relatedIds
                 };
 
-                await _databaseHelper.SaveSavedInvoiceRecordsAsync(new[] { record });
-                _currentSavedInvoiceRecord = record;
+                await _databaseHelper.SaveSavedInvoiceRecordsAsync(new[] { groupedRecord });
+                _currentSavedInvoiceRecord = groupedRecord;
                 _savedPrintHtml = PrintHtml;
                 RefreshTotals();
                 return $"تم حفظ الفاتورة المجمعة برقم {groupedNumber} وربطها بعدد {sourceInvoiceNumbers.Count} من الفواتير الأصلية.";
