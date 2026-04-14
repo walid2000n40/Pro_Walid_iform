@@ -221,8 +221,6 @@ namespace ProWalid.ViewModels
                 ? "العميل 1 يستخدم النموذج العام الجديد مع عمود خصم معلوماتي لا يؤثر على الإجمالي أو أي منطق محاسبي."
                 : IsHazemInvoice
                 ? "نموذج حازم: كل فاتورة مرتبطة بمعاملة واحدة فقط. قيمة GOV-FEES المعروضة لكل بند هي قيمة معلوماتية فقط ولا تدخل ضمن الإجمالي أو أي منطق محاسبي."
-                : row.Transaction.CustomerId == 3
-                ? "Customer 3 uses the new shared invoice template with an English/LTR presentation while preserving the same invoice data and totals."
                 : "هذه معاينة حقيقية مبنية على بيانات الفاتورة المحفوظة."
                 ;
 
@@ -753,9 +751,9 @@ namespace ProWalid.ViewModels
             var logoDataUri = GetPreferredImageDataUri(("Assets", "invoice", "inform-logo.png"), ("Assets", "invoice", "LOGO1.png"));
             var stampDataUri = GetPreferredImageDataUri(("Assets", "invoice", "1145.png"), ("Assets", "invoice", "STAMP (1).png"));
             var currentCustomerId = GetCurrentCustomerIdValue();
-            var useEnglishLayout = currentCustomerId == 3;
+            var useEnglishLayout = false;
             var useDiscountColumn = currentCustomerId == 100;
-            var useEmployeeNamesColumn = currentCustomerId == 3 || currentCustomerId == 102;
+            var useEmployeeNamesColumn = currentCustomerId == 102;
             var showEmployeeLineAboveTable = currentCustomerId == 1;
 
             var rows = new StringBuilder();
