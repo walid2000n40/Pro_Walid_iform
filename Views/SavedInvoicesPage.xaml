@@ -179,7 +179,7 @@
                                                 BorderBrush="#0284C7"
                                                 Foreground="White">
                                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                                <SymbolIcon Symbol="View" FontSize="12"/>
+                                                <SymbolIcon Symbol="View"/>
                                                 <TextBlock Text="عرض" FontSize="12"/>
                                             </StackPanel>
                                         </Button>
@@ -190,7 +190,7 @@
                                                 BorderBrush="#0284C7"
                                                 Foreground="White">
                                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                                <SymbolIcon Symbol="Print" FontSize="12"/>
+                                                <SymbolIcon Symbol="Print"/>
                                                 <TextBlock Text="طباعة" FontSize="12"/>
                                             </StackPanel>
                                         </Button>
@@ -202,7 +202,7 @@
                                                 BorderBrush="#DC2626"
                                                 Foreground="White">
                                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                                <SymbolIcon Symbol="List" FontSize="12"/>
+                                                <SymbolIcon Symbol="List"/>
                                                 <TextBlock Text="الفواتير الأصلية" FontSize="12"/>
                                             </StackPanel>
                                         </Button>
