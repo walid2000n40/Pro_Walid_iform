@@ -103,7 +103,8 @@ namespace ProWalid.Data
                     Notes TEXT NOT NULL DEFAULT '',
                     PrintHtml TEXT NOT NULL DEFAULT '',
                     PayloadJson TEXT NOT NULL DEFAULT '',
-                    SavedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    SavedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    RelatedIndividualIds TEXT NOT NULL DEFAULT ''
                 )";
 
             var createCompanySuggestionsTable = @"
@@ -140,6 +141,7 @@ namespace ProWalid.Data
             await connection.ExecuteAsync(createCustomersTable);
             await EnsureCustomersCustomerNumberColumnAsync(connection);
             await connection.ExecuteAsync(createSavedInvoicesTable);
+            await EnsureSavedInvoicesRelatedIndividualIdsColumnAsync(connection);
             await connection.ExecuteAsync(createCompanySuggestionsTable);
             await connection.ExecuteAsync(createEmployeeSuggestionsTable);
             await connection.ExecuteAsync(createItemSuggestionsTable);
@@ -273,6 +275,15 @@ namespace ProWalid.Data
             }
         }
 
+
+        private static async Task EnsureSavedInvoicesRelatedIndividualIdsColumnAsync(SqliteConnection connection)
+        {
+            var columns = await connection.QueryAsync("PRAGMA table_info(SavedInvoices)");
+            if (!columns.Any(column => string.Equals((string)column.name, "RelatedIndividualIds", StringComparison.OrdinalIgnoreCase)))
+            {
+                await connection.ExecuteAsync("ALTER TABLE SavedInvoices ADD COLUMN RelatedIndividualIds TEXT NOT NULL DEFAULT ''");
+            }
+        }
 
         private static async Task EnsureSyncTrackingColumnsAsync(SqliteConnection connection)
         {
@@ -762,13 +773,9 @@ namespace ProWalid.Data
             const int client102Seed = 300;
             int seed = customerId == 102 ? client102Seed : defaultSeed;
 
-            string sql = customerId == 102
-                ? @"SELECT MAX(GroupedSequenceNumber) FROM SavedInvoices WHERE GroupedSequenceNumber > 0 AND CustomerId = @CId"
-                : @"SELECT MAX(GroupedSequenceNumber) FROM SavedInvoices WHERE GroupedSequenceNumber > 0";
+            string sql = @"SELECT MAX(GroupedSequenceNumber) FROM SavedInvoices WHERE GroupedSequenceNumber > 0 AND CustomerId = @CId";
 
-            var maxSequence = customerId == 102
-                ? await connection.QueryFirstOrDefaultAsync<int?>(sql, new { CId = customerId })
-                : await connection.QueryFirstOrDefaultAsync<int?>(sql);
+            var maxSequence = await connection.QueryFirstOrDefaultAsync<int?>(sql, new { CId = customerId });
 
             return maxSequence.HasValue && maxSequence.Value >= seed
                 ? maxSequence.Value + 1
@@ -796,7 +803,8 @@ namespace ProWalid.Data
                          Notes,
                          PrintHtml,
                          PayloadJson,
-                         SavedAt
+                         SavedAt,
+                         RelatedIndividualIds
                   FROM SavedInvoices
                   WHERE (@CustomerId IS NULL OR CustomerId = @CustomerId)
                   ORDER BY datetime(SavedAt) DESC, Id DESC",
@@ -824,7 +832,8 @@ namespace ProWalid.Data
                         ? DateTimeOffset.TryParse(row.SavedAt.ToString(), out DateTimeOffset parsedSavedAt)
                             ? parsedSavedAt
                             : DateTimeOffset.Now
-                        : DateTimeOffset.Now
+                        : DateTimeOffset.Now,
+                    RelatedIndividualIds = row.RelatedIndividualIds?.ToString() ?? string.Empty
                 })
                 .ToList();
 
@@ -877,7 +886,8 @@ namespace ProWalid.Data
                                   Notes = @Notes,
                                   PrintHtml = @PrintHtml,
                                   PayloadJson = @PayloadJson,
-                                  SavedAt = @SavedAt
+                                  SavedAt = @SavedAt,
+                                  RelatedIndividualIds = @RelatedIndividualIds
                               WHERE Id = @Id",
                             new
                             {
@@ -895,7 +905,8 @@ namespace ProWalid.Data
                                 record.Notes,
                                 record.PrintHtml,
                                 record.PayloadJson,
-                                SavedAt = record.SavedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                                SavedAt = record.SavedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                                record.RelatedIndividualIds
                             },
                             dbTransaction);
                     }
@@ -917,7 +928,8 @@ namespace ProWalid.Data
                                   Notes,
                                   PrintHtml,
                                   PayloadJson,
-                                  SavedAt)
+                                  SavedAt,
+                                  RelatedIndividualIds)
                               VALUES (
                                   @SavedInvoiceNumber,
                                   @RootInvoiceNumber,
@@ -933,7 +945,8 @@ namespace ProWalid.Data
                                   @Notes,
                                   @PrintHtml,
                                   @PayloadJson,
-                                  @SavedAt)",
+                                  @SavedAt,
+                                  @RelatedIndividualIds)",
                             new
                             {
                                 record.SavedInvoiceNumber,
@@ -950,7 +963,8 @@ namespace ProWalid.Data
                                 record.Notes,
                                 record.PrintHtml,
                                 record.PayloadJson,
-                                SavedAt = record.SavedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                                SavedAt = record.SavedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                                record.RelatedIndividualIds
                             },
                             dbTransaction);
                     }

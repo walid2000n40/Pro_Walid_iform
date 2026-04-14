@@ -622,33 +622,33 @@ namespace ProWalid.ViewModels
                 var groupedNumber = _currentGroupedRequest.CustomerId == 102 ? groupedSequence.ToString() : groupedSequence.ToString("D5");
                 var payloadJson = BuildSavedInvoicePayloadJson();
                 var savedAt = DateTimeOffset.Now;
+                var relatedIds = string.Join(",", sourceInvoiceNumbers);
 
-                var records = sourceInvoiceNumbers
-                    .Select(sourceInvoiceNumber => new SavedInvoiceRecord
-                    {
-                        SavedInvoiceNumber = _currentGroupedRequest.CustomerId == 102 ? $"{groupedNumber}-{sourceInvoiceNumber}" : $"{sourceInvoiceNumber}-{groupedNumber}",
-                        RootInvoiceNumber = groupedNumber,
-                        SourceInvoiceNumber = sourceInvoiceNumber,
-                        GroupedSequenceNumber = groupedSequence,
-                        SavedKind = "grouped",
-                        TemplateKey = SelectedPreviewTemplateKey,
-                        CustomerId = _currentGroupedRequest.CustomerId,
-                        CustomerName = CustomerName,
-                        CompanyName = CompanyName,
-                        InvoiceDateText = InvoiceDate,
-                        TotalAmount = GrandTotal,
-                        Notes = Notes,
-                        PrintHtml = PrintHtml,
-                        PayloadJson = payloadJson,
-                        SavedAt = savedAt
-                    })
-                    .ToList();
+                var record = new SavedInvoiceRecord
+                {
+                    SavedInvoiceNumber = groupedNumber,
+                    RootInvoiceNumber = groupedNumber,
+                    SourceInvoiceNumber = string.Empty,
+                    GroupedSequenceNumber = groupedSequence,
+                    SavedKind = "grouped",
+                    TemplateKey = SelectedPreviewTemplateKey,
+                    CustomerId = _currentGroupedRequest.CustomerId,
+                    CustomerName = CustomerName,
+                    CompanyName = CompanyName,
+                    InvoiceDateText = InvoiceDate,
+                    TotalAmount = GrandTotal,
+                    Notes = Notes,
+                    PrintHtml = PrintHtml,
+                    PayloadJson = payloadJson,
+                    SavedAt = savedAt,
+                    RelatedIndividualIds = relatedIds
+                };
 
-                await _databaseHelper.SaveSavedInvoiceRecordsAsync(records);
-                _currentSavedInvoiceRecord = records[0];
+                await _databaseHelper.SaveSavedInvoiceRecordsAsync(new[] { record });
+                _currentSavedInvoiceRecord = record;
                 _savedPrintHtml = PrintHtml;
                 RefreshTotals();
-                return $"تم حفظ الفاتورة المجمعة برقم {groupedNumber} وربطها بعدد {records.Count} من الفواتير الأصلية.";
+                return $"تم حفظ الفاتورة المجمعة برقم {groupedNumber} وربطها بعدد {sourceInvoiceNumbers.Count} من الفواتير الأصلية.";
             }
 
             if (_currentInvoiceRow?.Transaction == null)

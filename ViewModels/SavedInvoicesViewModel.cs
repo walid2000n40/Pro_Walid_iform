@@ -74,12 +74,23 @@ namespace ProWalid.ViewModels
                 .Select(group =>
                 {
                     var first = group.First();
-                    var sourceInvoiceNumbers = group
-                        .Select(item => string.IsNullOrWhiteSpace(item.SourceInvoiceNumber) ? item.SavedInvoiceNumber : item.SourceInvoiceNumber)
-                        .Where(number => !string.IsNullOrWhiteSpace(number))
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .OrderBy(number => number, StringComparer.OrdinalIgnoreCase)
-                        .ToList();
+
+                    // New single-record approach: use RelatedIndividualIds
+                    var sourceInvoiceNumbers = !string.IsNullOrWhiteSpace(first.RelatedIndividualIds)
+                        ? first.RelatedIndividualIds
+                            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                            .Select(s => s.Trim())
+                            .Where(s => !string.IsNullOrWhiteSpace(s))
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                            .ToList()
+                        // Fallback: legacy multi-record approach
+                        : group
+                            .Select(item => string.IsNullOrWhiteSpace(item.SourceInvoiceNumber) ? item.SavedInvoiceNumber : item.SourceInvoiceNumber)
+                            .Where(number => !string.IsNullOrWhiteSpace(number))
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .OrderBy(number => number, StringComparer.OrdinalIgnoreCase)
+                            .ToList();
 
                     return new SavedInvoiceRecord
                     {
@@ -99,8 +110,9 @@ namespace ProWalid.ViewModels
                         PrintHtml = first.PrintHtml,
                         PayloadJson = first.PayloadJson,
                         SavedAt = first.SavedAt,
+                        RelatedIndividualIds = first.RelatedIndividualIds,
                         GroupedInvoicesCount = sourceInvoiceNumbers.Count,
-                        GroupedInvoiceNumbersSummary = string.Join(Environment.NewLine, sourceInvoiceNumbers)
+                        GroupedInvoiceNumbersSummary = string.Join(" - ", sourceInvoiceNumbers)
                     };
                 });
 
