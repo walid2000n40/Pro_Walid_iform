@@ -65,28 +65,29 @@ namespace ProWalid.Views
 
             try
             {
-                var appFolder = AppDomain.CurrentDomain.BaseDirectory;
-                var dbPath = AppStoragePaths.ResolveDatabasePath(appFolder);
-
-                var serverUrl = "https://informtyping.com/v2_test";
-                var apiKey = "85d7bd6243258f6d4d057ffa3885263566f69422a457b2b11a04edd6fbeb456b";
-
-                try
+                var syncService = App.SharedSyncService;
+                if (syncService == null)
                 {
-                    var settingsPath = Path.Combine(appFolder, "appsettings.json");
-                    if (File.Exists(settingsPath))
+                    var appFolder = AppDomain.CurrentDomain.BaseDirectory;
+                    var dbPath = AppStoragePaths.ResolveDatabasePath(appFolder);
+                    var serverUrl = "https://informtyping.com/v2_test";
+                    var apiKey = "85d7bd6243258f6d4d057ffa3885263566f69422a457b2b11a04edd6fbeb456b";
+                    try
                     {
-                        var json = JsonDocument.Parse(File.ReadAllText(settingsPath));
-                        if (json.RootElement.TryGetProperty("Sync", out var syncSection))
+                        var settingsPath = Path.Combine(appFolder, "appsettings.json");
+                        if (File.Exists(settingsPath))
                         {
-                            serverUrl = syncSection.GetProperty("ServerUrl").GetString() ?? serverUrl;
-                            apiKey = syncSection.GetProperty("ApiKey").GetString() ?? apiKey;
+                            var json = JsonDocument.Parse(File.ReadAllText(settingsPath));
+                            if (json.RootElement.TryGetProperty("Sync", out var syncSection))
+                            {
+                                serverUrl = syncSection.GetProperty("ServerUrl").GetString() ?? serverUrl;
+                                apiKey = syncSection.GetProperty("ApiKey").GetString() ?? apiKey;
+                            }
                         }
                     }
+                    catch { }
+                    syncService = new SyncService(dbPath, serverUrl, apiKey);
                 }
-                catch { }
-
-                var syncService = new SyncService(dbPath, serverUrl, apiKey);
                 var result = await syncService.FullSyncAsync();
 
                 var dialog = new ContentDialog

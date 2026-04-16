@@ -16,7 +16,10 @@ namespace ProWalid.Services
         private readonly string _connectionString;
         private readonly string _deviceId;
         private readonly string _syncStatePath;
+        private readonly object _syncLock = new();
+        private bool _isSyncing;
 
+        public bool IsSyncing => _isSyncing;
         public event Action<string>? OnProgress;
 
         public SyncService(string dbPath, string serverUrl, string apiKey)
@@ -62,6 +65,16 @@ namespace ProWalid.Services
         public async Task<SyncResult> FullSyncAsync()
         {
             var result = new SyncResult();
+            lock (_syncLock)
+            {
+                if (_isSyncing)
+                {
+                    result.Success = false;
+                    result.Message = "المزامنة قيد التنفيذ بالفعل";
+                    return result;
+                }
+                _isSyncing = true;
+            }
             try
             {
                 OnProgress?.Invoke("جاري التحقق من الاتصال...");
@@ -111,6 +124,10 @@ namespace ProWalid.Services
                 result.Success = false;
                 result.Message = $"خطأ في المزامنة: {ex.Message}";
                 OnProgress?.Invoke(result.Message);
+            }
+            finally
+            {
+                _isSyncing = false;
             }
             return result;
         }
@@ -174,6 +191,40 @@ namespace ProWalid.Services
                     UpdatedAt = item.UpdatedAt?.ToString() ?? DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
                 });
             }
+
+            // Push saved invoices
+            try
+            {
+                var savedInvoices = await connection.QueryAsync(
+                    @"SELECT SavedInvoiceNumber, RootInvoiceNumber, SourceInvoiceNumber, GroupedSequenceNumber,
+                             SavedKind, TemplateKey, CustomerId, CustomerName, CompanyName, InvoiceDate,
+                             TotalAmount, Notes, PrintHtml, PayloadJson, SavedAt, RelatedIndividualIds
+                      FROM SavedInvoices");
+                foreach (var si in savedInvoices)
+                {
+                    request.SavedInvoices.Add(new SyncSavedInvoicePush
+                    {
+                        SavedInvoiceNumber = si.SavedInvoiceNumber?.ToString() ?? "",
+                        RootInvoiceNumber = si.RootInvoiceNumber?.ToString() ?? "",
+                        SourceInvoiceNumber = si.SourceInvoiceNumber?.ToString() ?? "",
+                        GroupedSequenceNumber = si.GroupedSequenceNumber != null ? (int)(long)si.GroupedSequenceNumber : 0,
+                        SavedKind = si.SavedKind?.ToString() ?? "single",
+                        TemplateKey = si.TemplateKey?.ToString() ?? "",
+                        CustomerId = si.CustomerId != null ? (long)si.CustomerId : 0,
+                        CustomerName = si.CustomerName?.ToString() ?? "",
+                        CompanyName = si.CompanyName?.ToString() ?? "",
+                        InvoiceDate = si.InvoiceDate?.ToString() ?? "",
+                        TotalAmount = si.TotalAmount != null ? (double)si.TotalAmount : 0,
+                        Notes = si.Notes?.ToString() ?? "",
+                        PrintHtml = si.PrintHtml?.ToString() ?? "",
+                        PayloadJson = si.PayloadJson?.ToString() ?? "",
+                        SavedAt = si.SavedAt?.ToString() ?? "",
+                        RelatedIndividualIds = si.RelatedIndividualIds?.ToString() ?? ""
+                    });
+                }
+            }
+            catch { }
+
             return request;
         }
 
@@ -247,8 +298,7 @@ namespace ProWalid.Services
                 }
             }
 
-            // One-time: remove old attachments with direct URLs so they get re-inserted with API URLs
-            await connection.ExecuteAsync("DELETE FROM Attachments WHERE FilePath LIKE 'https://informtyping.com%'");
+            // Duplicate-safe: no longer bulk-delete remote attachments; dedup check below handles it
 
             foreach (var si in response.LineItems ?? new List<SyncLineItemPull>())
             {
@@ -290,14 +340,101 @@ namespace ProWalid.Services
                                 var relPath = url.Replace("\\/", "/");
                                 if (relPath.StartsWith("/v2_test/uploads/")) relPath = relPath.Substring("/v2_test/uploads/".Length);
                                 var fullUrl = "https://informtyping.com/v2_test/api/serve_file.php?api_key=85d7bd6243258f6d4d057ffa3885263566f69422a457b2b11a04edd6fbeb456b&path=" + relPath;
-                                var existingAtt = await connection.QueryFirstOrDefaultAsync<dynamic>("SELECT Id FROM Attachments WHERE TransactionItemId=@ItemId AND OriginalFileName=@FN", new { ItemId = itemId, FN = fileName });
+                                var existingAtt = await connection.QueryFirstOrDefaultAsync<dynamic>(
+                                    @"SELECT Id FROM Attachments 
+                                      WHERE TransactionItemId=@ItemId 
+                                        AND OriginalFileName=@FN", 
+                                    new { ItemId = itemId, FN = fileName });
                                 if (existingAtt == null)
-                                    await connection.ExecuteAsync("INSERT INTO Attachments (TransactionItemId, FileName, FilePath, OriginalFileName, FileSize, FileExtension, CreatedAt) VALUES (@ItemId, @FN, @FP, @OFN, 0, @Ext, datetime(\'now\'))", new { ItemId = itemId, FN = fileName, FP = fullUrl, OFN = fileName, Ext = System.IO.Path.GetExtension(fileName) });
+                                {
+                                    // Also check if there's an uploaded:// variant for the same file
+                                    var uploadedVariant = await connection.QueryFirstOrDefaultAsync<dynamic>(
+                                        @"SELECT Id FROM Attachments 
+                                          WHERE TransactionItemId=@ItemId 
+                                            AND (OriginalFileName=@FN OR FileName=@FN)
+                                            AND (FilePath LIKE 'uploaded://%' OR FilePath LIKE 'http%')",
+                                        new { ItemId = itemId, FN = fileName });
+                                    if (uploadedVariant == null)
+                                        await connection.ExecuteAsync("INSERT INTO Attachments (TransactionItemId, FileName, FilePath, OriginalFileName, FileSize, FileExtension, CreatedAt) VALUES (@ItemId, @FN, @FP, @OFN, 0, @Ext, datetime(\'now\'))", new { ItemId = itemId, FN = fileName, FP = fullUrl, OFN = fileName, Ext = System.IO.Path.GetExtension(fileName) });
+                                }
                             }
                         }
                     }
                     catch { }
                 }
+            }
+
+            // Pull saved invoices from server
+            foreach (var psi in response.SavedInvoices ?? new List<SyncSavedInvoicePull>())
+            {
+                try
+                {
+                    string savedInvNo = psi.SavedInvoiceNumber ?? "";
+                    if (string.IsNullOrWhiteSpace(savedInvNo)) continue;
+
+                    string savedKind = psi.IsBulk == 1 ? "grouped" : (psi.SavedKind ?? "single");
+                    string companyName = psi.CompanyName ?? "";
+                    string customerName = psi.CustomerName ?? psi.EmployeeName ?? "";
+                    double totalAmount = psi.IsBulk == 1 ? psi.GrandTotalDouble : psi.TotalAmountDouble;
+                    string printHtml = psi.PrintHtml ?? "";
+                    string savedAt = psi.SavedAt ?? DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+                    long custId = psi.CustomerIdLong;
+                    string rootInvNo = psi.RootInvoiceNumber ?? "";
+                    string sourceInvNo = psi.SourceInvoiceNumber ?? psi.InvoiceNumber ?? savedInvNo;
+                    string relIds = psi.RelatedIndividualIds ?? psi.TxIds ?? "";
+                    string bulkRef = psi.BulkRefNumber ?? "";
+
+                    // Use a unique key: SavedInvoiceNumber for single, or grouped prefix for bulk
+                    string uniqueKey = savedKind == "grouped" ? $"G-{custId}-{savedInvNo}" : savedInvNo;
+                    if (savedKind == "grouped" && !string.IsNullOrWhiteSpace(bulkRef))
+                        uniqueKey = bulkRef;
+
+                    var existingSaved = await connection.QueryFirstOrDefaultAsync<dynamic>(
+                        "SELECT Id FROM SavedInvoices WHERE SavedInvoiceNumber = @Key",
+                        new { Key = uniqueKey });
+
+                    if (existingSaved == null)
+                    {
+                        await connection.ExecuteAsync(
+                            @"INSERT INTO SavedInvoices (SavedInvoiceNumber, RootInvoiceNumber, SourceInvoiceNumber,
+                                  GroupedSequenceNumber, SavedKind, TemplateKey, CustomerId, CustomerName,
+                                  CompanyName, InvoiceDate, TotalAmount, Notes, PrintHtml, PayloadJson,
+                                  SavedAt, RelatedIndividualIds)
+                              VALUES (@Key, @Root, @Source, 0, @Kind, @Template, @CustId, @CustName,
+                                  @Company, @InvDate, @Total, @Notes, @Html, @Payload, @SavedAt, @RelIds)",
+                            new
+                            {
+                                Key = uniqueKey,
+                                Root = rootInvNo != "" ? rootInvNo : bulkRef,
+                                Source = sourceInvNo,
+                                Kind = savedKind,
+                                Template = psi.TemplateKey ?? "",
+                                CustId = custId,
+                                CustName = customerName,
+                                Company = companyName,
+                                InvDate = psi.InvoiceDate ?? savedAt,
+                                Total = totalAmount,
+                                Notes = psi.Notes ?? "",
+                                Html = printHtml,
+                                Payload = psi.PayloadJson ?? "",
+                                SavedAt = savedAt,
+                                RelIds = relIds
+                            });
+                    }
+                    else
+                    {
+                        // Update if server has newer HTML
+                        if (!string.IsNullOrWhiteSpace(printHtml))
+                        {
+                            await connection.ExecuteAsync(
+                                @"UPDATE SavedInvoices SET PrintHtml=@Html, TotalAmount=@Total, CompanyName=@Company,
+                                      CustomerName=@CustName, SavedAt=@SavedAt WHERE Id=@Id",
+                                new { Html = printHtml, Total = totalAmount, Company = companyName,
+                                      CustName = customerName, SavedAt = savedAt, Id = (long)existingSaved.Id });
+                        }
+                    }
+                }
+                catch { }
             }
         }
 

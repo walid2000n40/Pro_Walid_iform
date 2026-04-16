@@ -460,6 +460,7 @@ namespace ProWalid.ViewModels
             {
                 await _databaseHelper.SaveTransactionAsync(transaction);
                 TransactionViewModel.Instance?.AddOrUpdateTransaction(transaction);
+                TriggerBackgroundSync();
 
                 if (_frame != null && _frame.CanGoBack)
                 {
@@ -473,6 +474,7 @@ namespace ProWalid.ViewModels
 
                 await _databaseHelper.SaveTransactionAsync(transaction);
                 TransactionViewModel.Instance?.AddOrUpdateTransaction(transaction);
+                TriggerBackgroundSync();
 
                 if (_frame != null && _frame.CanGoBack)
                 {
@@ -568,6 +570,22 @@ namespace ProWalid.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"Error previewing attachment: {ex.Message}");
             }
+        }
+
+        private static void TriggerBackgroundSync()
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var syncService = App.SharedSyncService;
+                    if (syncService != null && !syncService.IsSyncing)
+                    {
+                        await syncService.FullSyncAsync();
+                    }
+                }
+                catch { }
+            });
         }
     }
 }
